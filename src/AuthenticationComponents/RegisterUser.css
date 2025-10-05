@@ -1,0 +1,100 @@
+.register-container {
+    width: 350px;
+    margin: 30px auto;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .register-title {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #222;
+  }
+  
+  input {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 100%;
+  }
+  
+  .password-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .show-password {
+    font-size: 0.85rem;
+    color: #333;
+  }
+  
+  .strength-bar {
+    display: flex;
+    gap: 4px;
+    margin: 6px 0;
+  }
+  
+  .bar {
+    height: 6px;
+    flex: 1;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .submit-btn {
+    margin-top: 10px;
+    padding: 8px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .submit-btn:disabled {
+    background: gray;
+    cursor: not-allowed;
+  }
+  
+  .upload-progress {
+    width: 100%;
+    margin-top: 8px;
+  }
+  
+  .error-text {
+    color: red;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .success-text {
+    color: green;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .password-requirements {
+    list-style: none;
+    padding: 0;
+    font-size: 0.85rem;
+  }
+  
+  .password-requirements li {
+    margin: 4px 0;
+  }
+  
+  .valid {
+    color: green;
+  }
+  
+  .invalid {
+    color: red;
+  }
+  
