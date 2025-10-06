@@ -151,7 +151,7 @@ const RegisterUser = () => {
 
   // --- JSX ---
   return (
-    <div className="register-container">
+    <div className="register-container bg-white">
       <h2 className="register-title">Register</h2>
 
       <input
@@ -192,7 +192,7 @@ const RegisterUser = () => {
           onChange={handleForm}
           placeholder="Password"
         />
-        <label className="show-password">
+        <label className="show-password ">
           <input
             type="checkbox"
             checked={passwordShow}
@@ -232,6 +232,7 @@ const RegisterUser = () => {
         placeholder="State"
       />
       <input
+      
         type="text"
         required
         name="location.country"
