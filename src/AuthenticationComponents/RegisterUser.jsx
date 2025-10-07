@@ -1,17 +1,40 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import "./RegisterUser.css";
+import photo1 from "../photos/register/1.jpg";
+import photo2 from "../photos/register/2.jpg";
+import photo3 from "../photos/register/3.jpg";
+import photo4 from "../photos/register/4.jpg";
+
+const images = [
+  { 
+    src: photo1, 
+    text: "Jobs fill your pockets, but adventures fill your soul." 
+  },
+  { 
+    src: photo2, 
+    text: "The world is a book, and those who do not travel read only one page." 
+  },
+  { 
+    src: photo3, 
+    text: "Collect moments, not things — the best stories are found between the pages of a passport." 
+  },
+  { 
+    src: photo4, 
+    text: "Take only memories, leave only footprints." 
+  },
+];
+
 
 const RegisterUser = () => {
-  // --- State Hooks ---
-  const [progress, setProgress] = useState(0);
+  const [imageIndex, setImageIndex] = useState(0);
   const [form, setForm] = useState({
     name: "",
     email: "",
     username: "",
-    password: "",
+    password: "Sandip@109",
     location: { city: "", state: "", country: "" },
   });
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [passwordShow, setPasswordShow] = useState(false);
@@ -23,18 +46,48 @@ const RegisterUser = () => {
     hasSpecial: false,
   });
 
-  // --- Helper Functions ---
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30*60);
+  const timerRef = useRef(null);
+
+  // Smooth carousel effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    }, 4000); // change every 4 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Countdown logic
+  useEffect(() => {
+    if (!isSubmitted) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [isSubmitted]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs < 10 ? "0" + secs : secs}s`;
+  };
+
   function calculatePasswordStrength(password) {
     let score = 0;
     let hasUpper = false;
     let hasLower = false;
     let hasNumber = false;
     let hasSpecial = false;
-
     const specials = ["~", "!", "@", "#", "$", "%", "^", "&", "*"];
 
     if (password.length >= 8) score++;
-
     for (const char of password) {
       const code = char.charCodeAt(0);
       if (code >= 65 && code <= 90) hasUpper = true;
@@ -42,34 +95,21 @@ const RegisterUser = () => {
       else if (code >= 48 && code <= 57) hasNumber = true;
       else if (specials.includes(char)) hasSpecial = true;
     }
-
     if (hasUpper && hasLower) score++;
     if (hasNumber) score++;
     if (hasSpecial) score++;
-
-    
-    const typeCount =
-      (hasUpper ? 1 : 0) +
-      (hasLower ? 1 : 0) +
-      (hasNumber ? 1 : 0) +
-      (hasSpecial ? 1 : 0);
-
-    if (typeCount < 2 && score > 1) score--;
-
     return { score, types: { hasUpper, hasLower, hasNumber, hasSpecial } };
   }
 
   const getBarColor = () => {
-    if (strength <= 1) return "red";
-    if (strength === 2) return "orange";
-    if (strength === 3) return "gold";
-    if (strength === 4) return "green";
+    if (strength <= 1) return "bg-red-700";
+    if (strength === 2) return "bg-orange-400";
+    if (strength === 3) return "bg-yellow-400";
+    if (strength === 4) return "bg-green-400";
   };
 
-  // --- Event Handlers ---
   const handleForm = (e) => {
     const { name, value } = e.target;
-
     if (name.startsWith("location.")) {
       const key = name.split(".")[1];
       setForm((prev) => ({
@@ -80,7 +120,6 @@ const RegisterUser = () => {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
 
-    // Live password strength calculation
     if (name === "password") {
       const { score, types } = calculatePasswordStrength(value);
       setStrength(score);
@@ -91,8 +130,6 @@ const RegisterUser = () => {
   const handleSubmit = async () => {
     setError("");
     setSuccess("");
-
-    // --- Validation Checks ---
     if (
       !form.name ||
       !form.email ||
@@ -105,173 +142,214 @@ const RegisterUser = () => {
       setError("Please fill out all fields.");
       return;
     }
-
-    // --- Name should not have numbers ---
-    const hasNumberInName = form.name.split("").some((char) => {
-      const code = char.charCodeAt(0);
-      return code >= 48 && code <= 57;
-    });
-    if (hasNumberInName) {
-      setError("Name should not contain numbers.");
-      return;
-    }
-
-    // --- Password strength ---
     if (strength < 4) {
-      setError(
-        "Password is too weak. Try adding numbers, uppercase letters, and special characters."
-      );
+      setError("Password too weak. Try adding uppercase, numbers, and symbols.");
       return;
     }
 
-    // --- API Call ---
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", form, {
-        onUploadProgress: (e) => {
-          const uploaded = Math.round((e.loaded * 100) / e.total);
-          setProgress(uploaded);
-        },
-      });
-
+      const res = await axios.post("http://localhost:5000/api/auth/register", form);
       setSuccess(res.data.message || "Registration successful!");
-      setForm({
-        name: "",
-        email: "",
-        username: "",
-        password: "",
-        location: { city: "", state: "", country: "" },
-      });
-      setStrength(0);
-      setCharTypes({ hasUpper: false, hasLower: false, hasNumber: false, hasSpecial: false });
-      setProgress(0);
+      setIsSubmitted(true);
+      setTimeLeft(30*60);
     } catch (err) {
       setError(err.response?.data?.message || "Server error. Please try again.");
     }
   };
 
-  // --- JSX ---
+  const handleResendEmail = async () => {
+    try {
+      await axios.post("http://localhost:5000/api/auth/resend-verification", {
+        email: form.email,
+      });
+      setSuccess("Verification email resent! Check your inbox.");
+      setTimeLeft(30 * 60);
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend email.");
+    }
+  };
+
   return (
-    <div className="register-container bg-white">
-      <h2 className="register-title">Register</h2>
-
-      <input
-        type="text"
-        required
-        name="name"
-        value={form.name}
-        onChange={handleForm}
-        placeholder="Name"
-      />
-
-      <input
-        type="email"
-        required
-        name="email"
-        value={form.email}
-        onChange={handleForm}
-        placeholder="Email"
-      />
-
-      <input
-        type="text"
-        required
-        name="username"
-        value={form.username}
-        onChange={handleForm}
-        placeholder="Username"
-        minLength={3}
-        maxLength={15}
-      />
-
-      <div className="password-section">
+    <div className="flex flex-col lg:flex-row min-h-screen">
+      {/* LEFT SIDE - Registration Form */}
+      <div className="w-full lg:w-1/3 mx-auto mt-8 lg:mt-0 p-6 rounded-xl shadow-md flex flex-col gap-3 z-10 bg-white/80 backdrop-blur-md">
+        <h2 className="text-center text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
+          Create Your Account
+        </h2>
+  
+        {/* Inputs */}
         <input
-          type={passwordShow ? "text" : "password"}
-          required
-          name="password"
-          value={form.password}
+          type="text"
+          name="name"
+          value={form.name}
           onChange={handleForm}
-          placeholder="Password"
+          placeholder="Name"
+          className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
         />
-        <label className="show-password ">
+        <input
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleForm}
+          placeholder="Email"
+          className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
+        />
+        <input
+          type="text"
+          name="username"
+          value={form.username}
+          onChange={handleForm}
+          placeholder="Username"
+          className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
+        />
+  
+        {/* Password Section */}
+        <div className="flex items-center justify-between">
           <input
-            type="checkbox"
-            checked={passwordShow}
-            onChange={() => setPasswordShow(!passwordShow)}
-          />{" "}
-          Show
-        </label>
+            type={passwordShow ? "text" : "password"}
+            name="password"
+            value={form.password}
+            onChange={handleForm}
+            placeholder="Password"
+            className="p-3 rounded-md border-2 border-stone-600 w-[75%] focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
+          />
+          <label className="text-sm sm:text-base text-gray-700 flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={passwordShow}
+              onChange={() => setPasswordShow(!passwordShow)}
+              className="accent-green-500 w-5 h-5 sm:w-6 sm:h-6"
+            />
+            Show
+          </label>
+        </div>
+  
+        {/* Strength Bar */}
+        <div className="flex gap-1 mt-1">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className={`h-[6px] flex-1 rounded-sm transition-all duration-300 ${
+                strength >= i ? getBarColor() : "bg-stone-600"
+              }`}
+            ></div>
+          ))}
+        </div>
+  
+        {/* Location Inputs */}
+        <input
+          type="text"
+          name="location.city"
+          value={form.location.city}
+          onChange={handleForm}
+          placeholder="City"
+          className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
+        />
+        <input
+          type="text"
+          name="location.state"
+          value={form.location.state}
+          onChange={handleForm}
+          placeholder="State"
+          className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
+        />
+        <input
+          type="text"
+          name="location.country"
+          value={form.location.country}
+          onChange={handleForm}
+          placeholder="Country"
+          className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
+        />
+  
+        {/* Submit Button */}
+        <button
+          onClick={handleSubmit}
+          disabled={strength < 4}
+          className={`mt-3 p-3 text-lg sm:text-xl rounded-md font-semibold text-white transform hover:scale-105 transition duration-300 ${
+            strength < 4
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-700 hover:bg-green-500"
+          }`}
+        >
+          Submit
+        </button>
+  
+        {/* Verification Section */}
+        {isSubmitted && (
+          <div className="mt-3 text-center">
+            <p className="text-gray-700 text-base sm:text-lg">
+              {timeLeft > 0
+                ? `Verification email expires in ${formatTime(timeLeft)}`
+                : "Verification link expired."}
+            </p>
+            <button
+              onClick={handleResendEmail}
+              disabled={timeLeft > 0}
+              className={`mt-2 w-full px-3 py-2 rounded-md text-base sm:text-lg font-medium transition ${
+                timeLeft > 0
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+              }`}
+            >
+              Resend Verification Email
+            </button>
+          </div>
+        )}
+  
+        {/* Messages */}
+        {error && <p className="text-red-600 text-center text-sm">{error}</p>}
+        {success && <p className="text-green-600 text-center text-sm">{success}</p>}
+  
+        {/* Password Requirements */}
+        <ul className="list-none text-sm mt-2 space-y-1">
+          <li className={form.password.length >= 8 ? "text-green-600" : "text-red-600"}>
+            At least 8 characters long
+          </li>
+          <li
+            className={
+              charTypes.hasUpper && charTypes.hasLower
+                ? "text-green-600"
+                : "text-red-600"
+            }
+          >
+            Has both uppercase and lowercase letters
+          </li>
+          <li className={charTypes.hasNumber ? "text-green-600" : "text-red-600"}>
+            Contains numbers
+          </li>
+          <li className={charTypes.hasSpecial ? "text-green-600" : "text-red-600"}>
+            Contains special characters (~!@#$%^&*)
+          </li>
+        </ul>
       </div>
-
-      {/* Strength Bar */}
-      <div className="strength-bar">
-        {[1, 2, 3, 4].map((i) => (
+  
+      {/* RIGHT SIDE - Carousel (Hidden on small screens) */}
+      <div className="hidden lg:block relative w-2/3 h-screen overflow-hidden">
+        {images.map((img, index) => (
           <div
-            key={i}
-            className="bar"
-            style={{
-              backgroundColor: strength >= i ? getBarColor() : "#ccc",
-            }}
-          ></div>
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              index === imageIndex ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <img
+              src={img.src}
+              alt={img.text}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-0 left-0 w-2/3 h-full mt-[2rem] ">
+              <p className=" text-white text-3xl xl:text-4xl font-semibold text-center px-6  ">
+                {img.text}
+              </p>
+            </div>
+          </div>
         ))}
       </div>
-
-      <input
-        type="text"
-        required
-        name="location.city"
-        value={form.location.city}
-        onChange={handleForm}
-        placeholder="City"
-      />
-      <input
-        type="text"
-        required
-        name="location.state"
-        value={form.location.state}
-        onChange={handleForm}
-        placeholder="State"
-      />
-      <input
-      
-        type="text"
-        required
-        name="location.country"
-        value={form.location.country}
-        onChange={handleForm}
-        placeholder="Country"
-      />
-
-      <button
-        className="submit-btn"
-        onClick={handleSubmit}
-        disabled={strength < 4}
-      >
-        Submit
-      </button>
-
-      {progress > 0 && (
-        <progress value={progress} max="100" className="upload-progress"></progress>
-      )}
-
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
-
-      <ul className="password-requirements">
-        <li className={form.password.length >= 8 ? "valid" : "invalid"}>
-          At least 8 characters long
-        </li>
-        <li className={charTypes.hasUpper && charTypes.hasLower ? "valid" : "invalid"}>
-          Has both uppercase and lowercase letters
-        </li>
-        <li className={charTypes.hasNumber ? "valid" : "invalid"}>
-          Contains numbers
-        </li>
-        <li className={charTypes.hasSpecial ? "valid" : "invalid"}>
-          Contains special characters (~!@#$%^&*)
-        </li>
-      </ul>
     </div>
   );
+  
 };
 
 export default RegisterUser;
