@@ -4,6 +4,7 @@ import photo1 from "../photos/register/1.jpg";
 import photo2 from "../photos/register/2.jpg";
 import photo3 from "../photos/register/3.jpg";
 import photo4 from "../photos/register/4.jpg";
+import { Link } from "react-router-dom";
 
 const images = [
   { 
@@ -31,7 +32,7 @@ const RegisterUser = () => {
     name: "",
     email: "",
     username: "",
-    password: "Sandip@109",
+    password: "",
     location: { city: "", state: "", country: "" },
   });
 
@@ -171,7 +172,7 @@ const RegisterUser = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen">
+    <div className="absolute top-0 left-0 right-0 flex flex-col lg:flex-row min-h-screen">
       {/* LEFT SIDE - Registration Form */}
       <div className="w-full lg:w-1/3 mx-auto mt-8 lg:mt-0 p-6 rounded-xl shadow-md flex flex-col gap-3 z-10 bg-white/80 backdrop-blur-md">
         <h2 className="text-center text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">
@@ -263,6 +264,15 @@ const RegisterUser = () => {
           className="p-3 rounded-md border-2 border-stone-600 w-full focus:outline-none focus:ring-2 focus:ring-stone-600 text-lg sm:text-xl"
         />
   
+  <div className="text-center mt-4 text-xl">
+  <Link 
+    to="/login" 
+    className="text-green-700 font-medium hover:text-green-500 transition-colors duration-200"
+  >
+    Already have an account? Login here
+  </Link>
+</div>
+
         {/* Submit Button */}
         <button
           onClick={handleSubmit}
@@ -275,6 +285,7 @@ const RegisterUser = () => {
         >
           Submit
         </button>
+
   
         {/* Verification Section */}
         {isSubmitted && (
@@ -303,7 +314,7 @@ const RegisterUser = () => {
         {success && <p className="text-green-600 text-center text-sm">{success}</p>}
   
         {/* Password Requirements */}
-        <ul className="list-none text-sm mt-2 space-y-1">
+        <ul className="list-none text-2xl mt-2 space-y-1 " >
           <li className={form.password.length >= 8 ? "text-green-600" : "text-red-600"}>
             At least 8 characters long
           </li>

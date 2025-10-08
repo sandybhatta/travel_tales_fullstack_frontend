@@ -9,7 +9,7 @@ const App = () => {
   return (
     <>
     <NavBar/>
-    <div className=' border-2 border-green-300'>
+    <div className=' '>
         <Routes>
           <Route path='/register-user' element={<RegisterUser/>}/>
           <Route path="/verify-email" element={<VerifyEmail/>}/>
