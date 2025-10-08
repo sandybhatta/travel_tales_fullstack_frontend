@@ -1,94 +1,91 @@
 import React, { useRef, useState } from "react";
-import MainLogo from "../MainLogo.jpg";
+import axios from "axios";
+import OtpVerification from "./OtpVerification.jsx";
+import ReactivationModal from "./ReactivationModal.jsx";
+import ForgotPassword from "./ForgotPassword";
+
+const API_BASE = "http://localhost:5000/api"; // update as needed
 
 const Login = () => {
-  const [email,setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordShow, setpasswordShow] = useState(false);
-  const [error,setError] = useState("")
+  const emailRef = useRef();
+  const passwordRef = useRef();
+  const [stage, setStage] = useState("login"); // login | otp | forgot | reset
+  const [userId, setUserId] = useState(null);
+  const [reactivateData, setReactivateData] = useState(null);
+  const [error, setError] = useState("");
 
+  const handleLogin = async () => {
+    setError("");
+    const email = emailRef.current.value;
+    const password = passwordRef.current.value;
+
+    try {
+      const res = await axios.post(`${API_BASE}/login`, { email, password });
+      setUserId(res.data.userId);
+      setStage("otp");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Login failed.";
+      if (err.response?.data?.allowReactivation) {
+        setReactivateData({
+          userId: err.response.data.userId,
+          message: msg,
+        });
+      } else {
+        setError(msg);
+      }
+    }
+  };
+
+  if (stage === "otp") {
+    return <OtpVerification   userId={userId} onBack={() => setStage("login")} />;
+  }
+
+  if (stage === "forgot") {
+    return <ForgotPassword onBack={() => setStage("login")} />;
+  }
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-screen bg-gradient-to-br from-green-50 to-blue-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-50 to-blue-100 p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h1>
 
-      {/* IMAGE SIDE — visible only on large screens (desktop and above) */}
-      <div className="hidden lg:flex w-1/2 items-center justify-center bg-white shadow-xl">
-        <img
-          src={MainLogo}
-          alt="Travel Tales Logo"
-          className="object-cover w-full h-full"
+        <input
+          ref={emailRef}
+          type="email"
+          placeholder="Email"
+          className="w-full mb-3 border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
         />
-      </div>
+        <input
+          ref={passwordRef}
+          type="password"
+          placeholder="Password"
+          className="w-full mb-4 border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+        />
+        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-      {/* FORM SIDE */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10 md:p-12">
-        <div className="bg-white rounded-3xl shadow-3xl p-10 sm:p-12 w-full max-w-lg flex flex-col gap-8">
+        <button
+          onClick={handleLogin}
+          className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-semibold"
+        >
+          Login
+        </button>
 
-          <h2 className="text-center text-3xl sm:text-4xl font-bold uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">
-            Login to TravelTales
-          </h2>
-
-          {/* Email Input */}
-          <div className="flex flex-col">
-            <label className="text-[1.5rem] font-semibold text-gray-600 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e)=>setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 text-[1.5 rem]"
-            />
-          </div>
-
-          {/* Password Input */}
-          <div className="flex flex-col">
-            <label className="text-[1.5rem] font-semibold text-gray-600 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={passwordShow ? "text" : "password"}
-                value={password}
-                onChange={(e)=>setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="px-4 py-3 w-full rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 text-[1.5 rem]"
-              />
-              <div className="absolute right-3 top-3 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={passwordShow}
-                  onChange={() => setpasswordShow(!passwordShow)}
-                  className="w-4 h-4 accent-green-500 cursor-pointer"
-                />
-                <span className="text-xs text-gray-600">Show</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Button */}
+        <div className="text-center mt-4">
           <button
-            type="button"
-            disabled={!email || !password}
-            className="mt-4 w-full bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold py-3 rounded-lg hover:scale-105 transition-all duration-200 shadow-lg"
+            className="text-sm text-blue-500 hover:underline"
+            onClick={() => setStage("forgot")}
           >
-            Login
+            Forgot Password?
           </button>
-
-          {/* Extra links */}
-          <div className="text-center text-xl text-gray-600 mt-3">
-            Don’t have an account?{" "}
-            <a
-              href="/register-user"
-              className="text-blue-500 font-semibold hover:underline"
-            >
-              Register here
-            </a>
-          </div>
-
         </div>
       </div>
+
+      {reactivateData && (
+        <ReactivationModal
+          {...reactivateData}
+          onClose={() => setReactivateData(null)}
+        />
+      )}
     </div>
   );
 };
