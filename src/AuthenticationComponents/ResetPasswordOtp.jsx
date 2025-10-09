@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:5000/api/auth";
 
 const ResetPasswordOtp = ({ email, onBack }) => {
+    const navigate = useNavigate();
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -25,7 +27,7 @@ const ResetPasswordOtp = ({ email, onBack }) => {
       });
       setMessage(res.data.message || "Password changed successfully!");
       setError("");
-      // Optionally redirect to login after 2 seconds
+
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setError(err.response?.data?.message || "Password reset failed");

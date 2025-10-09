@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import {useDispatch} from "react-redux"
+import {setAccessToken, setUserInformation} from "../slices/userSlice"
+import { useNavigate } from "react-router-dom";
+const API_BASE = "http://localhost:5000/api/auth";
 
-const API_BASE = "http://localhost:5000/api";
 
 const OtpVerification = ({ userId, onBack  }) => {
+    const dispatch = useDispatch()
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [cooldown, setCooldown] = useState(0); // in seconds
+  const [cooldown, setCooldown] = useState(0); 
+  const navigate = useNavigate();
 
   // countdown timer effect
   useEffect(() => {
@@ -20,10 +25,14 @@ const OtpVerification = ({ userId, onBack  }) => {
 
   const handleVerify = async () => {
     try {
-      const res = await axios.post(`${API_BASE}/otp-login`, { userId, otp });
-      setMessage("✅ OTP verified! Login complete.");
+      const res = await axios.post(`${API_BASE}/otp-login`, { userId, otp }, { withCredentials: true });
+      setMessage(" OTP verified! Login complete.");
       setError("");
+      dispatch(setAccessToken(res.data.accessToken))
+      dispatch(setUserInformation(res.data.user))
       localStorage.setItem("accessToken", res.data.accessToken);
+      navigate("/")
+
       // You can redirect here, e.g. window.location.href = "/dashboard"
     } catch (err) {
       setError(err.response?.data?.message || "OTP verification failed");
@@ -34,9 +43,9 @@ const OtpVerification = ({ userId, onBack  }) => {
   const handleResend = async () => {
     try {
       await axios.post(`${API_BASE}/resend-otp`, { userId, type: "login" });
-      setMessage("📩 A new OTP has been sent to your email.");
+      setMessage(" A new OTP has been sent to your email.");
       setError("");
-      setCooldown(600); // 10 minutes = 600 seconds
+      setCooldown(600); 
     } catch (err) {
       setError(err.response?.data?.message || "Failed to resend OTP");
       setMessage("");

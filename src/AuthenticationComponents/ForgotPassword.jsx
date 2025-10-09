@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import ResetPasswordOtp from "./ResetPasswordOtp";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:5000/api/auth";
 
 const ForgotPassword = ({ onBack }) => {
   const [stage, setStage] = useState("email"); // "email" or "reset"
