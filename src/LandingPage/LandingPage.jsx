@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
@@ -15,13 +15,24 @@ const LandingPage = () => {
   useEffect(() => {
     if (isAccessToken) navigate('/home');
   }, [isAccessToken]);
+  
+  const featureRef= useRef(null)
+  const aboutRef= useRef(null)
+
+
+  const handleFeatureScroll=()=>{
+    featureRef.current.scrollIntoView({behavior:"smooth"})
+  }
+  const handleAboutScroll=()=>{
+    aboutRef.current.scrollIntoView({behavior:"smooth"})
+  }
 
   return (
     <div className="font-sans bg-[#ffffff] text-[#2B2D42] h-[200vh]">
-      <Navbar />
+      <Navbar  onFeatureClick={handleFeatureScroll} onAboutClick={handleAboutScroll}/>
       <HeroSection />
-      <Features />
-      <PlatformHighlights />
+      <Features featureRef={featureRef}/>
+      <PlatformHighlights aboutRef={aboutRef} />
       <CommunitySection />
       
       <Footer />

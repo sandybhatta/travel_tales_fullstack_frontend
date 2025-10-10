@@ -1,52 +1,60 @@
 import React, { useEffect, useRef } from "react";
+import landing1 from "./photos/landing1.jpg";
+import landing2 from "./photos/landing2.jpg";
+import landing3 from "./photos/landing3.jpg";
+import landing4 from "./photos/landing4.jpg";
 
-const Features = () => {
+
+const Features = ({featureRef}) => {
   const features = [
     {
       title: "Create Stunning Photo Stories",
       description:
-        "Transform your travel moments into unforgettable visual stories. Express your journey through photos, words, and emotions — and inspire others to explore more.",
+        "Turn your travel photos into captivating stories that speak louder than words. Use expressive captions, elegant templates, and emotional storytelling tools to bring your journeys to life and inspire fellow explorers.",
       points: [
-        "Smart photo editor & templates",
-        "Dynamic captions and tags",
-        "Built for storytelling travelers",
+        "Beautiful, ready-to-use photo story layouts",
+        "AI-powered captions and smart tagging",
+        "Perfect for travel creators and storytellers",
       ],
-      image: null,
+      image: landing1,
     },
     {
-      title: "Explore the World Through Interactive Maps",
+      title: "Create Trips and Show Your Journey Day by Day",
       description:
-        "Navigate the globe your way. Find, mark, and share routes that reveal hidden corners of the world, all with real-time interactive mapping tools.",
+        "Document your adventures with detailed, day-by-day trip timelines. Add activities, locations, and memories for each day — creating a vivid story of your journey from start to finish.",
       points: [
-        "Add your personal routes",
-        "Bookmark dream destinations",
-        "Discover local gems near you",
+        "Add and organize activities per day",
+        "Include photos, notes, and highlights",
+        "Visualize your journey on a travel timeline",
       ],
-      image: null,
+      image: landing2,
     },
     {
-      title: "Connect With Adventurers Worldwide",
+      title:
+        "Connect With Adventurers Worldwide — Add Followers and Close Friends",
       description:
-        "Join a thriving travel community. Collaborate, share, and connect with explorers who live for discovery and human connection.",
+        "Build your travel circle and connect with people who share your wanderlust. Follow travelers you admire, chat with new friends, and add your favorite companions to your close circle for more personal sharing.",
       points: [
-        "Chat and collaborate instantly",
-        "Join global travel groups",
-        "Grow your adventure network",
+        "Follow and interact with global travelers",
+        "Chat with friends or create travel groups",
+        "Add close friends for exclusive stories",
       ],
-      image: null,
+      image: landing3,
     },
     {
-      title: "Plan, Track & Relive Your Journeys",
+      title:
+        "Plan, Track & Relive Your Trips With Collaborators — Manage Expenses, To-Dos, and Notes",
       description:
-        "Keep every journey alive — plan smarter, track effortlessly, and relive your adventures with our personalized memory timeline.",
+        "Plan your next adventure collaboratively with friends. Keep track of expenses, create to-do lists, jot down notes, and relive every moment through your personalized trip dashboard.",
       points: [
-        "Create custom itineraries",
-        "Auto-track travel logs",
-        "Replay your adventures anytime",
+        "Collaborate with friends on trip planning",
+        "Track expenses, notes, and to-dos easily",
+        "Relive memories through your interactive trip log",
       ],
-      image: null,
+      image: landing4,
     },
   ];
+  
 
   const refs = useRef([]);
 
@@ -72,7 +80,7 @@ const Features = () => {
   }, []);
 
   return (
-    <section className="w-full py-24 bg-[#EDF2F4] overflow-hidden">
+    <section ref={featureRef} className="w-full py-24 bg-[#EDF2F4] overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 md:px-10 text-center">
         {/* Section Heading */}
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#2B2D42] mb-4">
@@ -96,7 +104,7 @@ const Features = () => {
             >
               {/* Image */}
               <div className="w-full md:w-1/2">
-                <div className="relative overflow-hidden rounded-xl w-full h-64 bg-[#8D99AE]/20 animate-pulse">
+                <div className="relative overflow-hidden rounded-xl w-full h-64 bg-[#8D99AE]/20">
                   {feature.image && (
                     <img
                       src={feature.image}
@@ -109,7 +117,7 @@ const Features = () => {
 
               {/* Text */}
               <div className="w-full md:w-1/2 text-left space-y-4">
-                <h3 className="text-2xl font-bold text-[#2B2D42] leading-snug">
+                <h3 className="leckerli text-2xl text-[#EF233C]  font-bold leading-snug">
                   {feature.title}
                 </h3>
                 <p className="text-[#555] leading-relaxed">{feature.description}</p>

@@ -1,4 +1,5 @@
 import React from "react";
+import BusTravel from "./photos/BusTravel.png"
 
 const CommunitySection = () => {
   return (
@@ -39,11 +40,11 @@ const CommunitySection = () => {
 
         {/* Right Image / Illustration Placeholder */}
         <div className="w-full md:w-1/2 relative animate-fadeIn md:animate-fadeIn delay-200">
-          <div className="w-full h-80 md:h-[420px] bg-[#8D99AE]/20 rounded-2xl overflow-hidden flex items-center justify-center">
+          <div className="w-full h-80 md:h-[420px]  rounded-2xl overflow-hidden flex items-center justify-center">
             {/* Placeholder - replace later with real image */}
-            <div className="w-40 h-40 bg-[#EF233C]/30 rounded-full blur-2xl absolute animate-pulse"></div>
+            <div className="opacity-0 md:opacity-100 w-[110%] h-[110%] bg-[#EF233C]/30 rounded-full blur-2xl absolute md:animate-pulse"></div>
             <div className="text-[#8D99AE] text-xl font-medium z-10">
-              Community Image / Illustration
+              <img className="w-full h-full object-cover" src={BusTravel}/>
             </div>
           </div>
         </div>

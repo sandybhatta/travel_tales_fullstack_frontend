@@ -8,7 +8,7 @@ import landing5 from "./photos/landing5.jpeg";
 import landing6 from "./photos/landing6.jpeg";
 
 const images = [landing1, landing2, landing3, landing4, landing5, landing6];
-const PlatformHighlights = () => {
+const PlatformHighlights = ({aboutRef}) => {
   const highlights = [
     {
       title: "Story Creation",
@@ -55,8 +55,8 @@ const PlatformHighlights = () => {
   ];
 
   return (
-    <section className="w-full py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-6 md:px-10 text-center">
+    <section className="w-full py-20 bg-white"  ref={aboutRef} >
+      <div className="max-w-7xl mx-auto px-6 md:px-10 text-center"   >
         <h2 className="text-3xl md:text-4xl font-bold text-[#2B2D42] mb-4">
           Everything You Need in One Platform
         </h2>

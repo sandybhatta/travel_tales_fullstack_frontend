@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logo from "../TravelTalesWhite.png";
 
-const Navbar = () => {
+const Navbar = ({onFeatureClick , onAboutClick}) => {
   const [isOpen, setIsOpen] = useState(false);
   
 
@@ -23,12 +23,14 @@ const Navbar = () => {
           <Link
             to="#features"
             className="text-[#edf2f4] hover:text-[#ef233c] transition-colors duration-200"
+            onClick={()=>onFeatureClick()}
           >
             Features
           </Link>
           <Link
             to="#about"
             className="text-[#edf2f4] hover:text-[#ef233c] transition-colors duration-200"
+            onClick={onAboutClick}
           >
             About
           </Link>
@@ -79,14 +81,19 @@ const Navbar = () => {
       >
         <Link
           to="#features"
-          onClick={() => setIsOpen(false)}
+          onClick={() => {setIsOpen(false);
+                         onFeatureClick()
+          }}
           className="hover:text-[#ef233c] text-lg"
         >
           Features
         </Link>
         <Link
           to="#about"
-          onClick={() => setIsOpen(false)}
+          onClick={() => {
+            setIsOpen(false);
+            onAboutClick()
+          }}
           className="hover:text-[#ef233c] text-lg"
         >
           About
