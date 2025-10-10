@@ -6,7 +6,6 @@ import HeroSection from './HeroSection';
 import Features from './Features';
 import PlatformHighlights from './PlatformHighlights';
 import CommunitySection from './CommunitySection';
-import FinalCTA from './FinalCTA';
 import Footer from './Footer';
 
 const LandingPage = () => {
@@ -24,7 +23,7 @@ const LandingPage = () => {
       <Features />
       <PlatformHighlights />
       <CommunitySection />
-      <FinalCTA />
+      
       <Footer />
     </div>
   );

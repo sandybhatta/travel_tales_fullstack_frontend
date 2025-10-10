@@ -8,6 +8,10 @@ html{
     font-family: "Leckerli One", cursive;
     
 }
+.container:hover{
+  background-color: transparent;
+}
+
 @keyframes orbit {
   0% {
     transform: rotate(0deg) translateX(120px) rotate(0deg);
@@ -44,4 +48,87 @@ html{
   }
 
 
-/* font-family: "Leckerli One", cursive; */
+
+
+
+  /* css for landing/features component */
+  .slide-from-left {
+    transform: translateX(-150px);
+  }
+  .slide-from-right {
+    transform: translateX(150px);
+  }
+  
+  /* --- Animate In --- */
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-150px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(150px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* --- Animate Out --- */
+  @keyframes slideOutLeft {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-150px);
+    }
+  }
+  @keyframes slideOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(150px);
+    }
+  }
+  
+  /* --- Animation Utility Classes --- */
+  .animate-slideIn.slide-from-left {
+    animation: slideInLeft 0.9s ease-out forwards;
+  }
+  .animate-slideIn.slide-from-right {
+    animation: slideInRight 0.9s ease-out forwards;
+  }
+  .animate-slideOut.slide-from-left {
+    animation: slideOutLeft 0.9s ease-in forwards;
+  }
+  .animate-slideOut.slide-from-right {
+    animation: slideOutRight 0.9s ease-in forwards;
+  }
+
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(25px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.9s ease-out both;
+  }
