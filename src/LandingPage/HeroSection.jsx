@@ -22,7 +22,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="relative bg-[#edf2f4] overflow-hidden pt-24 pb-16 md:pt-32 md:pb-20">
+    <section className="relative bg-[#edf2f4] overflow-hidden mt-[80px] pt-24 pb-16 md:pt-32 md:pb-20 h-[100vh]">
       <div className="max-w-7xl mx-auto px-6 flex flex-col-reverse md:flex-row items-center justify-between gap-10">
         
         {/* LEFT TEXT CONTENT */}
@@ -72,7 +72,7 @@ const HeroSection = () => {
 
         {/* RIGHT IMAGE CAROUSEL */}
         <div className=" w-[90%] md:w-1/2 flex justify-center relative top-9 z-200">
-          <div className="w-[90%] sm:w-[80%] md:w-[90%] lg:w-[85%] rounded-3xl  shadow-xl relative h-[300px] sm:h-[400px] md:h-[450px]  bg-green-900">
+          <div className="w-[100%] sm:w-[80%] md:w-[90%] lg:w-[85%] rounded-3xl  shadow-xl relative h-[300px] sm:h-[400px] md:h-[450px]  bg-green-900">
             {images.map((img, i) => (
               <img
                 key={i}
