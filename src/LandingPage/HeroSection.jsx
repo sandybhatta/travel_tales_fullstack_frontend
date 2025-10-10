@@ -71,7 +71,7 @@ const HeroSection = () => {
         </div>
 
         {/* RIGHT IMAGE CAROUSEL */}
-        <div className=" md:w-1/2 flex justify-center relative top-9 z-200">
+        <div className=" w-[90%] md:w-1/2 flex justify-center relative top-9 z-200">
           <div className="w-[90%] sm:w-[80%] md:w-[90%] lg:w-[85%] rounded-3xl  shadow-xl relative h-[300px] sm:h-[400px] md:h-[450px]  bg-green-900">
             {images.map((img, i) => (
               <img
