@@ -5,8 +5,8 @@ import RegisterUser from './AuthenticationComponents/RegisterUser'
 import VerifyEmail from './AuthenticationComponents/VerifyEmail'
 import Login from './AuthenticationComponents/Login'
 import Home from './HomeComponents/Home'
-import NavBar from './NavBar'
-import LandingPage from './LandingPage'
+
+import LandingPage from './LandingPage/LandingPage'
 
 const App = () => {
   
