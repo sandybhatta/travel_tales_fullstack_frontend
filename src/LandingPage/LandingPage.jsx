@@ -10,7 +10,10 @@ import Footer from './Footer';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const isAccessToken = useSelector(state => state.user.isAccessToken);
+
+  const reduxAccessToken = useSelector(state => state.user.accessToken);
+  const localToken = localStorage.getItem("accessToken");
+  const isAccessToken = reduxAccessToken || localToken;
 
   useEffect(() => {
     if (isAccessToken) navigate('/home');

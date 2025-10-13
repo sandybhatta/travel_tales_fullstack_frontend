@@ -32,6 +32,7 @@ const userSlice = createSlice({
         setAccessToken:(state,action)=>{
             state.accessToken=action.payload
             state.isAccessToken=true
+            localStorage.setItem("accessToken", action.payload)
         },
         setUserInformation:(state,action)=>{
             const {name, username,email, avatar,usernameChangedAt,bio,location,followers,followings,closeFriends,blockedUsers, interests }=action.payload
@@ -63,9 +64,23 @@ const userSlice = createSlice({
             state.interests=interests?.length>0 ? interests:[]
 
 
-
-        }
+            localStorage.setItem("userInfo", JSON.stringify(state))
+        },
+        loadUserFromStorage: (state) => {
+            const storedUser = localStorage.getItem("userInfo");
+            const storedToken = localStorage.getItem("accessToken");
+      
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              Object.assign(state, parsedUser); 
+            }
+      
+            if (storedToken) {
+              state.accessToken = storedToken;
+              state.isAccessToken = true;
+            }
+          },
     }
 }) 
 export default userSlice.reducer
-export const {setAccessToken , setUserInformation} = userSlice.actions
+export const {setAccessToken , setUserInformation , loadUserFromStorage} = userSlice.actions

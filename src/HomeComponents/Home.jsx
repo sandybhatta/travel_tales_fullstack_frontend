@@ -1,9 +1,25 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import NavComponent from './NavComponent'
+import { useSelector,useDispatch } from 'react-redux'
+import {loadUserFromStorage} from '../slices/userSlice'
+
 
 
 
 const Home = () => {
+
+  const dispatch = useDispatch()
+
+const userState =useSelector(state=>state.user)
+const isStateIncomplete = !userState.accessToken || !userState.username || !userState.email;
+
+
+  useEffect(()=>{
+    if (isStateIncomplete) {
+      dispatch(loadUserFromStorage())
+    }
+
+  },[userState,dispatch])
   
 
   

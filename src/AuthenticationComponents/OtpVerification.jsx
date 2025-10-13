@@ -30,10 +30,10 @@ const OtpVerification = ({ userId, onBack  }) => {
       setError("");
       dispatch(setAccessToken(res.data.accessToken))
       dispatch(setUserInformation(res.data.user))
-      localStorage.setItem("accessToken", res.data.accessToken);
+     
       navigate("/")
 
-      // You can redirect here, e.g. window.location.href = "/dashboard"
+      
     } catch (err) {
       setError(err.response?.data?.message || "OTP verification failed");
       setMessage("");
