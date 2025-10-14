@@ -46,6 +46,7 @@ const userSlice = createSlice({
             else{
                 state.avatar=avatar
             }
+            
             if(usernameChangedAt){
                 state.usernameChangedAt=usernameChangedAt
             }

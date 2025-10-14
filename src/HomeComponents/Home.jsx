@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import NavComponent from './NavComponent'
 import { useSelector,useDispatch } from 'react-redux'
 import {loadUserFromStorage} from '../slices/userSlice'
@@ -7,7 +7,7 @@ import {loadUserFromStorage} from '../slices/userSlice'
 
 
 const Home = () => {
-
+const [isSearchOpen,setIsSearchOpen] =useState(false)
   const dispatch = useDispatch()
 
 const userState =useSelector(state=>state.user)
@@ -24,11 +24,15 @@ const isStateIncomplete = !userState.accessToken || !userState.username || !user
 
   
   return (
-    <div className=' w-full h-[100vh] bg-green-100'>
-      <NavComponent/>
+    <div className=' w-full h-[100vh] bg-[#8D99AE]/60'
+    onClick={()=>setIsSearchOpen(false)}
+    >
+      <NavComponent isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen}/>
       
       
-      Home</div>
+      Home
+      
+      </div>
   )
 }
 
