@@ -1,12 +1,30 @@
 import React, { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { history } from '../Apis/searchApi'
+
 const Search = ({isSearchOpen , setIsSearchOpen}) => {
-    const[ searchParams, setSearchParms] = useSearchParams()
+    const [recent, setRecent] = useState([])
+    const [error, setError] = useState('')
+
+
     const [query, setQuery] =useState("")
 
     useEffect(()=>{
       if(!isSearchOpen)return;
+      const fetchHistory = async()=>{
+        setError("")
+        try {
+
+          const {data} = await history()
+          setRecent(data.history)
+
+        } catch (error) {
+          setError(error.response?.data?.message || "Failed to fetch search history");
+        }
+        
       
+      }
+      fetchHistory()
+
     },[isSearchOpen])
     
     
@@ -30,12 +48,18 @@ const Search = ({isSearchOpen , setIsSearchOpen}) => {
           className="bx bx-search absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-[#EF233C]"
         ></i>
         {
-          isSearchOpen && (
-            <div>
+        isSearchOpen  && (
+          <div className="absolute top-full mt-2 w-full bg-[#2B2D42] rounded-lg shadow-lg z-50">
+            {recent.map((item) => (
+                <div key={item._id} className="px-4 py-2 hover:bg-[#353749] cursor-pointer">
+              {item.query} ({item.type}
+              )
+        </div>
+      ))}
+    </div>
+  )}
 
-            </div>
-          )
-        }
+  {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
 
       </div>
     );
