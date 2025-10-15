@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
-
-import CreatePost from './CreatePost'
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import CreatePost from "./CreatePost";
 
 const HomeFeed = () => {
- 
+  const navigate = useNavigate();
 
   return (
-    <div className=''>
-        <CreatePost/>
-    </div>
-  )
-}
+  <div className="w-full lg:w-[70%] relative flex justify-center bg-[#fff]">
+  <CreatePost/>
+  </div>
+  );
+};
 
-export default HomeFeed
+export default HomeFeed;
