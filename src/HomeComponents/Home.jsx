@@ -11,6 +11,7 @@ import TripRelatedData from './TripRelatedData'
 
 const Home = () => {
 const [isSearchOpen,setIsSearchOpen] =useState(false)
+const [createModal, setCreateModal] = useState(false)
   const dispatch = useDispatch()
 
 const userState =useSelector(state=>state.user)
@@ -27,14 +28,17 @@ const isStateIncomplete = !userState.accessToken || !userState.username || !user
 
   
   return (
-    <div className=' w-full h-[100vh] bg-[#8D99AE]/60'
-    onClick={()=>setIsSearchOpen(false)}
+    <div className=' w-full h-[400vh] bg-[#8D99AE]/60'
+    onClick={()=>{
+      setIsSearchOpen(false)
+      setCreateModal(false)
+    }}
     >
       <NavComponent isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen}/>
       
       <div className='w-full flex  h-[calc(100vh -80px)] justify-between gap-20'>
         <SideBar/>
-         <HomeFeed/>
+         <HomeFeed createModal={createModal} setCreateModal={setCreateModal}/>
          <TripRelatedData/>
 
 

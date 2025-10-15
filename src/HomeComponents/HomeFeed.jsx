@@ -1,13 +1,13 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+
 import CreatePost from "./CreatePost";
 
-const HomeFeed = () => {
-  const navigate = useNavigate();
+const HomeFeed = ({createModal,setCreateModal}) => {
+  
 
   return (
   <div className="w-full lg:w-[70%] relative flex justify-center bg-[#fff]">
-  <CreatePost/>
+  <CreatePost createModal={createModal} setCreateModal={setCreateModal}/>
   </div>
   );
 };
