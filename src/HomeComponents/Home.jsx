@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react'
 import NavComponent from './NavComponent'
 import { useSelector,useDispatch } from 'react-redux'
 import {loadUserFromStorage} from '../slices/userSlice'
+import HomeFeed from './HomeFeed'
+import SideBar from './SideBar'
+import TripRelatedData from './TripRelatedData'
 
 
 
@@ -29,8 +32,14 @@ const isStateIncomplete = !userState.accessToken || !userState.username || !user
     >
       <NavComponent isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen}/>
       
-      
-      Home
+      <div className='w-full flex justify-between gap-20'>
+        <SideBar/>
+         <HomeFeed/>
+         <TripRelatedData/>
+
+
+      </div>
+     
       
       </div>
   )

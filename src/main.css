@@ -4,6 +4,10 @@ html{
     font-family: "Poppins", sans-serif;
     
 }
+
+
+
+
 .leckerli{
     font-family: "Leckerli One", cursive;
     
@@ -132,3 +136,36 @@ html{
   .animate-fadeIn {
     animation: fadeIn 0.9s ease-out both;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  .custom-scroll::-webkit-scrollbar {
+    display: none;
+    
+  }
+  
+ 
+  
+  
+  
+ 
+  
+ 
+  

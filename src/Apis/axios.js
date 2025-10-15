@@ -14,7 +14,7 @@ mainApi.interceptors.request.use(
     const state = store.getState();
     const reduxToken = state.user.accessToken;
     const localToken = localStorage.getItem("accessToken");
-    const accessToken = reduxToken || localToken || "";
+    const accessToken = localToken || reduxToken || "";
 
     if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`
@@ -50,8 +50,10 @@ mainApi.interceptors.response.use(
 
         return mainApi(originalRequest);
       } catch (err) {
+        
         localStorage.removeItem("accessToken");
         window.location.href = "/login";
+        
         return Promise.reject(err);
       }
     }
