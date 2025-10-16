@@ -127,7 +127,7 @@ const CreatePost = ({createModal, setCreateModal}) => {
       </div>}
 
 
-        {creationTab==="Post" ? <PostCreation/> : <TripCreation/>}
+        {creationTab==="Post" ? <PostCreation setCreationTab={setCreationTab}/> : <TripCreation/>}
 
     </div>
    
