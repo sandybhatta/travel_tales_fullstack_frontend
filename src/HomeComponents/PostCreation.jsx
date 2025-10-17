@@ -1,25 +1,57 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
+import AddCaptionTab from './AddCaptionTab';
+import PhotoEditor from './PhotoEditor';
 
 const PostCreation = ({setCreationTab}) => {
-    const[caption,setCaption]=useState("")
+    const [files,setFiles] = useState([])
+   
     const[tagOpen,setTagOpen] = useState(false);
     const[visibilityOpen, setVisibilityOpen]=useState(false)
+
+
     const reduxUserState = useSelector(state=>state.user)
     const storageUserState = JSON.parse(localStorage.getItem("userInfo"))
     const avatar =reduxUserState.avatar || storageUserState.avatar
     const name =reduxUserState.name || storageUserState.name
-    const username =reduxUserState.username || storageUserState.username
+    const username = reduxUserState.username || storageUserState.username
+
+
+    const MAX_FILES = 20
+    const MAX_FILE_SIZE = 100 * 1024 *1024 
+
 
     useEffect(()=>{
 
     },[tagOpen])
 
-    const handleCaption = (e)=>{
-        if(e.target.value.length<=1000){
-            setCaption(e.target.value)
+   
+    const handleFiles = (newFiles)=>{
+        if(files.length>20){
+            return;
         }
-    }
+        const incomingFiles = Array.from(newFiles);
+        let media = [...files, ...incomingFiles]
+        let toatalFileSize = media.reduce((acc,file)=>acc+file.size,0)
+
+        if(toatalFileSize > MAX_FILE_SIZE){
+            return;
+        }
+
+        if(media.length > MAX_FILES){
+            media = media.slice(0,MAX_FILES)
+        }
+
+        media = media.map(file=> ({
+            type:file.type.startsWith('image')?"image":"video",
+            url:URL.createObjectURL(file),
+            size:file.size,
+        }))
+
+        setFiles(media)
+
+    } 
+
 
   return (
     <div className='w-full h-[calc(100vh-80px)]  bg-white absolute left-[50%] -translate-x-[50%] flex items-center justify-center'>
@@ -62,37 +94,7 @@ const PostCreation = ({setCreationTab}) => {
 
         </div>
 
-        <div className='w-[70%] h-1/2  py-10 relative bottom-20 left-10 '>
-            <textarea
-            className='resize-none bg-[#EDF2F4] rounded-3xl border-1 border-[#878a8b]/50 shadow-lg px-2 py-3 placeholder:text-lg focus:outline-none'
-            value={caption}
-            onChange={handleCaption}
-            rows="14"
-            cols="90"
-            placeholder='write caption for your post'
-            />
-            <span className='absolute bottom-0 right-2 text-sm text-[#4a4c4d]'>{caption.length}/1000 characters</span>
-
-            <div className='w-full  mt-5 flex items-center justify-center gap-50'>
-                <div className='flex flex-col items-center justify-center'> 
-                    <i className='bx  bx-image text-[#000] text-4xl' >
-                    </i>
-                    <p>Add Images</p>
-                </div>
-                <div className='flex flex-col items-center justify-center'>
-                    <i className='bx  bx-video text-[#000] text-4xl' ></i>
-                    <p> Add Videos</p>
-                    </div>
-                <div className='flex flex-col items-center justify-center'>
-                    <i className='bx  bx-trip text-[#000] text-4xl' ></i>
-                    <p className='text-center'>Add post to a Trip</p>
-                </div>
-                  
-                   
-                   
-            </div>
-
-        </div>
+        { files && files.length>0?<PhotoEditor files={files} setFiles ={setFiles} />: <AddCaptionTab handleFiles={handleFiles}/>}
 
         
 
