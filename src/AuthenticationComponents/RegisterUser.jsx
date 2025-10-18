@@ -149,7 +149,7 @@ const RegisterUser = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", form);
+      const res = await axios.post("https://traveltales-backend-nmyv.onrender.com/api/auth/register", form);
       setSuccess(res.data.message || "Registration successful!");
       setIsSubmitted(true);
       setTimeLeft(30*60);
@@ -160,7 +160,7 @@ const RegisterUser = () => {
 
   const handleResendEmail = async () => {
     try {
-      await axios.post("http://localhost:5000/api/auth/resend-verification", {
+      await axios.post("https://traveltales-backend-nmyv.onrender.com/api/auth/resend-verification", {
         email: form.email,
       });
       setSuccess("Verification email resent! Check your inbox.");

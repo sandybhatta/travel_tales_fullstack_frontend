@@ -6,7 +6,7 @@ import TripCreation from './TripCreation'
 const CreatePost = ({createModal, setCreateModal}) => {
     const textRef = useRef("")
     const timerRef = useRef(null)
-    const [creationTab, setCreationTab] = useState("Post")
+    const [creationTab, setCreationTab] = useState("")
     
 
 
@@ -100,7 +100,10 @@ const CreatePost = ({createModal, setCreateModal}) => {
         <div className='w-[70%] h-1/2 bg-white absolute left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] rounded-2xl flex flex-col items-center justify-center gap-5'>
 
         <i className='bx  bx-x text-3xl absolute cursor-pointer right-10 top-5'  
-        onClick={()=>setCreateModal(false)}
+        onClick={()=>{
+          setCreationTab("")
+          setCreateModal(false)
+        }}
         ></i>
 
         <div className=' leckerli w-1/2 h-16 rounded-full text-center leading-[4rem] bg-red-400 text-3xl text-white cursor-pointer'
@@ -127,7 +130,9 @@ const CreatePost = ({createModal, setCreateModal}) => {
       </div>}
 
 
-        {creationTab==="Post" ? <PostCreation setCreationTab={setCreationTab}/> : <TripCreation/>}
+        {creationTab==="Post" ?
+         <PostCreation setCreationTab={setCreationTab}/> : creationTab==="Trip"? <TripCreation/>:""
+        }
 
     </div>
    

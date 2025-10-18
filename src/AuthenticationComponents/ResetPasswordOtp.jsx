@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = "http://localhost:5000/api/auth";
+const API_BASE = "https://traveltales-backend-nmyv.onrender.com/api/auth";
 
 const ResetPasswordOtp = ({ email, onBack }) => {
     const navigate = useNavigate();

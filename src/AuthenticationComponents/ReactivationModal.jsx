@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000/api/auth";
+const API_BASE = "https://traveltales-backend-nmyv.onrender.com/api/auth";
 
 const ReactivationModal = ({ userId, message, onClose }) => {
   const [status, setStatus] = useState("");

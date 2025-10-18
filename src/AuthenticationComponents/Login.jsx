@@ -4,7 +4,7 @@ import OtpVerification from "./OtpVerification.jsx";
 import ReactivationModal from "./ReactivationModal.jsx";
 import ForgotPassword from "./ForgotPassword";
 
-const API_BASE = "http://localhost:5000/api/auth"; // update as needed
+const API_BASE = "https://traveltales-backend-nmyv.onrender.com/api/auth"; 
 
 const Login = () => {
   const emailRef = useRef();

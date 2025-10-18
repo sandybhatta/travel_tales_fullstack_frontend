@@ -3,7 +3,7 @@ import axios from "axios";
 import {useDispatch} from "react-redux"
 import {setAccessToken, setUserInformation} from "../slices/userSlice"
 import { useNavigate } from "react-router-dom";
-const API_BASE = "http://localhost:5000/api/auth";
+const API_BASE = "https://traveltales-backend-nmyv.onrender.com/api/auth";
 
 
 const OtpVerification = ({ userId, onBack  }) => {

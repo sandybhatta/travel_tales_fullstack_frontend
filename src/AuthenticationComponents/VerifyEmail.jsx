@@ -18,7 +18,7 @@ const VerifyEmail = () => {
 
       try {
         const res = await axios.post(
-          `http://localhost:5000/api/auth/verify-email?token=${token}`
+          `https://traveltales-backend-nmyv.onrender.com/api/auth/verify-email?token=${token}`
         );
         setStatus("success");
         setMessage(res.data.message || "Your email has been successfully verified!");
