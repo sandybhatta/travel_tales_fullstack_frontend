@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 const initialState={
-    id:"",
+    _id:"",
     name:"",
     username:"",
     email:"",
@@ -36,8 +36,8 @@ const userSlice = createSlice({
             localStorage.setItem("accessToken", action.payload)
         },
         setUserInformation:(state,action)=>{
-            const {id,name, username,email, avatar,usernameChangedAt,bio,location,followers,followings,closeFriends,blockedUsers, interests }=action.payload;
-            state.id=id;
+            const {_id,name, username,email, avatar,usernameChangedAt,bio,location,followers,followings,closeFriends,blockedUsers, interests }=action.payload;
+            state._id=_id;
 
             state.name=name;
             state.username=username;

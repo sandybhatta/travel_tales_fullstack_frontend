@@ -19,6 +19,24 @@ const PhotoEditor = ({files,setFiles}) => {
         })
     }
 
+    const handleMediaDelete= ()=>{
+        const imageIndex=activeImageIndex
+        setFiles(files.filter((file,ind)=>{
+            if(ind===activeImageIndex){
+                return false;
+            }
+            else{
+                return true;
+            }
+        }))
+        if(imageIndex===files.length-1){
+            setActiveImageIndex(imageIndex-1)
+        }else{
+            setActiveImageIndex(imageIndex)
+        }
+        
+    }
+
     const handleAddMore = (newFiles)=>{
         // if already 20 files exist return
         if(files.length>=20)return;
@@ -73,6 +91,7 @@ const PhotoEditor = ({files,setFiles}) => {
 
         {/* image lists */}
         <div className='w-[45%] h-[70%] flex items-center justify-center flex-wrap gap-2 overflow-x-hidden overflow-y-auto'>
+            <p className='absolute top-10 right-[40%] text-[#EF233C] text-lg'>{activeImageIndex+1} of {files.length}</p>
             {
                 files.map((file, ind)=>{
                     
@@ -88,7 +107,7 @@ const PhotoEditor = ({files,setFiles}) => {
                             moveImage(ind, "right")}
                         }
                         disabled={ind===files.length-1}>
-                                <i className='bx  bx-arrow-right-stroke-circle absolute top-1/2 right-0 text-3xl  hover:bg-[#000]/40 '
+                                <i className='bx  bx-arrow-right-stroke-circle absolute top-1/2 right-0 text-3xl text-white bg-[#EF233C]  hover:bg-[#EF233C]/40 cursor-pointer'
                                 
                                 ></i> 
                         </button>
@@ -102,7 +121,8 @@ const PhotoEditor = ({files,setFiles}) => {
                             />:
                             <video
                             src={file.url}
-                            className='object-cover w-full '
+                            
+                            className='object-contain w-full h-full '
                             />
                         }
                         
@@ -112,7 +132,7 @@ const PhotoEditor = ({files,setFiles}) => {
                             moveImage(ind, "left")
                         }}
                         disabled={ind===0}>
-                                <i className='bx  bx-arrow-left-stroke-circle absolute top-1/2 left-0 text-3xl  hover:bg-[#000]/40 '
+                                <i className='bx  bx-arrow-left-stroke-circle absolute top-1/2 left-0 text-3xl   text-white bg-[#EF233C]  hover:bg-[#EF233C]/70 cursor-pointer'
                                 
                                 ></i> 
                         </button>
@@ -125,14 +145,19 @@ const PhotoEditor = ({files,setFiles}) => {
 
         <div className='flex items-center justify-between absolute bottom-0 w-full h-[100px]'>
 
-           <div className='flex items-center justify-center gap-5 w-1/2'>
+           <div className='flex items-center justify-center gap-10 w-1/2'>
                     <button 
+                    className='relative group cursor-pointer flex items-center justify-center rounded-full '
                     onClick={(e)=>{
                         e.stopPropagation();
                         addMoreRef.current.click()
                     }}
                     >
                         <i className='bx  bx-plus-circle text-3xl'></i> 
+                        <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
+                   bg-black text-white text-sm px-2 py-1 rounded 
+                   opacity-0 group-hover:opacity-100 
+                   transition-opacity duration-300 whitespace-nowrap'>Add photos or videos</span>
                     </button>
 <input
 className='hidden'
@@ -145,12 +170,24 @@ onChange={(e)=>{
 }}
 
 />
-                    <button>
+                    <button
+                    className='relative group cursor-pointer flex items-center justify-center rounded-full '
+                    onClick={(e)=>{
+                        e.stopPropagation()
+                        handleMediaDelete()
+                    }}
+                    >
                     <i className='bx  bx-trash text-3xl'></i> 
+                    <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
+                   bg-black text-white text-sm px-2 py-1 rounded 
+                   opacity-0 group-hover:opacity-100 
+                   transition-opacity duration-300 whitespace-nowrap'>Delete selected media</span>
                     </button>
 
            </div>
-           <div className='w-1/2 h-[50px] text-white flex items-center justify-center '> 
+
+
+           <div className={`w-[80px] h-[50px] rounded-full bg-green-500 hover:bg-green-400  text-white flex items-center justify-center mr-10 `}> 
 
                 <p>Next</p>
            </div>

@@ -36,7 +36,7 @@ const isStateIncomplete = !userState.accessToken || !userState.username || !user
     >
       <NavComponent isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen}/>
       
-      <div className='w-full flex  h-[calc(100vh -80px)] justify-between gap-20'>
+      <div className='w-full flex  h-[calc(100vh -80px)] justify-between '>
         <SideBar/>
          <HomeFeed createModal={createModal} setCreateModal={setCreateModal}/>
          <TripRelatedData/>

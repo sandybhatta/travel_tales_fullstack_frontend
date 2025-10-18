@@ -66,7 +66,7 @@ const CreatePost = ({createModal, setCreateModal}) => {
     
 
   return (
-    <div className='w-full flex justify-center'>
+    <div className='w-full flex justify-center overflow-x-hidden'>
          <div className="w-[50%] bg-[#EDF2F4] rounded-xl shadow-lg  p-4 sm:p-6  flex items-center justify-center  gap-4 transition-all duration-300 hover:shadow-xl border-2 cursor-pointer" 
           onClick={(e)=>{
             e.stopPropagation()

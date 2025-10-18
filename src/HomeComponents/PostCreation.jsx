@@ -2,12 +2,15 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import AddCaptionTab from './AddCaptionTab';
 import PhotoEditor from './PhotoEditor';
+import TagUsers from './TagUsers';
+import VisibilityOfPost from './VisibilityOfPost';
 
 const PostCreation = ({setCreationTab}) => {
     const [files,setFiles] = useState([])
    
     const[tagOpen,setTagOpen] = useState(false);
     const[visibilityOpen, setVisibilityOpen]=useState(false)
+    const [visibilityStatus, setVisibilityStatus] = useState("public")
 
 
     const reduxUserState = useSelector(state=>state.user)
@@ -21,9 +24,7 @@ const PostCreation = ({setCreationTab}) => {
     const MAX_FILE_SIZE = 100 * 1024 *1024 
 
 
-    useEffect(()=>{
-
-    },[tagOpen])
+    
 
    
     const handleFiles = (newFiles)=>{
@@ -54,7 +55,14 @@ const PostCreation = ({setCreationTab}) => {
 
 
   return (
-    <div className='w-full h-[calc(100vh-80px)]  bg-white absolute left-[50%] -translate-x-[50%] flex items-center justify-center'>
+    <div className='w-full h-[calc(100vh-80px)]  bg-white absolute left-[50%] -translate-x-[50%] flex items-center justify-center '>
+
+
+
+                {
+                    visibilityOpen && <VisibilityOfPost visibilityStatus={visibilityStatus} setVisibilityStatus={setVisibilityStatus} setVisibilityOpen={setVisibilityOpen} />
+                }
+
         <div className='ml-10 mt-5 h-[20%] absolute top-0 left-0 bg-white flex items-center gap-3'>
             <img
         src={avatar}
@@ -68,18 +76,39 @@ const PostCreation = ({setCreationTab}) => {
             </div>
             
             <div className='ml-5 flex gap-3'>
-                <i className='bx  bx-group   text-3xl cursor-pointer' 
+
+                {/* tag a user */}
+                <i className='bx  bx-user-plus relative group  text-3xl cursor-pointer' 
                 onClick={()=>{
                     setTagOpen(!tagOpen);
                     setVisibilityOpen(false)
                 }}
-                ></i> 
-                <i className='bx  bx-eye-alt text-3xl cursor-pointer' 
+                >
+                    <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
+                   bg-black text-white text-sm px-2 py-1 rounded 
+                   opacity-0 group-hover:opacity-100 
+                   transition-opacity duration-300 whitespace-nowrap'>Tag</span>
+                    </i> 
+
+                
+
+
+                {/* set visibility */}
+                <i className= {`bx  ${visibilityStatus === "public" ?"bx-community" : visibilityStatus === "followers" ? "bx-group" : visibilityStatus === "close_friends"? "bxs-user-check" :"bx-lock-keyhole"} text-3xl cursor-pointer  relative group `}
                 onClick={()=>{
                     setTagOpen(false);
                     setVisibilityOpen(!visibilityOpen)
                 }}
-                ></i> 
+                >
+                    <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
+                   bg-black text-white text-sm px-2 py-1 rounded 
+                   opacity-0 group-hover:opacity-100 
+                   transition-opacity duration-300 whitespace-nowrap'>Visibility</span></i> 
+
+                {
+                    tagOpen && <TagUsers/>
+                }
+               
             </div>
             
         </div>
@@ -93,6 +122,8 @@ const PostCreation = ({setCreationTab}) => {
         ></i> 
 
         </div>
+
+        
 
         { files && files.length>0?<PhotoEditor files={files} setFiles ={setFiles} />: <AddCaptionTab handleFiles={handleFiles}/>}
 

@@ -11,16 +11,16 @@ const AddCaptionTab = ({handleFiles}) => {
         }
     }
   return (
-    <div className='w-[70%] h-1/2  py-10 relative bottom-20 left-10 '>
+    <div className='w-[70%] h-1/2 mt-5 py-5 relative bottom-20 left-10 '>
             <textarea
-            className='resize-none bg-[#EDF2F4] rounded-3xl border-1 border-[#878a8b]/50 shadow-lg px-2 py-3 placeholder:text-lg focus:outline-none'
+            className='resize-none bg-[#EDF2F4] rounded-3xl border-1 border-[#878a8b]/50 shadow-lg px-2 pt-3 pb-10 placeholder:text-lg focus:outline-none'
             value={caption}
             onChange={handleCaption}
             rows="14"
             cols="90"
             placeholder='write caption for your post'
             />
-            <span className='absolute bottom-0 right-2 text-sm text-[#4a4c4d]'>{caption.length}/1000 characters</span>
+            <span className='absolute -bottom-15 right-2 text-sm text-[#4a4c4d] mt-10'>{caption.length}/1000 characters</span>
 
             <div className='w-full  mt-5 flex items-center justify-center gap-50'
             >
