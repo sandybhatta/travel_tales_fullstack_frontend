@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import ResetPasswordOtp from "./ResetPasswordOtp";
 
-const API_BASE = "https://traveltales-backend-nmyv.onrender.com/api/auth";
+const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/auth`;
 
 const ForgotPassword = ({ onBack }) => {
   const [stage, setStage] = useState("email"); // "email" or "reset"

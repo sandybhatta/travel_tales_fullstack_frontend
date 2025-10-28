@@ -4,7 +4,7 @@ import  store  from "../slices/store";
 import { setAccessToken } from "../slices/userSlice";
 
 const mainApi = axios.create({
-  baseURL: "https://traveltales-backend-nmyv.onrender.com",
+  baseURL: import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
 });
 
@@ -39,7 +39,7 @@ mainApi.interceptors.response.use(
 
       try {
         const refreshRes = await axios.get(
-          "https://traveltales-backend-nmyv.onrender.com/api/auth/refresh",
+          `${import.meta.env.VITE_BACKEND_URL}/api/auth/refresh`,
           { withCredentials: true }
         );
 
