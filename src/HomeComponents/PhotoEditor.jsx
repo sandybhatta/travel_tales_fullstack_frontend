@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react'
+import FinalPostWithImg from './FinalPostWithImg';
 
-const PhotoEditor = ({files,setFiles}) => {
+const PhotoEditor = ({files,setFiles,caption,setCaption,visibilityStatus, setVisibilityStatus,visibilityOpen,setVisibilityOpen,setCreateModal,setCreationTab,tagOpen,setTagOpen}) => {
     const [activeImageIndex , setActiveImageIndex] = useState(0)
+    const [next,setNext]=useState(false)
     const previewImage = files[activeImageIndex];
     
     const addMoreRef = useRef()
@@ -62,6 +64,7 @@ const PhotoEditor = ({files,setFiles}) => {
         incomingFiles.forEach((file)=>{
             if(media.length <20){
                 media.push({
+                    file,
                     type:file.type.startsWith('image')?"image":"video",
                     url:URL.createObjectURL(file),
                     size:file.size,
@@ -71,22 +74,77 @@ const PhotoEditor = ({files,setFiles}) => {
         setFiles([...media]);
     }
   return (
-    <div className=' w-full h-[calc(100vh-80px)] bg-[#FFF] flex justify-around items-center gap-5 px-5'>
+    <div className=' w-full h-[calc(100vh-80px)] bg-[#FFF] flex justify-center items-center gap-5 px-5'>
         {/* image previewer */}
-        <div className='w-[50%] h-[50%] '> 
-                {
-                previewImage.type==="image"?
-                <img
-                src={previewImage.url}
-                className='object-contain w-full h-full border-4 border-[#000]'
-                />:
-                <video
-                src={previewImage.url}
-                controls
-                className='object-contain w-full h-full'
-                />
+        <div className='w-[50%] h-[50%]  flex flex-col justify-center items-center'> 
+                    <div className='w-full h-[3/4] overflow-hidden'>
+                        {
+                                previewImage.type==="image"?
+                                <img
+                                src={previewImage.url}
+                                className='object-contain w-full h-full border-4 border-[#000]'
+                                />:
+                                <video
+                                src={previewImage.url}
+                                controls
+                                className='object-contain w-full h-full'
+                                />
+                                
+                                }
+                     </div>
                 
-                }
+                <div className='flex items-center justify-between w-full h-[100px] mt-5'>
+
+                    <div className='flex items-center justify-center gap-10 w-1/2'>
+                        <button 
+                            className='relative group cursor-pointer flex items-center justify-center rounded-full '
+                            onClick={(e)=>{
+                                e.stopPropagation();
+                                addMoreRef.current.click()
+                            }}
+                            >
+                            <i className='bx  bx-plus-circle text-3xl'></i> 
+                            <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
+                            bg-black text-white text-sm px-2 py-1 rounded 
+                            opacity-0 group-hover:opacity-100 
+                            transition-opacity duration-300 whitespace-nowrap'>Add photos or videos</span>
+                        </button>
+  <input
+className='hidden'
+type='file'
+multiple
+accept='image/* , video/mp4'
+ref={addMoreRef}
+onChange={(e)=>{
+handleAddMore(e.target.files)
+}}
+/>
+                        <button
+                            className='relative group cursor-pointer flex items-center justify-center rounded-full '
+                            onClick={(e)=>{
+                                e.stopPropagation()
+                                handleMediaDelete()
+                            }}
+                            >
+                            <i className='bx  bx-trash text-3xl'></i> 
+                            <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
+                            bg-black text-white text-sm px-2 py-1 rounded 
+                            opacity-0 group-hover:opacity-100 
+                            transition-opacity duration-300 whitespace-nowrap'>Delete selected media</span>
+                        </button>
+
+            </div>
+
+
+            <div className={` cursor-pointer h-[50px] rounded-full bg-green-500 hover:bg-green-400  text-white flex items-center justify-center mr-10 px-5 gap-2`}
+            onClick={()=>setNext(true)}
+            > 
+                <i className='bx  bx-arrow-to-right-stroke text-3xl'></i> 
+                <p>Next</p>
+            </div>
+
+
+            </div>
         </div>
 
         {/* image lists */}
@@ -143,57 +201,22 @@ const PhotoEditor = ({files,setFiles}) => {
 
         </div>
 
-        <div className='flex items-center justify-between absolute bottom-0 w-full h-[100px]'>
+        {next && <FinalPostWithImg 
+        caption={caption}
+        setCaption={setCaption} 
+        files={files} 
+        visibilityStatus={visibilityStatus} 
+        setVisibilityStatus={setVisibilityStatus}
+        visibilityOpen={visibilityOpen}
+        setVisibilityOpen={setVisibilityOpen}
+        setCreateModal={setCreateModal} 
+        setCreationTab={setCreationTab}
+        tagOpen={tagOpen}
+        setTagOpen={setTagOpen}
+        setNext={setNext}
+        />        }
 
-           <div className='flex items-center justify-center gap-10 w-1/2'>
-                    <button 
-                    className='relative group cursor-pointer flex items-center justify-center rounded-full '
-                    onClick={(e)=>{
-                        e.stopPropagation();
-                        addMoreRef.current.click()
-                    }}
-                    >
-                        <i className='bx  bx-plus-circle text-3xl'></i> 
-                        <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
-                   bg-black text-white text-sm px-2 py-1 rounded 
-                   opacity-0 group-hover:opacity-100 
-                   transition-opacity duration-300 whitespace-nowrap'>Add photos or videos</span>
-                    </button>
-<input
-className='hidden'
-type='file'
-multiple
-accept='image/* , video/mp4'
-ref={addMoreRef}
-onChange={(e)=>{
-    handleAddMore(e.target.files)
-}}
-
-/>
-                    <button
-                    className='relative group cursor-pointer flex items-center justify-center rounded-full '
-                    onClick={(e)=>{
-                        e.stopPropagation()
-                        handleMediaDelete()
-                    }}
-                    >
-                    <i className='bx  bx-trash text-3xl'></i> 
-                    <span className='absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
-                   bg-black text-white text-sm px-2 py-1 rounded 
-                   opacity-0 group-hover:opacity-100 
-                   transition-opacity duration-300 whitespace-nowrap'>Delete selected media</span>
-                    </button>
-
-           </div>
-
-
-           <div className={`w-[80px] h-[50px] rounded-full bg-green-500 hover:bg-green-400  text-white flex items-center justify-center mr-10 `}> 
-
-                <p>Next</p>
-           </div>
-
-           
-        </div>
+       
     </div>
   )
 }

@@ -5,13 +5,14 @@ import PhotoEditor from './PhotoEditor';
 import TagUsers from './TagUsers';
 import VisibilityOfPost from './VisibilityOfPost';
 
-const PostCreation = ({setCreationTab}) => {
+const PostCreation = ({setCreationTab,setCreateModal}) => {
     const [files,setFiles] = useState([])
    
     const[tagOpen,setTagOpen] = useState(false);
     const[visibilityOpen, setVisibilityOpen]=useState(false)
     const [visibilityStatus, setVisibilityStatus] = useState("public")
 
+    const[caption,setCaption]=useState("")
 
     const reduxUserState = useSelector(state=>state.user)
     const storageUserState = JSON.parse(localStorage.getItem("userInfo"))
@@ -44,6 +45,7 @@ const PostCreation = ({setCreationTab}) => {
         }
 
         media = media.map(file=> ({
+            file,
             type:file.type.startsWith('image')?"image":"video",
             url:URL.createObjectURL(file),
             size:file.size,
@@ -55,7 +57,7 @@ const PostCreation = ({setCreationTab}) => {
 
 
   return (
-    <div className='w-full h-[calc(100vh-80px)]  bg-white absolute left-[50%] -translate-x-[50%] flex items-center justify-center '>
+    <div className='w-full h-[calc(100vh-80px)]  bg-[#fff] absolute left-[50%] -translate-x-[50%] flex flex-col items-center justify-between '>
 
 
 
@@ -63,11 +65,11 @@ const PostCreation = ({setCreationTab}) => {
                     visibilityOpen && <VisibilityOfPost visibilityStatus={visibilityStatus} setVisibilityStatus={setVisibilityStatus} setVisibilityOpen={setVisibilityOpen} />
                 }
 
-        <div className='ml-10 mt-5 h-[20%] absolute top-0 left-0 bg-white flex items-center gap-3'>
+        <div className='h-[20%] w-full    flex items-center gap-3'>
             <img
         src={avatar}
         alt='user profile'
-        className='object-contain w-[100px] h-full'
+        className='object-contain w-[100px] h-full ml-2'
         />
         <div className='w-[80%]  flex  px-2 py-3'   >
             <div >
@@ -125,7 +127,23 @@ const PostCreation = ({setCreationTab}) => {
 
         
 
-        { files && files.length>0?<PhotoEditor files={files} setFiles ={setFiles} />: <AddCaptionTab handleFiles={handleFiles}/>}
+        { files && files.length>0 ?
+        <PhotoEditor 
+        files={files} 
+        setFiles ={setFiles} 
+        caption={caption} 
+        setCaption={setCaption} 
+        visibilityStatus={visibilityStatus} 
+        setVisibilityStatus={setVisibilityStatus}
+        setCreateModal={setCreateModal} 
+        setCreationTab={setCreationTab} 
+        visibilityOpen={visibilityOpen}
+        setVisibilityOpen={setVisibilityOpen}
+        tagOpen={tagOpen}
+        setTagOpen={setTagOpen}
+        />
+        :
+         <AddCaptionTab handleFiles={handleFiles} visibilityStatus={visibilityStatus} setCreateModal={setCreateModal} setCreationTab={setCreationTab} caption={caption} setCaption={setCaption}/>}
 
         
 

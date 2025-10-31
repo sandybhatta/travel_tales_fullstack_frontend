@@ -6,7 +6,7 @@ import TripCreation from './TripCreation'
 const CreatePost = ({createModal, setCreateModal}) => {
     const textRef = useRef("")
     const timerRef = useRef(null)
-    const [creationTab, setCreationTab] = useState("")
+    const [creationTab, setCreationTab] = useState("Post")
     
 
 
@@ -66,8 +66,8 @@ const CreatePost = ({createModal, setCreateModal}) => {
     
 
   return (
-    <div className='w-full flex justify-center overflow-x-hidden'>
-         <div className="w-[50%] bg-[#EDF2F4] rounded-xl shadow-lg  p-4 sm:p-6  flex items-center justify-center  gap-4 transition-all duration-300 hover:shadow-xl border-2 cursor-pointer" 
+    <div className='w-full flex justify-center overflow-x-hidden  '>
+         <div className="w-[50%] bg-[#fff] rounded-xl shadow-xl  p-4 sm:p-6  flex items-center justify-center  gap-4 transition-all duration-300  border-1 cursor-pointer" 
           onClick={(e)=>{
             e.stopPropagation()
             setCreateModal(true)
@@ -82,7 +82,7 @@ const CreatePost = ({createModal, setCreateModal}) => {
                   className="w-10 h-10 rounded-full object-cover"
                 />
 
-                  <div className="w-[90%] h-full bg-white text-lg  border-1 rounded-xl py-2 px-2"
+                  <div className="w-[90%] h-full bg-white text-lg  border-1 border-[#000]/40 rounded-xl py-2 px-2 text-[#000]/50"
                   ref={textRef}
                   ></div>
 
@@ -114,6 +114,7 @@ const CreatePost = ({createModal, setCreateModal}) => {
         }}
 
         > Create a post </div>
+
         <div className=' leckerli w-1/2 h-16 rounded-full text-center leading-[4rem] bg-red-400 text-3xl text-white cursor-pointer'
 
         onClick={()=>{
@@ -131,7 +132,7 @@ const CreatePost = ({createModal, setCreateModal}) => {
 
 
         {creationTab==="Post" ?
-         <PostCreation setCreationTab={setCreationTab}/> : creationTab==="Trip"? <TripCreation/>:""
+         <PostCreation setCreationTab={setCreationTab} setCreateModal={setCreateModal}/> : creationTab==="Trip"? <TripCreation/>:""
         }
 
     </div>
