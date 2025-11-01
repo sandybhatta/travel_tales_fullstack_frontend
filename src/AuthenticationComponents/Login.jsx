@@ -4,7 +4,7 @@ import OtpVerification from "./OtpVerification.jsx";
 import ReactivationModal from "./ReactivationModal.jsx";
 import ForgotPassword from "./ForgotPassword";
 
-const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`; 
+const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/login`; 
 
 const Login = () => {
   const emailRef = useRef();
@@ -20,7 +20,7 @@ const Login = () => {
     const password = passwordRef.current.value;
 
     try {
-      const res = await axios.post(`${API_BASE}/login`, { email, password });
+      const res = await axios.post(`${API_BASE}`, { email, password });
       setUserId(res.data.userId);
       setStage("otp");
     } catch (err) {
