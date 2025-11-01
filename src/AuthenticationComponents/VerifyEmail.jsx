@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const [status, setStatus] = useState("loading"); 
   const [message, setMessage] = useState("");
+  const navigate = useNavigate()
 
   useEffect(() => {
     const verify = async () => {
@@ -22,6 +23,9 @@ const VerifyEmail = () => {
         );
         setStatus("success");
         setMessage(res.data.message || "Your email has been successfully verified!");
+        setTimeout(()=>{
+          navigate("/login")
+        },2500)
       } catch (err) {
         setStatus("error");
         setMessage(
