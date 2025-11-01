@@ -4,7 +4,7 @@ import  store  from "../slices/store";
 import { setAccessToken } from "../slices/userSlice";
 
 const mainApi = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: import.meta.env.VITE_BACKEND_LIVE_URL,
   withCredentials: true,
 });
 
@@ -39,7 +39,7 @@ mainApi.interceptors.response.use(
 
       try {
         const refreshRes = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/auth/refresh`,
+          `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/refresh`,
           { withCredentials: true }
         );
 

@@ -28,7 +28,7 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
 
 
   return (
-    <nav className="w-full h-[80px] bg-[#2b2d42] flex items-center justify-between px-4 md:px-8 shadow-md" 
+    <nav className="w-full h-[80px] fixed z-15 bg-[#2b2d42] flex items-center justify-between px-4 md:px-8 shadow-md" 
     
     >
       {/* Logo */}
@@ -50,7 +50,7 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
       {/* Navigation Links (hidden on mobile/tablet) */}
       <div className="hidden lg:flex items-center text-[#EDF2F4] text-[1.1rem] relative w-[20%]">
   <div
-    className="flex flex-row items-center gap-3 p-2 rounded-full border border-[#5f5c5c] hover:border-white transition-all duration-400 relative bg-[#353749]"
+    className="flex flex-row items-center gap-3 p-2 rounded-full  transition-all duration-400 relative bg-[#353749]"
   >
     {/* Avatar */}
     <img src={avatar} alt="User" className="w-14 h-14 object-cover rounded-full" />

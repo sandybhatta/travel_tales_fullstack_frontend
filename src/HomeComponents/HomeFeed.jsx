@@ -6,7 +6,7 @@ const HomeFeed = ({createModal,setCreateModal}) => {
   
 
   return (
-  <div className="w-full lg:w-[70%] relative flex justify-center bg-[#fff]">
+  <div className="w-full   relative  flex items-center justify-center  ">
   <CreatePost createModal={createModal} setCreateModal={setCreateModal}/>
   </div>
   );

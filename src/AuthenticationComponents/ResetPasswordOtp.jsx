@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/auth`;
+const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
 
 const ResetPasswordOtp = ({ email, onBack }) => {
     const navigate = useNavigate();

@@ -4,7 +4,7 @@ import OtpVerification from "./OtpVerification.jsx";
 import ReactivationModal from "./ReactivationModal.jsx";
 import ForgotPassword from "./ForgotPassword";
 
-const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/auth`; 
+const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`; 
 
 const Login = () => {
   const emailRef = useRef();

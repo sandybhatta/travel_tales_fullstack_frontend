@@ -3,7 +3,7 @@ import axios from "axios";
 import {useDispatch} from "react-redux"
 import {setAccessToken, setUserInformation} from "../slices/userSlice"
 import { useNavigate } from "react-router-dom";
-const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/auth`;
+const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
 
 
 const OtpVerification = ({ userId, onBack  }) => {

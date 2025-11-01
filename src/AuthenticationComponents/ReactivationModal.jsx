@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API_BASE = `${import.meta.env.VITE_BACKEND_URL}/api/auth`;
+const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
 
 const ReactivationModal = ({ userId, message, onClose }) => {
   const [status, setStatus] = useState("");

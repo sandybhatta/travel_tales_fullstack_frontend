@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-  const [status, setStatus] = useState("loading"); // 'loading' | 'success' | 'error'
+  const [status, setStatus] = useState("loading"); 
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -18,7 +18,7 @@ const VerifyEmail = () => {
 
       try {
         const res = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/auth/verify-email?token=${token}`
+          `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/verify-email?token=${token}`
         );
         setStatus("success");
         setMessage(res.data.message || "Your email has been successfully verified!");

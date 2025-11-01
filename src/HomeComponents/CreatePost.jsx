@@ -6,7 +6,7 @@ import TripCreation from './TripCreation'
 const CreatePost = ({createModal, setCreateModal}) => {
     const textRef = useRef("")
     const timerRef = useRef(null)
-    const [creationTab, setCreationTab] = useState("Post")
+    const [creationTab, setCreationTab] = useState("")
     
 
 
@@ -66,8 +66,8 @@ const CreatePost = ({createModal, setCreateModal}) => {
     
 
   return (
-    <div className='w-full flex justify-center overflow-x-hidden  '>
-         <div className="w-[50%] bg-[#fff] rounded-xl shadow-xl  p-4 sm:p-6  flex items-center justify-center  gap-4 transition-all duration-300  border-1 cursor-pointer" 
+    <div className='w-[70%] lg:h-[70px] flex justify-center overflow-x-hidden mt-5  '>
+         <div className="w-full h-full bg-[#fff] rounded-xl shadow-xl     flex items-center justify-center  gap-4 transition-all duration-300   cursor-pointer" 
           onClick={(e)=>{
             e.stopPropagation()
             setCreateModal(true)
@@ -75,14 +75,14 @@ const CreatePost = ({createModal, setCreateModal}) => {
           >
         
       
-            <div className=" w-full h-[70px]  flex justify-between items-center ">
+            <div className=" w-full h-full  flex justify-between items-center  px-4 py-2">
                 <img
                   src={avatar}
                   alt="User Avatar"
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="h-2/3 rounded-full object-contain"
                 />
 
-                  <div className="w-[90%] h-full bg-white text-lg  border-1 border-[#000]/40 rounded-xl py-2 px-2 text-[#000]/50"
+                  <div className="w-[90%] h-full  text-lg  rounded-xl  text-[#000]/50 flex items-center border px-2 shadow-2xl  "
                   ref={textRef}
                   ></div>
 
