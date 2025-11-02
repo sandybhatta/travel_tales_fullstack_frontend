@@ -1,21 +1,11 @@
 import React, {  useEffect, useState } from 'react'
-
-import { useSelector } from 'react-redux'
-
 import Suggestions from './FriendSection/Suggestions'
+import MyFollowings from './FriendSection/MyFollowings'
 
 const Friends = () => {
   
     const [activePage,setActivePage] = useState("suggestions")
-    const reduxUserId = useSelector(state=>state.user._id);
-    const storageUser = JSON.parse(localStorage.getItem("userInfo"))
-    const storageUserId = storageUser._id;
-    const userId = reduxUserId || storageUserId 
-
-    
-
-   
-
+  
 
   return (
     <div className='w-full h-auto relative '>
@@ -45,6 +35,7 @@ const Friends = () => {
         </div>
 
         {activePage === "suggestions" && <Suggestions /> }
+        {activePage === "followings" && <MyFollowings /> }
 
         
         
