@@ -44,6 +44,21 @@ const MyFollowings = () => {
     if(node)observer.current.observe(node)
     
    },[hasMore])
+
+
+
+   const handleUnfollow = async(id)=>{
+    try {
+      await mainApi.post(`/api/user/unfollow/${id}`)
+      setFollowings(prev=>prev.filter(user=>user._id !== id))
+      setCount(prev=>prev-1)
+   } catch (error) {
+     
+   }
+   } 
+
+
+
   useEffect(()=>{
     fetchFollowings()
   },[])
@@ -74,6 +89,10 @@ const MyFollowings = () => {
                 <p className="text-md">{user.name}</p>
               </div>
             </Link>
+                    <button
+                      className='px-4 py-2  mr-2 block rounded-lg bg-red-500 border-1 border-white cursor-pointer'
+                      onClick={()=>handleUnfollow(user._id)}
+                      >Unfollow</button>
           </div>
         );
       })}
