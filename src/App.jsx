@@ -15,6 +15,7 @@ import AcceptedTrips from './SideBarComponents/AcceptedTrips'
 import Explore from './SideBarComponents/Explore'
 import HomeFeed from './HomeComponents/HomeFeed'
 import Friends from './SideBarComponents/Friends'
+import ProfilePage from './ProfileSection/ProfilePage'
 
 const App = () => {
   const [createModal, setCreateModal] = useState(false)
@@ -40,6 +41,8 @@ const App = () => {
             <Route path="explore" element={<Explore />} />
             <Route path="friends" element={<Friends />} />
           </Route>
+
+          <Route path='/profile/:userId' element={<ProfilePage/>} />
 
 
         </Routes>

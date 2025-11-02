@@ -33,7 +33,7 @@ const isStateIncomplete = !userState.accessToken || !userState.username || !user
     <div className=' w-full  border '
     onClick={()=>{
       setIsSearchOpen(false)
-      setCreateModal(false)
+      
     }}
     >
       <NavComponent isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen}/>
