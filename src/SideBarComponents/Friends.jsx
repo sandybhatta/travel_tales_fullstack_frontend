@@ -1,6 +1,7 @@
 import React, {  useEffect, useState } from 'react'
 import Suggestions from './FriendSection/Suggestions'
 import MyFollowings from './FriendSection/MyFollowings'
+import MyFollowers from './FriendSection/MyFollowers'
 
 const Friends = () => {
   
@@ -36,6 +37,7 @@ const Friends = () => {
 
         {activePage === "suggestions" && <Suggestions /> }
         {activePage === "followings" && <MyFollowings /> }
+        {activePage === "followers" && <MyFollowers /> }
 
         
         
