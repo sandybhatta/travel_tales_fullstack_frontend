@@ -12,6 +12,8 @@ const PostCreation = ({setCreationTab,setCreateModal}) => {
     const[visibilityOpen, setVisibilityOpen]=useState(false)
     const [visibilityStatus, setVisibilityStatus] = useState("public")
 
+    const [taggedUsers, setTaggedUsers] = useState([])
+
     const[caption,setCaption]=useState("")
 
     const reduxUserState = useSelector(state=>state.user)
@@ -22,7 +24,7 @@ const PostCreation = ({setCreationTab,setCreateModal}) => {
 
 
     const MAX_FILES = 20
-    const MAX_FILE_SIZE = 100 * 1024 *1024 
+    const MAX_FILE_SIZE = 10 * 1024 *1024 
 
 
     
@@ -108,7 +110,7 @@ const PostCreation = ({setCreationTab,setCreateModal}) => {
                    transition-opacity duration-300 whitespace-nowrap'>Visibility</span></i> 
 
                 {
-                    tagOpen && <TagUsers/>
+                    tagOpen && <TagUsers taggedUsers={taggedUsers} setTaggedUsers ={setTaggedUsers} setTagOpen={setTagOpen}/>
                 }
                
             </div>

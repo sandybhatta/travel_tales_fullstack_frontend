@@ -42,7 +42,7 @@ const PhotoEditor = ({files,setFiles,caption,setCaption,visibilityStatus, setVis
     const handleAddMore = (newFiles)=>{
         // if already 20 files exist return
         if(files.length>=20)return;
-        const MAX_FILE_SIZE=100*1024*1024;
+        const MAX_FILE_SIZE=10*1024*1024;
         const incomingFiles = Array.from(newFiles)
         if(incomingFiles.length===0)return;
 
