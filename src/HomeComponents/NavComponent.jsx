@@ -16,12 +16,15 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
   const reduxProfilePic = reduxUserState?.avatar
   const reduxUsername = reduxUserState?.username
   const reduxName = reduxUserState?.name
+  const reduxId = reduxUserState._id
 
   // localStorage states
   const stateProfilePic = userInfo?.avatar
   const stateUsername = userInfo?.username
   const stateName = userInfo?.name
+  const stateId = userInfo?._id
 
+  const userId= reduxId || stateId
   const avatar = reduxProfilePic || stateProfilePic 
   const username =  reduxUsername  || stateUsername
   const name =  reduxName  || stateName
@@ -48,23 +51,26 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
       </div>
 
       {/* Navigation Links (hidden on mobile/tablet) */}
-      <div className="hidden lg:flex items-center text-[#EDF2F4] text-[1.1rem] relative w-[20%]">
-  <div
-    className="flex flex-row items-center gap-3 p-2 rounded-full  transition-all duration-400 relative bg-[#353749]"
-  >
-    {/* Avatar */}
-    <img src={avatar} alt="User" className="w-14 h-14 object-cover rounded-full" />
+      <Link to={`/home/profile/${userId}`}
+      className='w-[20%]'>
+          <div className="w-full hidden cursor-pointer lg:flex items-center text-[#EDF2F4] text-[1.1rem] relative ">
+                <div
+                  className="flex flex-row items-center gap-3 p-2 rounded-full  transition-all duration-400 relative bg-[#353749]"
+                >
+                  {/* Avatar */}
+                  <img src={avatar} alt="User" className="w-14 h-14 object-cover rounded-full" />
 
-    {/* Username and Name */}
-    <div className="flex flex-col justify-center gap-1 text-[0.8rem]">
-      <p>@ {username}</p>
-      <p>{name}</p>
-    </div>
+                  {/* Username and Name */}
+                  <div className="flex flex-col justify-center gap-1 text-[0.8rem]">
+                    <p>@ {username}</p>
+                    <p>{name}</p>
+                  </div>
 
-    {/* Dropdown Icon */}
-    <i className='bx bx-chevron-down  text-[2rem] text-[#FFFFFF]'></i>
-  </div>
-</div>
+                  {/* Dropdown Icon */}
+                  <i className='bx bx-chevron-down  text-[2rem] text-[#FFFFFF]'></i>
+                </div>
+          </div>
+      </Link>
 
     </nav>
   );

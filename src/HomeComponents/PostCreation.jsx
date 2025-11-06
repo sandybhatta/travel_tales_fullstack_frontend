@@ -145,7 +145,15 @@ const PostCreation = ({setCreationTab,setCreateModal}) => {
         setTagOpen={setTagOpen}
         />
         :
-         <AddCaptionTab handleFiles={handleFiles} visibilityStatus={visibilityStatus} setCreateModal={setCreateModal} setCreationTab={setCreationTab} caption={caption} setCaption={setCaption}/>}
+         <AddCaptionTab 
+         handleFiles={handleFiles} 
+         visibilityStatus={visibilityStatus} 
+         setCreateModal={setCreateModal} 
+         setCreationTab={setCreationTab} 
+         caption={caption} 
+         setCaption={setCaption}
+         taggedUsers={taggedUsers}
+         />}
 
         
 

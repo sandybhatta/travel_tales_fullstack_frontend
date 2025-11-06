@@ -40,9 +40,10 @@ const App = () => {
             <Route path="accepted-trips" element={<AcceptedTrips />} />
             <Route path="explore" element={<Explore />} />
             <Route path="friends" element={<Friends />} />
+            <Route path='profile/:userId' element={<ProfilePage/>} />
           </Route>
-
-          <Route path='/profile/:userId' element={<ProfilePage/>} />
+          
+          
 
 
         </Routes>

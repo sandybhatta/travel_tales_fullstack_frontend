@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react'
 import mainApi from '../Apis/axios'
 import { useSelector } from 'react-redux'
 
-const AddCaptionTab = ({handleFiles, visibilityStatus,setCreateModal,setCreationTab ,caption,setCaption}) => {
+const AddCaptionTab = ({handleFiles, visibilityStatus,setCreateModal,setCreationTab ,caption,setCaption,taggedUsers}) => {
     
     const imageRef=useRef()
     const videoRef=useRef()
@@ -20,6 +20,7 @@ const AddCaptionTab = ({handleFiles, visibilityStatus,setCreateModal,setCreation
              await mainApi.post("/api/posts",{
                 caption,
                 location,
+                taggedUsers,
                 visibility:visibilityStatus
             })
             setCreationTab("")
