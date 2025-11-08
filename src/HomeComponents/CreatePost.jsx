@@ -6,7 +6,7 @@ import TripCreation from './TripCreation'
 const CreatePost = ({createModal, setCreateModal}) => {
     const textRef = useRef("")
     const timerRef = useRef(null)
-    const [creationTab, setCreationTab] = useState("")
+    const [creationTab, setCreationTab] = useState("Trip")
     
 
 
@@ -132,7 +132,7 @@ const CreatePost = ({createModal, setCreateModal}) => {
 
 
         {creationTab==="Post" ?
-         <PostCreation setCreationTab={setCreationTab} setCreateModal={setCreateModal}/> : creationTab==="Trip"? <TripCreation/>:""
+         <PostCreation setCreationTab={setCreationTab} setCreateModal={setCreateModal}/> : creationTab==="Trip"? <TripCreation setCreationTab={setCreationTab} />:""
         }
 
     </div>
