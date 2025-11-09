@@ -3,8 +3,14 @@ import { useSelector } from "react-redux";
 import VisibilityOfPost from "./VisibilityOfPost";
 import TagUsers from "./TagUsers";
 import Destinations from "./Destinations";
+import Expense from "./Expense";
 
 const TripCreation = ({ setCreationTab }) => {
+
+
+  const reduxUser = useSelector((state) => state.user);
+  const { name, username, avatar, _id } = reduxUser;
+
   const [tagOpen, setTagOpen] = useState(false);
   const [taggedUsers, setTaggedUsers] = useState([]);
 
@@ -27,12 +33,35 @@ const TripCreation = ({ setCreationTab }) => {
     },
   ]);
 
+  const [destinationErrors, setDestinationErrors] = useState([
+    {
+      cityError: "",
+      stateError: "",
+      countryError: "",
+    },
+  ]);
+
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [expenses, setExpenses] = useState([
+    {
+      title: "",
+      amount: "",
+      spentBy: _id,
+      createdAt: new Date(),
+    },
+  ]);
+  const [expenseErrors, setExpenseErrors] = useState([
+    {
+      titleError: "",
+      amountError: "",
+    },
+  ]);
+
   const textRef = useRef(null);
   const imageRef = useRef(null);
 
   const [selectedTags, setSelectedTags] = useState([]);
-  const reduxUser = useSelector((state) => state.user);
-  const { name, username, avatar } = reduxUser;
+ 
 
   useEffect(() => {
     textRef.current.style.height = "auto";
@@ -42,20 +71,25 @@ const TripCreation = ({ setCreationTab }) => {
   const tags = [
     "adventure",
     "beach",
-    "mountain",
-    "city",
-    "honeymoon",
-    "family",
-    "solo",
-    "friends",
+    "mountains",
+    "history",
+    "food",
+    "wildlife",
+    "culture",
     "luxury",
     "budget",
-    "wildlife",
-    "roadtrip",
+    "road_trip",
+    "solo",
+    "group",
+    "trekking",
     "spiritual",
+    "nature",
+    "photography",
+    "festivals",
+    "architecture",
+    "offbeat",
+    "shopping",
   ];
-
-  const numbers = "1234567890";
 
   const handleTitle = (e) => {
     let text = e.target.value;
@@ -84,14 +118,23 @@ const TripCreation = ({ setCreationTab }) => {
   };
 
   const handleBudget = (e) => {
-    const number = e.target.value.slice(budget.length);
+    let value = e.target.value;
 
-    // deleting
-    if (e.target.value.length < budget.length) {
-      setBudget(e.target.value);
-    } else if (numbers.split("").includes(number)) {
-      setBudget(e.target.value);
+    if (value === "") {
+      setBudget("");
+      return;
     }
+
+    let filtered = "";
+    const digits = "0123456789".split("");
+
+    for (let i = 0; i < value.length; i++) {
+      if (digits.includes(value[i])) {
+        filtered += value[i];
+      }
+    }
+
+    setBudget(filtered);
   };
 
   return (
@@ -104,7 +147,7 @@ const TripCreation = ({ setCreationTab }) => {
         />
       )}
 
-      <div className="flex flex-wrap w-auto h-auto ">
+      <div className="flex flex-wrap w-auto h-auto gap-5  ">
         <div className="w-[50px] h-full">
           <img src={avatar} className="object-contain w-full" />
         </div>
@@ -127,7 +170,7 @@ const TripCreation = ({ setCreationTab }) => {
                    opacity-0 group-hover:opacity-100 
                    transition-opacity duration-300 whitespace-nowrap"
             >
-              Tag
+              Invite
             </span>
           </i>
 
@@ -204,19 +247,26 @@ const TripCreation = ({ setCreationTab }) => {
 
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
         <h2
-          className="w-fit text-3xl font-semibold leckerli text-white flex items-center cursor-pointer"
+          className="w-fit text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-4 py-4 rounded-lg shadow-xl"
           onClick={() => {
             setDestinationOpen((prev) => !prev);
           }}
         >
-          <i className="bx bx-location-plus text-3xl text-white"></i>
+          <i className="bx bx-location-plus text-3xl text-white ml-3"></i>
           Add Destinations
+          {destinationOpen ? (
+            <i className="bx bx-chevron-up text-3xl text-white"></i>
+          ) : (
+            <i className="bx bx-chevron-down text-3xl text-white"></i>
+          )}
         </h2>
         {destinationOpen && destinations.length > 0 && (
           <Destinations
             setDestinationOpen={setDestinationOpen}
             destinations={destinations}
             setDestinations={setDestinations}
+            errors={destinationErrors}
+            setErrors={setDestinationErrors}
           />
         )}
       </div>
@@ -238,7 +288,9 @@ const TripCreation = ({ setCreationTab }) => {
             >
               <i className=" bx bx-plus text-5xl "></i>
               <p className="text-2xl">Add a cover photo of your trip</p>
-              <p className="text-lg text-stone-600">Image should be less than 10 MB</p>
+              <p className="text-lg text-stone-600">
+                Image should be less than 10 MB
+              </p>
 
               <input
                 type="file"
@@ -250,9 +302,14 @@ const TripCreation = ({ setCreationTab }) => {
             </div>
           )}
 
-          {coverPhoto? <i className="bx bx-trash text-3xl text-[#EF233C] absolute right-5 top-1/2 -translate-y-1/2 bg-white px-3 py-3 rounded-full cursor-pointer" 
-          onClick={()=>setCoverPhoto(null)}
-          ></i> : <></>}
+          {coverPhoto ? (
+            <i
+              className="bx bx-trash text-3xl text-[#EF233C] absolute right-5 top-1/2 -translate-y-1/2 bg-white px-3 py-3 rounded-full cursor-pointer"
+              onClick={() => setCoverPhoto(null)}
+            ></i>
+          ) : (
+            <></>
+          )}
         </div>
       </div>
 
@@ -266,7 +323,7 @@ const TripCreation = ({ setCreationTab }) => {
                 key={index}
                 className={`py-3 rounded-lg px-3 ${
                   selectedTags.includes(tag)
-                    ? "bg-red-400 text-white"
+                    ? "bg-[#EF233C] text-white"
                     : "bg-white text-black "
                 } cursor-pointer`}
                 onClick={() => {
@@ -296,6 +353,31 @@ const TripCreation = ({ setCreationTab }) => {
           onChange={handleBudget}
           className="bg-white text-black text-xl px-4 py-3 w-1/2 focus:outline-none rounded-lg "
         />
+      </div>
+
+      {/* create Expenses */}
+      <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
+        <h2
+          className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer"
+          onClick={() => setExpenseOpen((prev) => !prev)}
+        >
+          <i className="bx bx-calculator text-3xl"></i>
+          Create Expenses
+          {expenseOpen ? (
+            <i className="bx bx-chevron-up text-3xl text-white"></i>
+          ) : (
+            <i className="bx bx-chevron-down text-3xl text-white"></i>
+          )}
+        </h2>
+        {expenseOpen && expenses.length > 0 && (
+          <Expense
+            expenses={expenses}
+            setExpenses={setExpenses}
+            setExpenseOpen={setExpenseOpen}
+            errors={expenseErrors}
+            setErrors={setExpenseErrors}
+          />
+        )}
       </div>
     </div>
   );

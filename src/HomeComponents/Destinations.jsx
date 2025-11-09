@@ -1,11 +1,81 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const Destinations = ({
   setDestinationOpen,
   destinations,
   setDestinations,
+  errors,
+  setErrors
 }) => {
-  const [destinationCount, setDestinationCount] = useState(1);
+  
+
+  const saveDestination = () => {
+    const newErrors = destinations.map((destination) => ({
+      cityError: "",
+      stateError: "",
+      countryError: "",
+    }));
+  
+    
+  
+    destinations.forEach((destination, index) => {
+      const { city, state, country } = destination;
+      
+     
+      if (city.trim() === "") {
+        newErrors[index].cityError = "City should not be empty";
+        
+      }
+      if (state.trim() === "") {
+        newErrors[index].stateError = "State should not be empty";
+        
+      }
+      if (country.trim() === "") {
+        newErrors[index].countryError = "Country should not be empty";
+       
+      }
+  
+     
+      const isAlpha = (char) => {
+        const code = char.charCodeAt(0);
+        return (
+          (code >= 65 && code <= 90) || 
+          (code >= 97 && code <= 122)   
+        );
+      };
+  
+      for (let char of city) {
+        if (!isAlpha(char)) {
+          newErrors[index].cityError = "City should only contain letters A-Z";
+          
+          break;
+        }
+      }
+  
+      for (let char of state) {
+        if (!isAlpha(char)) {
+          newErrors[index].stateError = "State should only contain letters A-Z";
+          
+          break;
+        }
+      }
+  
+      for (let char of country) {
+        if (!isAlpha(char)) {
+          newErrors[index].countryError = "Country should only contain letters A-Z";
+         
+          break;
+        }
+      }
+    });
+  
+    setErrors(newErrors);
+  
+    
+  };
+  useEffect(()=>{
+    saveDestination()
+  },[destinations])
 
   const handleAddress = (e, i) => {
     const { name, value } = e.target;
@@ -15,12 +85,18 @@ const Destinations = ({
   };
   const addDestinationCount = () => {
     setDestinations((prev) => [...prev, { city: "", state: "", country: "" }]);
+    setErrors((prev) => [
+      ...prev,
+      { cityError: "", stateError: "", countryError: "" },
+    ]);
   };
+
   const removeDestination = (index) => {
     setDestinations((prev) =>
       prev.filter((_, i) => i !== index && prev.length > 1)
     );
   };
+
   return (
     <div className="w-full " onClick={(e) => e.stopPropagation()}>
       {destinations.map((d, i) => {
@@ -30,8 +106,8 @@ const Destinations = ({
             key={i}
           >
             <h2 className="text-3xl text-white font-semibold">
-              {" "}
-              Destination {i + 1}{" "}
+              
+              Destination {i + 1}
             </h2>
 
             <input
@@ -43,6 +119,11 @@ const Destinations = ({
               }}
               className="bg-[#EDF2F4] px-2 py-4 rounded-lg focus:outline-none text-xl text-black "
             />
+            {errors[i].cityError && (
+              <p className="bg-white text-red-500 text-sm font-semibold px-3 py-2 rounded-lg">
+                {errors[i].cityError}
+              </p>
+            )}
 
             <input
               name="state"
@@ -53,6 +134,11 @@ const Destinations = ({
               }}
               className="bg-[#EDF2F4] px-2 py-4 rounded-lg focus:outline-none text-xl text-black "
             />
+            {errors[i].stateError && (
+              <p className="bg-white text-red-500 text-sm font-semibold px-3 py-2 rounded-lg">
+                {errors[i].stateError}
+              </p>
+            )}
 
             <input
               name="country"
@@ -63,6 +149,11 @@ const Destinations = ({
               }}
               className="bg-[#EDF2F4] px-2 py-4 rounded-lg focus:outline-none text-xl text-black "
             />
+            {errors[i].countryError && (
+              <p className="bg-white text-red-500 text-sm font-semibold px-3 py-2 rounded-lg">
+                {errors[i].countryError}
+              </p>
+            )}
 
             <div
               className={`${
@@ -78,7 +169,7 @@ const Destinations = ({
         );
       })}
 
-      <div className=" w-full py-5  flex flex-col items-center justify-center">
+      <div className=" w-full py-5  flex flex-col items-center justify-center gap-5">
         <div
           className="flex flex-col items-center justify-center bg-green-500 rounded-lg px-5 py-3 cursor-pointer gap-2 "
           onClick={() => addDestinationCount()}
@@ -86,6 +177,8 @@ const Destinations = ({
           <i className="bx bx-plus-circle text-3xl text-white"></i>
           <h4 className="text-3xl text-white"> Add More Destinations</h4>
         </div>
+
+        
       </div>
     </div>
   );
