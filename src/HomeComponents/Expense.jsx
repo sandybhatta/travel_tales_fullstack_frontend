@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 
-const Expense = ({ expenses, setExpenses, setExpenseOpen ,errors,setErrors }) => {
+const Expense = ({ expenses, setExpenses,errors,setErrors }) => {
   const { username ,_id} = useSelector((state) => state.user);
 
   const [infoOpen, setInfoOpen] = useState(false);
@@ -122,9 +122,9 @@ const Expense = ({ expenses, setExpenses, setExpenseOpen ,errors,setErrors }) =>
           <div
           className="flex flex-col items-center justify-center w-full gap-8 relative"
           key={i}>
-            { i>0 && <i className="bx bx-trash absolute right-0 top-1/2 -translate-y-1/2 text-3xl text-red-500 bg-white px-3 py-3 rounded-lg"
+             <i className="bx bx-trash absolute right-0 top-1/2 -translate-y-1/2 text-3xl text-red-500 bg-white px-3 py-3 rounded-lg"
             onClick={()=>handleRemoveExpense(i)}
-            ></i>}
+            ></i>
             <h2 className="text-2xl font-semibold text-center "> Expense {i+1}</h2>
             <input
               type="text"

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
 const Destinations = ({
-  setDestinationOpen,
   destinations,
   setDestinations,
   errors,
@@ -156,9 +155,7 @@ const Destinations = ({
             )}
 
             <div
-              className={`${
-                i === 0 ? "hidden" : "block"
-              } absolute right-5 top-1/2 -translate-y-1/2 cursor-pointer bg-white rounded-full flex items-center justify-center px-4 py-4 `}
+              className={` absolute right-5 top-1/2 -translate-y-1/2 cursor-pointer bg-white rounded-full flex items-center justify-center px-4 py-4 `}
               onClick={() => {
                 removeDestination(i);
               }}

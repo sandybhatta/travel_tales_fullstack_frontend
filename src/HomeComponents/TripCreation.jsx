@@ -4,6 +4,7 @@ import VisibilityOfPost from "./VisibilityOfPost";
 import TagUsers from "./TagUsers";
 import Destinations from "./Destinations";
 import Expense from "./Expense";
+import Notes from "./Notes";
 
 const TripCreation = ({ setCreationTab }) => {
 
@@ -56,6 +57,23 @@ const TripCreation = ({ setCreationTab }) => {
       amountError: "",
     },
   ]);
+
+
+
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notes, setNotes] =useState([
+    {
+      body:"",
+      createdAt:new Date(),
+      createdBy:_id,
+      isPinned:false
+    }
+  ])
+  const [noteErrors, setNoteErrors] = useState([
+    {
+      bodyError:""
+    }
+  ])
 
   const textRef = useRef(null);
   const imageRef = useRef(null);
@@ -260,9 +278,8 @@ const TripCreation = ({ setCreationTab }) => {
             <i className="bx bx-chevron-down text-3xl text-white"></i>
           )}
         </h2>
-        {destinationOpen && destinations.length > 0 && (
+        {destinationOpen  && (
           <Destinations
-            setDestinationOpen={setDestinationOpen}
             destinations={destinations}
             setDestinations={setDestinations}
             errors={destinationErrors}
@@ -358,24 +375,47 @@ const TripCreation = ({ setCreationTab }) => {
       {/* create Expenses */}
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
         <h2
-          className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer"
+          className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-3 py-5 rounded-xl shadow-2xl relative"
           onClick={() => setExpenseOpen((prev) => !prev)}
         >
           <i className="bx bx-calculator text-3xl"></i>
           Create Expenses
           {expenseOpen ? (
-            <i className="bx bx-chevron-up text-3xl text-white"></i>
+            <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-up text-3xl text-white"></i>
           ) : (
-            <i className="bx bx-chevron-down text-3xl text-white"></i>
+            <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-down text-3xl text-white"></i>
           )}
         </h2>
-        {expenseOpen && expenses.length > 0 && (
+        {expenseOpen  && (
           <Expense
             expenses={expenses}
             setExpenses={setExpenses}
-            setExpenseOpen={setExpenseOpen}
             errors={expenseErrors}
             setErrors={setExpenseErrors}
+          />
+        )}
+      </div>
+
+      {/* create notes */}
+      <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
+      <h2
+          className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-3 py-5 rounded-xl shadow-2xl relative"
+          onClick={() => setNotesOpen((prev) => !prev)}
+        >
+          <i className="bx bx-pencil-square text-3xl"></i>
+          Create Notes
+          {notesOpen ? (
+            <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-up text-3xl text-white"></i>
+          ) : (
+            <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-down text-3xl text-white"></i>
+          )}
+        </h2>
+        {notesOpen  && (
+          <Notes
+            notes={notes}
+            setNotes={setNotes}
+            errors={noteErrors}
+            setErrors= {setNoteErrors}
           />
         )}
       </div>
