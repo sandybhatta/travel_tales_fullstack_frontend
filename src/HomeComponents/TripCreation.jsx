@@ -6,12 +6,15 @@ import Destinations from "./Destinations";
 import Expense from "./Expense";
 import Notes from "./Notes";
 import Todos from "./Todos";
+import mainApi from "../Apis/axios";
 
 const TripCreation = ({ setCreationTab }) => {
-
-
   const reduxUser = useSelector((state) => state.user);
   const { name, username, avatar, _id } = reduxUser;
+
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [tripDateError, setTripDateError] = useState([]);
 
   const [tagOpen, setTagOpen] = useState(false);
   const [taggedUsers, setTaggedUsers] = useState([]);
@@ -59,51 +62,46 @@ const TripCreation = ({ setCreationTab }) => {
     },
   ]);
 
-
-
   const [notesOpen, setNotesOpen] = useState(false);
-  const [notes, setNotes] =useState([
+  const [notes, setNotes] = useState([
     {
-      body:"",
-      createdAt:new Date(),
-      createdBy:_id,
-      isPinned:false
-    }
-  ])
+      body: "",
+      createdAt: new Date(),
+      createdBy: _id,
+      isPinned: false,
+    },
+  ]);
   const [noteErrors, setNoteErrors] = useState([
     {
-      bodyError:""
-    }
-  ])
-
-
+      bodyError: "",
+    },
+  ]);
 
   const [todosOpen, setTodosOpen] = useState(false);
 
-  const [todos, setTodos] =useState([
+  const [todos, setTodos] = useState([
     {
-      task:"",
-      done:false,
-      dueDate:new Date(),
-      createdBy:_id,
-      assignedTo:_id,
-     
-    }
-  ])
+      task: "",
+      done: false,
+      dueDate: new Date(),
+      createdBy: _id,
+      assignedTo: _id,
+    },
+  ]);
   const [todoErrors, setTodoErrors] = useState([
     {
-      taskError:""
-    }
-  ])
+      taskError: "",
+    },
+  ]);
 
-
-
-
+  const [titleError, setTitleError] = useState("");
   const textRef = useRef(null);
   const imageRef = useRef(null);
 
   const [selectedTags, setSelectedTags] = useState([]);
- 
+
+  const [apiError, setApiError] = useState(null);
+  const apiErrorRef  = useRef() ;
 
   useEffect(() => {
     textRef.current.style.height = "auto";
@@ -137,9 +135,12 @@ const TripCreation = ({ setCreationTab }) => {
     let text = e.target.value;
     if (text.length <= 100) {
       setTitle(text);
-    } else {
-      text = text.slice(0, 100);
-      setTitle(text);
+    }
+    setTitleError("");
+  };
+  const handleTitleError = () => {
+    if (!title.trim()) {
+      setTitleError("Title of the Trip Cannot Be Empty");
     }
   };
 
@@ -177,6 +178,116 @@ const TripCreation = ({ setCreationTab }) => {
     }
 
     setBudget(filtered);
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "";
+    return new Date(date).toISOString().split("T")[0];
+  };
+
+  const handleDate = (value, type) => {
+    const errors = [];
+
+    if (value === "") {
+      if (type === "startDate") setStartDate(null);
+      else setEndDate(null);
+
+      setTripDateError(["Start date and End date must be selected"]);
+      return;
+    }
+
+    const selectedDate = new Date(value);
+
+    if (type === "startDate") setStartDate(selectedDate);
+    else setEndDate(selectedDate);
+
+    let start = type === "startDate" ? selectedDate : startDate;
+    let end = type === "endDate" ? selectedDate : endDate;
+
+    if (!start || !end) {
+      errors.push("Start date and End date must be selected");
+    } else if (start > end) {
+      errors.push("Start Date should be before End Date");
+    }
+
+    setTripDateError(errors);
+  };
+
+  const handleCreateTrip = async () => {
+    if (titleError || tripDateError.length > 0) return;
+
+    const validDestinations = destinations.filter((destination, index) => {
+      if (
+        destinationErrors[index].cityError ||
+        destinationErrors[index].stateError ||
+        destinationErrors[index].countryError
+      ) {
+        return false;
+      } else {
+        return true;
+      }
+    });
+    const validExpenses = expenses.filter((expense, index) => {
+      if (expenseErrors[index].titleError || expenseErrors[index].amountError) {
+        return false;
+      } else {
+        return true;
+      }
+    });
+
+    const validNotes = notes.filter((note, index) => {
+      if (noteErrors[index].bodyError) {
+        return false;
+      } else {
+        return true;
+      }
+    });
+
+    const validTodos = todos.filter((todo, index) => {
+      if (todoErrors[index].taskError) {
+        return false;
+      } else {
+        return true;
+      }
+    });
+
+    try {
+      const formData = new FormData();
+
+      formData.append("title", title);
+      formData.append("startDate", startDate.toISOString());
+      formData.append("endDate", endDate.toISOString());
+
+      if (description) formData.append("description", description);
+
+      if (selectedTags.length > 0)
+        formData.append("tags", JSON.stringify(selectedTags));
+      if (visibilityStatus) formData.append("visibility", visibilityStatus);
+
+      if (validDestinations && validDestinations.length > 0)
+        formData.append("destinations", JSON.stringify(validDestinations));
+      if (Number(budget) > 0) formData.append("travelBudget", Number(budget));
+      if (validExpenses && validExpenses.length > 0)
+        formData.append("expenses", JSON.stringify(validExpenses));
+      if (validNotes && validNotes.length > 0)
+        formData.append("notes", JSON.stringify(validNotes));
+      if (validTodos && validTodos.length > 0)
+        formData.append("todoList", JSON.stringify(validTodos));
+      if (taggedUsers && taggedUsers.length > 0)
+        formData.append("invitedFriends", JSON.stringify(taggedUsers));
+
+      if (coverPhoto) {
+        formData.append("coverPhoto", coverPhoto);
+      }
+
+      const { data } = await mainApi.post("/api/trips/", formData);
+      console.log(data.message);
+      setCreationTab("");
+    } catch (error) {
+      const errorResponse = error?.response?.data?.message;
+      setApiError(errorResponse);
+      apiErrorRef.current.scrollIntoView({behavior:'smooth',block: "center"})
+    }
   };
 
   return (
@@ -258,6 +369,19 @@ const TripCreation = ({ setCreationTab }) => {
         onClick={() => setCreationTab("")}
       ></i>
 
+      {/* api failure message */}
+
+      {apiError && (
+        <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10"
+        
+        >
+          <p className="bg-red-500 text-white font-semibold text-3xl px-4 py-3 rounded-lg"
+          ref={apiErrorRef}
+          >
+            {apiError}
+          </p>
+        </div>
+      )}
       {/* title bar */}
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10">
         <h2 className="text-3xl font-semibold leckerli text-white">
@@ -266,9 +390,15 @@ const TripCreation = ({ setCreationTab }) => {
         <input
           type="text"
           onChange={handleTitle}
+          onBlur={handleTitleError}
           value={title}
           className="w-full h-[35px] bg-white text-xl font-semibold border-none px-2 py-7 focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-lg"
         />
+        {titleError && (
+          <p className="bg-white text-xl text-red-500 px-3 py-3 rounded-lg">
+            {titleError}{" "}
+          </p>
+        )}
       </div>
 
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
@@ -287,6 +417,37 @@ const TripCreation = ({ setCreationTab }) => {
         </span>
       </div>
 
+      {/* start date and end date */}
+      <div className="w-4/5 h-auto flex flex-col items-center justify-center gap-5 mt-10 px-10 relative">
+        <h2 className="text-3xl font-semibold leckerli text-white">
+          Trip Start and End Date
+        </h2>
+
+        <div className="w-full flex  items-center justify-between gap-5 flex-wrap">
+          <input
+            type="date"
+            value={formatDate(startDate)}
+            onChange={(e) => handleDate(e.target.value, "startDate")}
+            className="px-4 py-3 text-white rounded-lg border border-white shadow-2xl focus:outline-none scale-125"
+          />
+          <input
+            type="date"
+            value={formatDate(endDate)}
+            onChange={(e) => handleDate(e.target.value, "endDate")}
+            className="px-4 py-3 text-white rounded-lg border border-white shadow-2xl focus:outline-none scale-125"
+          />
+
+          {tripDateError.map((error, i) => (
+            <div
+              key={i}
+              className="w-full text-red-500 bg-white rounded-lg px-5 py-4 flex flex-col items-center justify-center"
+            >
+              {error}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
         <h2
           className="w-fit text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-4 py-4 rounded-lg shadow-xl"
@@ -302,7 +463,7 @@ const TripCreation = ({ setCreationTab }) => {
             <i className="bx bx-chevron-down text-3xl text-white"></i>
           )}
         </h2>
-        {destinationOpen  && (
+        {destinationOpen && (
           <Destinations
             destinations={destinations}
             setDestinations={setDestinations}
@@ -410,7 +571,7 @@ const TripCreation = ({ setCreationTab }) => {
             <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-down text-3xl text-white"></i>
           )}
         </h2>
-        {expenseOpen  && (
+        {expenseOpen && (
           <Expense
             expenses={expenses}
             setExpenses={setExpenses}
@@ -422,7 +583,7 @@ const TripCreation = ({ setCreationTab }) => {
 
       {/* create notes */}
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
-      <h2
+        <h2
           className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-3 py-5 rounded-xl shadow-2xl relative"
           onClick={() => setNotesOpen((prev) => !prev)}
         >
@@ -434,12 +595,12 @@ const TripCreation = ({ setCreationTab }) => {
             <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-down text-3xl text-white"></i>
           )}
         </h2>
-        {notesOpen  && (
+        {notesOpen && (
           <Notes
             notes={notes}
             setNotes={setNotes}
             errors={noteErrors}
-            setErrors= {setNoteErrors}
+            setErrors={setNoteErrors}
           />
         )}
       </div>
@@ -447,7 +608,7 @@ const TripCreation = ({ setCreationTab }) => {
       {/* create todo list */}
 
       <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
-      <h2
+        <h2
           className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-3 py-5 rounded-xl shadow-2xl relative"
           onClick={() => setTodosOpen((prev) => !prev)}
         >
@@ -459,7 +620,7 @@ const TripCreation = ({ setCreationTab }) => {
             <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-down text-3xl text-white"></i>
           )}
         </h2>
-        {todosOpen  && (
+        {todosOpen && (
           <Todos
             todos={todos}
             setTodos={setTodos}
@@ -470,7 +631,16 @@ const TripCreation = ({ setCreationTab }) => {
         )}
       </div>
 
-
+      <div className="w-4/5 h-auto flex items-center justify-center gap-5 mt-10 ">
+        <div
+          className="w-1/2 bg-green-500 hover:bg-green-400 shadow-2xl text-white text-3xl leckerli text-center px-5 py-4 rounded-lg hover:shadow-3xl relative group overflow-hidden cursor-pointer flex items-center justify-center"
+          onClick={handleCreateTrip}
+        >
+          <p className="relative z-30">Create Trip</p>
+          <i className="bx bx-send text-white text-3xl z-30"></i>
+          <div className="w-full h-full absolute inset-0  bg-red-400 origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-400 ease-in  rounded-lg "></div>
+        </div>
+      </div>
     </div>
   );
 };

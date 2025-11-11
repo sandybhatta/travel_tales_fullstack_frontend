@@ -14,7 +14,13 @@ const Todos = ({ todos, setTodos, errors, setErrors, userId }) => {
     if (type === "done") {
       updatedTodo[i].done = e.target.checked;
     } else if (type === "dueDate") {
-      updatedTodo[i].dueDate = new Date(e.target.value);
+      const value = e.target.value;
+      if(!value){
+        updatedTodo[i].dueDate = null;
+      }
+      else{
+        updatedTodo[i].dueDate = new Date(value);
+      }
     } else {
       updatedTodo[i][type] = e.target.value;
     }
@@ -115,6 +121,7 @@ const Todos = ({ todos, setTodos, errors, setErrors, userId }) => {
               type="date"
               value={formatDate(todo.dueDate)}
               onChange={(e) => handleTodo(e, i, "dueDate")}
+              className="px-4 py-3  rounded-lg border border-white shadow-2xl focus:outline-none scale-125"
             />
 
             <p className="bg-white text-black border rounded-lg px-4 py-3">
