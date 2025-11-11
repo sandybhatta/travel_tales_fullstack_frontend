@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 
 const Notes = ({ notes, setNotes, errors, setErrors }) => {
-  const bodyRef = useRef();
+  const bodyRef = useRef([]);
   const { _id } = useSelector((state) => state.user);
 
   const handleChange = (e, i) => {
@@ -13,14 +13,20 @@ const Notes = ({ notes, setNotes, errors, setErrors }) => {
   };
 
   const setIsPinned = (i) => {
-    const updatedNote = [...notes];
-    updatedNote[i]["isPinned"] = !notes[i].isPinned;
-    setNotes([...updatedNote]);
+    const updatedNotes = [...notes];
+    updatedNotes[i]["isPinned"] = !updatedNotes[i].isPinned;
+    setNotes(updatedNotes);
   };
 
   useEffect(() => {
-    bodyRef.current.style.height = "auto";
-    bodyRef.current.style.height = bodyRef.current.scrollHeight + "px";
+    notes.forEach((_,i)=>{
+        const el = bodyRef.current[i]
+        if(el){
+            el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+        }
+    })
+    
   }, [notes]);
 
   useEffect(() => {
@@ -45,6 +51,14 @@ const Notes = ({ notes, setNotes, errors, setErrors }) => {
     ]);
     setErrors((prev) => [...prev, { bodyError: "" }]);
   };
+
+
+const removeNote = (index)=>{
+    setNotes(prev=>prev.filter((_,i)=> i !== index))
+    setErrors(prev=>prev.filter((_,i)=> i !== index))
+}
+
+
   return (
     <div className="text-white mt-5 w-full flex flex-col items-center   ">
       {notes.map((note, i) => {
@@ -57,7 +71,7 @@ const Notes = ({ notes, setNotes, errors, setErrors }) => {
             <div className="w-full flex items-center justify-between  flex-wrap relative">
               <textarea
               placeholder="Make your notes for trip"
-                ref={bodyRef}
+                ref={el=>bodyRef.current[i]=el}
                 value={note.body}
                 onChange={(e) => handleChange(e, i)}
                 className="resize-none bg-white text-black text-xl w-3/4 rounded-xl px-4 py-3 mb-6 "
@@ -84,7 +98,9 @@ const Notes = ({ notes, setNotes, errors, setErrors }) => {
                   </i>
                 )}
               </span>
-              <i className=" bx bx-trash text-2xl text-red-500 bg-white px-2 py-2 rounded-lg"></i>
+              <i className=" bx bx-trash text-2xl text-red-500 bg-white px-2 py-2 rounded-lg cursor-pointer"
+              onClick={()=>removeNote(i)}
+              ></i>
             </div>
             <p className="text-sm text-white ">
               {note.createdAt.toDateString()}

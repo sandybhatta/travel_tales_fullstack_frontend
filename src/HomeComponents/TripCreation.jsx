@@ -5,6 +5,7 @@ import TagUsers from "./TagUsers";
 import Destinations from "./Destinations";
 import Expense from "./Expense";
 import Notes from "./Notes";
+import Todos from "./Todos";
 
 const TripCreation = ({ setCreationTab }) => {
 
@@ -74,6 +75,29 @@ const TripCreation = ({ setCreationTab }) => {
       bodyError:""
     }
   ])
+
+
+
+  const [todosOpen, setTodosOpen] = useState(false);
+
+  const [todos, setTodos] =useState([
+    {
+      task:"",
+      done:false,
+      dueDate:new Date(),
+      createdBy:_id,
+      assignedTo:_id,
+     
+    }
+  ])
+  const [todoErrors, setTodoErrors] = useState([
+    {
+      taskError:""
+    }
+  ])
+
+
+
 
   const textRef = useRef(null);
   const imageRef = useRef(null);
@@ -419,6 +443,34 @@ const TripCreation = ({ setCreationTab }) => {
           />
         )}
       </div>
+
+      {/* create todo list */}
+
+      <div className="w-4/5 h-auto flex flex-col gap-5 mt-10 px-10 relative">
+      <h2
+          className="text-3xl font-semibold leckerli text-white flex items-center cursor-pointer border px-3 py-5 rounded-xl shadow-2xl relative"
+          onClick={() => setTodosOpen((prev) => !prev)}
+        >
+          <i className="bx bx-pencil-square text-3xl"></i>
+          Create Todos
+          {todosOpen ? (
+            <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-up text-3xl text-white"></i>
+          ) : (
+            <i className="absolute right-5 top-1/2 -translate-y-1/2 bx bx-chevron-down text-3xl text-white"></i>
+          )}
+        </h2>
+        {todosOpen  && (
+          <Todos
+            todos={todos}
+            setTodos={setTodos}
+            errors={todoErrors}
+            setErrors={setTodoErrors}
+            userId={_id}
+          />
+        )}
+      </div>
+
+
     </div>
   );
 };

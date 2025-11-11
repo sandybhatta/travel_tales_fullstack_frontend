@@ -92,8 +92,11 @@ const Destinations = ({
 
   const removeDestination = (index) => {
     setDestinations((prev) =>
-      prev.filter((_, i) => i !== index && prev.length > 1)
+      prev.filter((_, i) => i !== index )
     );
+    setErrors((prev) =>
+    prev.filter((_, i) => i !== index )
+  );
   };
 
   return (

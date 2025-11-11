@@ -38,6 +38,7 @@ const Expense = ({ expenses, setExpenses,errors,setErrors }) => {
 
   const handleRemoveExpense = (index)=>{
     setExpenses(prev=>prev.filter((_,i)=>i!== index))
+    setErrors(prev=>prev.filter((_,i)=>i!== index))
   }
 
 
@@ -71,7 +72,7 @@ const Expense = ({ expenses, setExpenses,errors,setErrors }) => {
               
               break;
             }
-         }
+         } 
 
          let digits = "1234567890"
 
