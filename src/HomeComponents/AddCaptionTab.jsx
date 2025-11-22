@@ -65,10 +65,7 @@ const AddCaptionTab = ({handleFiles, visibilityStatus,setCreateModal,setCreation
                     <p> Add Videos</p>
                 </div>
 
-                <div className='flex flex-col items-center justify-center cursor-pointer'>
-                    <i className='bx  bx-trip text-[#000] text-4xl' ></i>
-                    <p className='text-center'>Add post to a Trip</p>
-                </div>
+               
                
 
                 <button className='flex flex-col items-center justify-center cursor-pointer'

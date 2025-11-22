@@ -80,7 +80,7 @@ const ProfilePage = () => {
 
       
       {!privacy && (
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-4 gap-4">
           <div className="p-4 bg-gray-100 rounded-xl text-center">
             <p className="text-lg font-bold">{userData.followerCount}</p>
             <p className="text-gray-600 text-sm">Followers</p>
@@ -94,6 +94,11 @@ const ProfilePage = () => {
           <div className="p-4 bg-gray-100 rounded-xl text-center">
             <p className="text-lg font-bold">{userData.postCount}</p>
             <p className="text-gray-600 text-sm">Posts</p>
+          </div>
+
+          <div className="p-4 bg-gray-100 rounded-xl text-center">
+            <p className="text-lg font-bold">{userData.tripCount}</p>
+            <p className="text-gray-600 text-sm">Trips</p>
           </div>
         </div>
       )}

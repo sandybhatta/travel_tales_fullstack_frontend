@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 
-const SideBar = () => {
+const SideBar = ({setIsSidebarOpen}) => {
   const links = [
     { name: "Home", path: "", icon:"bx-home-alt-2" },
     { name: "My Trips", path: "my-trips", icon:"bx-trip" },
@@ -14,7 +14,11 @@ const SideBar = () => {
   ];
 
   return (
-    <div className="w-full h-screen bg-[#2b2d42] border-2 border-white flex flex-col items-center justify-around sticky top-0">
+    <div className="w-full h-screen bg-[#2b2d42] border-2 border-white flex flex-col items-center justify-end sticky top-0 ">
+
+        <i className='bx bx-sidebar text-white px-2 py-3 text-5xl absolute right-2 top-2'
+        onClick={()=>setIsSidebarOpen(prev=>!prev)}
+        ></i>
       <div className="w-full  py-4 flex flex-col items-center justify-center">
         {links.map((link) => (
           <NavLink

@@ -9,11 +9,11 @@ const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/login`;
 const Login = () => {
   const emailRef = useRef();
   const passwordRef = useRef();
-  const [stage, setStage] = useState("login"); // login | otp | forgot | reset
+  const [stage, setStage] = useState("login"); 
   const [userId, setUserId] = useState(null);
   const [reactivateData, setReactivateData] = useState(null);
   const [error, setError] = useState("");
-  console.log("Backend URL:", import.meta.env.VITE_BACKEND_LIVE_URL);
+
   const handleLogin = async () => {
     setError("");
     const email = emailRef.current.value;

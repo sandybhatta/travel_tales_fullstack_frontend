@@ -215,80 +215,84 @@ const TripCreation = ({ setCreationTab }) => {
 
   const handleCreateTrip = async () => {
     if (titleError || tripDateError.length > 0) return;
-
-    const validDestinations = destinations.filter((destination, index) => {
-      if (
-        destinationErrors[index].cityError ||
-        destinationErrors[index].stateError ||
-        destinationErrors[index].countryError
-      ) {
-        return false;
-      } else {
-        return true;
-      }
-    });
-    const validExpenses = expenses.filter((expense, index) => {
-      if (expenseErrors[index].titleError || expenseErrors[index].amountError) {
-        return false;
-      } else {
-        return true;
-      }
-    });
-
-    const validNotes = notes.filter((note, index) => {
-      if (noteErrors[index].bodyError) {
-        return false;
-      } else {
-        return true;
-      }
-    });
-
-    const validTodos = todos.filter((todo, index) => {
-      if (todoErrors[index].taskError) {
-        return false;
-      } else {
-        return true;
-      }
-    });
-
+    setApiError("");
+  
+    const validDestinations = destinations.filter((destination, index) =>
+    !destinationErrors[index].cityError &&
+    !destinationErrors[index].stateError &&
+    !destinationErrors[index].countryError &&
+    destination.city.trim() !== "" &&
+    destination.state.trim() !== "" &&
+    destination.country.trim() !== ""
+  );
+  
+  const validExpenses = expenses.filter((expense, index) =>
+    !expenseErrors[index].titleError &&
+    !expenseErrors[index].amountError &&
+    expense.title.trim() !== "" &&
+    Number(expense.amount) >= 0
+  );
+  
+  const validNotes = notes.filter((note, index) =>
+    !noteErrors[index].bodyError &&
+    note.body.trim() !== ""
+  );
+  
+  const validTodos = todos.filter((todo, index) =>
+    !todoErrors[index].taskError &&
+    todo.task.trim() !== ""
+  );
+  
     try {
       const formData = new FormData();
-
+  
+      // Basic fields
       formData.append("title", title);
       formData.append("startDate", startDate.toISOString());
       formData.append("endDate", endDate.toISOString());
-
+  
       if (description) formData.append("description", description);
-
-      if (selectedTags.length > 0)
-        formData.append("tags", JSON.stringify(selectedTags));
       if (visibilityStatus) formData.append("visibility", visibilityStatus);
-
-      if (validDestinations && validDestinations.length > 0)
-        formData.append("destinations", JSON.stringify(validDestinations));
       if (Number(budget) > 0) formData.append("travelBudget", Number(budget));
-      if (validExpenses && validExpenses.length > 0)
-        formData.append("expenses", JSON.stringify(validExpenses));
-      if (validNotes && validNotes.length > 0)
-        formData.append("notes", JSON.stringify(validNotes));
-      if (validTodos && validTodos.length > 0)
-        formData.append("todoList", JSON.stringify(validTodos));
-      if (taggedUsers && taggedUsers.length > 0)
-        formData.append("invitedFriends", JSON.stringify(taggedUsers));
-
-      if (coverPhoto) {
-        formData.append("coverPhoto", coverPhoto);
+  
+      
+      if (selectedTags.length > 0) {
+        selectedTags.forEach(tag => formData.append("tags[]", tag));
       }
-
+  
+      // ARRAY FIELDS → SEND AS JSON STRING
+      if (validDestinations.length > 0)
+        formData.append("destinations", JSON.stringify(validDestinations));
+  
+      if (validExpenses.length > 0)
+        formData.append("expenses", JSON.stringify(validExpenses));
+  
+      if (validNotes.length > 0)
+        formData.append("notes", JSON.stringify(validNotes));
+  
+      if (validTodos.length > 0)
+        formData.append("todoList", JSON.stringify(validTodos));
+  
+      if (taggedUsers.length > 0)
+        formData.append("invitedFriends", JSON.stringify(taggedUsers));
+  
+      // Photo
+      if (coverPhoto) formData.append("coverPhoto", coverPhoto);
+  
+      // API CALL
       const { data } = await mainApi.post("/api/trips/", formData);
       console.log(data.message);
       setCreationTab("");
+  
     } catch (error) {
       const errorResponse = error?.response?.data?.message;
       setApiError(errorResponse);
-      apiErrorRef.current.scrollIntoView({behavior:'smooth',block: "center"})
+      if (apiErrorRef.current) {
+        apiErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }
   };
+  
 
   return (
     <div className="w-full h-auto  bg-[#8D99AE] absolute left-[50%] -translate-x-[50%] flex flex-col items-center justify-start py-5">
