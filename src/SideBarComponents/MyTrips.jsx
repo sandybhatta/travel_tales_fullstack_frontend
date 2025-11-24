@@ -96,8 +96,8 @@ const MyTrips = () => {
       <div className="w-[80%] flex  items-center justify-between ">
         {/* text info */}
         <div className="w-fit flex flex-col items-start justify-start ">
-          <h2 className="text-black text-3xl font-semibold">My Trips</h2>
-          <p className="text-gray-500 text-">
+          <h2 className="text-black text-3xl font-semibold mb-3">My Trips</h2>
+          <p className="text-gray-500 text-base">
             Plan, track, and share your travel adventures
           </p>
         </div>
