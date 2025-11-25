@@ -31,7 +31,7 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
 
 
   return (
-    <nav className="w-full h-[80px] fixed z-15 bg-[#2b2d42] flex items-center justify-between px-4 md:px-8 shadow-md" 
+    <nav className="w-full h-[80px] fixed  bg-[#2b2d42] flex items-center justify-between px-4 md:px-8 shadow-md z-30" 
     
     >
       {/* Logo */}

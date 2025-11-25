@@ -1,8 +1,23 @@
 import React from 'react'
+import { Link } from 'react-router-dom';
 
 const AcceptedInvitedTrips = ({acceptedTrips,formatDate}) => {
+
+    console.log(acceptedTrips);
+
+
+    function formatAcceptedDate(dateString) {
+        return new Date(dateString).toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
     return (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="w-full grid grid-cols-3 gap-5">
           {acceptedTrips.map((trip) => {
             
     
@@ -19,12 +34,12 @@ const AcceptedInvitedTrips = ({acceptedTrips,formatDate}) => {
                           alt="trip cover"
                           className="h-full w-full object-cover"
                         />
-                        <span className='absolute top-2 left-2 px-4 py-2 rounded-full text-white bg-green-500 flex items-center gap-2'> 
+                        <span className='absolute top-2 left-2 px-2 py-1 rounded-lg text-white bg-green-500 flex items-center gap-2'> 
                             <i className='bx bx-check text-2xl'></i>
                             Accepted
                         </span>
 
-                        <span className={`${trip.tripStatus==="past"? "bg-green-500": trip.tripStatus=== "upcoming"?"bg-blue-500":"bg-red-500"} absolute top-2 right-2 px-4 py-2 rounded-full text-white`}>
+                        <span className={`${trip.tripStatus==="past"? "bg-green-500": trip.tripStatus=== "upcoming"?"bg-blue-500":"bg-red-500"} absolute top-2 right-2 px-2 py-1 rounded-lg text-white`}>
                             {trip.tripStatus}
                         </span>
 
@@ -62,12 +77,13 @@ const AcceptedInvitedTrips = ({acceptedTrips,formatDate}) => {
                             <p className="text-gray-500 text-sm">
                               @{trip.owner.username}
                             </p>
+                            <p className="text-black text-xs">Accepted at: {formatAcceptedDate(trip.acceptedAt)} </p>
                           </div>
     
-                          <div className="flex items-center gap-1">
-                            <i className="bx bx-siren-alt text-2xl text-red-500" />
-                            <p className="text-gray-500 text-xs">Invited You</p>
-                          </div>
+                         
+                           
+                            
+                          
                         </div>
                       </div>
     
@@ -120,6 +136,15 @@ const AcceptedInvitedTrips = ({acceptedTrips,formatDate}) => {
                           </span>
                         ))}
                       </div>
+
+
+                            <Link to={`/trip/${trip.id}`} className='w-fit h-fit rounded-lg'>
+                                    <div className='rounded-lg w-full py-2 px-4 text-white bg-red-500 text-xl font-semibold'>
+                                        <p> View Trip </p>
+
+                                      </div>
+                            </Link>
+                      
     
                       
                     </div>

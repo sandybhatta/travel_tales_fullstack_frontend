@@ -9,7 +9,7 @@ import PastTrips from "./TripSection/PastTrips";
 const MyTrips = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("Start Date");
   const [dropdownOpen, setDropDownOpen] = useState(false);
   const [activePage, setActivePage] = useState("own-trip");
 
@@ -112,7 +112,7 @@ const MyTrips = () => {
       {/* search bar and option */}
       <div className="w-[80%] flex  items-center justify-between ">
         <div
-          className={`w-4/5 bg-white rounded-lg shadow-lg ${
+          className={`w-[70%] bg-white rounded-lg shadow-lg ${
             searchOpen ? "border-3 border-red-500  " : "border-none"
           } flex items-center justify-start gap-2 px-4 py-2 `}
           onClick={(e) => {
@@ -131,17 +131,18 @@ const MyTrips = () => {
           />
         </div>
 
-        <div className="w-[18%] flex flex-col items-center gap-2 justify-center text-base text-black">
+        <div className="w-[20%] flex flex-col items-center gap-2 justify-center text-base text-black z-20">
           <div
-            className="relative bg-white text-xl text-black flex items-center gap-3 px-2 py-2 rounded-lg w-full cursor-pointer"
+            className="relative shadow-2xl bg-white text-xl text-black flex items-center gap-3 justify-between px-2 py-2 rounded-lg w-full cursor-pointer"
             onClick={() => setDropDownOpen((prev) => !prev)}
           >
             <i className="bx bx-slider text-xl text-black"></i>
             <p className="text-sm ">
-              {sortBy ? `Sort By ${sortBy}` : "Sort By Latest"}
+              Sort By {sortBy}
             </p>
             <i className="bx bx-chevron-down text-2xl text-gray-500"></i>
           </div>
+          
           <div className="px-3 relative w-full ">
             {dropdownOpen && (
               <div className="w-full absolute top-0 left-1/2 -translate-x-1/2 bg-white flex flex-col items-center justify-center gap-3 px-3 py-2  rounded-lg shadow-2xl ">
@@ -149,11 +150,11 @@ const MyTrips = () => {
                   className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
                   onClick={() => {
                     setDropDownOpen(false);
-                    setSortBy("");
+                    setSortBy("Start Date");
                   }}
                 >
-                  Sort By Latest
-                  {sortBy === "" && (
+                  Sort By Start Date
+                  {sortBy === "Start Date" && (
                     <i className="bx bx-check text-gray-500 ml-2"></i>
                   )}
                 </p>
@@ -161,11 +162,11 @@ const MyTrips = () => {
                   className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
                   onClick={() => {
                     setDropDownOpen(false);
-                    setSortBy("oldest");
+                    setSortBy("End Date");
                   }}
                 >
-                  Sort By Oldest
-                  {sortBy === "oldest" && (
+                  Sort By End Date
+                  {sortBy === "End Date" && (
                     <i className="bx bx-check text-gray-500 ml-2"></i>
                   )}
                 </p>
@@ -173,11 +174,23 @@ const MyTrips = () => {
                   className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
                   onClick={() => {
                     setDropDownOpen(false);
-                    setSortBy("popular");
+                    setSortBy("Destinations");
                   }}
                 >
-                  Sort By Popular
-                  {sortBy === "popular" && (
+                  Sort By Destinations
+                  {sortBy === "Destinations" && (
+                    <i className="bx bx-check text-gray-500 ml-2"></i>
+                  )}
+                </p>
+                <p
+                  className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
+                  onClick={() => {
+                    setDropDownOpen(false);
+                    setSortBy("Posts");
+                  }}
+                >
+                  Sort By Posts
+                  {sortBy === "Posts" && (
                     <i className="bx bx-check text-gray-500 ml-2"></i>
                   )}
                 </p>
@@ -237,7 +250,7 @@ const MyTrips = () => {
       {/* my trips */}
       <div className="w-[80%] ">
         {activePage === "own-trip" ? (
-          <AllTrips allTrips={allTrips} />
+          <AllTrips allTrips={allTrips} sortBy={sortBy}/>
         ) : activePage === "upcoming" ? (
           <UpcomingTrips />
         ) : activePage === "ongoing" ? (

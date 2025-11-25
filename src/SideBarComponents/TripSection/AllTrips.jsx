@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const AllTrips = ({ allTrips }) => {
+const AllTrips = ({ allTrips, sortBy }) => {
   const [option, setOption] = useState(null);
 
   const handleOption = (index, e) => {
@@ -23,12 +23,31 @@ const AllTrips = ({ allTrips }) => {
     );
   }
 
+  let sortedTrips = null;
+  if (sortBy === "Start Date") {
+    sortedTrips = [...allTrips].sort(
+      (a, b) => new Date(a.startDate) - new Date(b.startDate)
+    );
+  } else if (sortBy === "End Date") {
+    sortedTrips = [...allTrips].sort(
+      (a, b) => new Date(a.endDate) - new Date(b.endDate)
+    );
+  } else if (sortBy === "Destinations") {
+    sortedTrips = [...allTrips].sort(
+      (a, b) => (b?.destinations?.length ?? 0) - (a?.destinations?.length ?? 0)
+    );
+  } else if (sortBy === "Posts") {
+    sortedTrips = [...allTrips].sort(
+      (a, b) => (b?.posts?.length ?? 0) - (a?.posts?.length ?? 0)
+    );
+  }
+
   return (
     <div
       className="w-full grid grid-cols-3 gap-5"
       onClick={() => setOption(null)}
     >
-      {allTrips.map((trip, i) => {
+      {sortedTrips.map((trip, i) => {
         const coverPhoto = trip?.coverPhoto?.url ? trip.coverPhoto.url : null;
 
         let tripStatus = null;

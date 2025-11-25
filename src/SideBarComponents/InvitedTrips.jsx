@@ -23,6 +23,7 @@ const InvitedTrips = () => {
     const signal = controller.signal;
 
     const fetchInvitedTrips = async () => {
+      setError("")
       setLoading(true);
       try {
         if (activePage === "pending") {
