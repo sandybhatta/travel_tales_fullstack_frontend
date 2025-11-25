@@ -66,7 +66,6 @@ const InvitedTrips = () => {
     return () => controller.abort();
   }, [activePage]);
 
-
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
@@ -265,9 +264,21 @@ const InvitedTrips = () => {
         {error && <div className="text-red-500">{error}</div>}
         {loading && <div>Loading...</div>}
 
-        {
-          activePage ==="pending" ? <PendingInvitedTrips invitedTrips={invitedTrips} setInvitedTrips={setInvitedTrips} formatDate={formatDate} setError={setError}/> : activePage === "accepted" ? <AcceptedInvitedTrips/> : <AllInvitedTrips/>
-        }
+        {activePage === "pending" ? (
+          <PendingInvitedTrips
+            invitedTrips={invitedTrips}
+            setInvitedTrips={setInvitedTrips}
+            formatDate={formatDate}
+            setError={setError}
+          />
+        ) : activePage === "accepted" ? (
+          <AcceptedInvitedTrips 
+          acceptedTrips={acceptedTrips}
+          formatDate={formatDate}
+          />
+        ) : (
+          <AllInvitedTrips />
+        )}
       </div>
     </div>
   );
