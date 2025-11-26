@@ -27,19 +27,19 @@ const AllTrips = ({ allTrips, sortBy }) => {
   if (sortBy === "Start Date") {
     sortedTrips = [...allTrips].sort(
       (a, b) => new Date(a.startDate) - new Date(b.startDate)
-    );
+    )
   } else if (sortBy === "End Date") {
     sortedTrips = [...allTrips].sort(
       (a, b) => new Date(a.endDate) - new Date(b.endDate)
-    );
+    )
   } else if (sortBy === "Destinations") {
     sortedTrips = [...allTrips].sort(
       (a, b) => (b?.destinations?.length ?? 0) - (a?.destinations?.length ?? 0)
-    );
+    )
   } else if (sortBy === "Posts") {
     sortedTrips = [...allTrips].sort(
       (a, b) => (b?.posts?.length ?? 0) - (a?.posts?.length ?? 0)
-    );
+    )
   }
 
   return (
@@ -66,7 +66,7 @@ const AllTrips = ({ allTrips, sortBy }) => {
 
         return (
           <div
-            className=" rounded-lg bg-white overflow-hidden flex flex-col items-center justify-center shadow-lg hover:shadow-2xl"
+            className=" rounded-lg pb-4 bg-white overflow-hidden flex flex-col items-center gap-4 justify-center shadow-lg hover:shadow-2xl"
             key={trip._id}
           >
             {/* top section of images */}
@@ -135,33 +135,35 @@ const AllTrips = ({ allTrips, sortBy }) => {
               </div>
 
               {/* collaborators */}
-              <div className="text-sm text-black">
+              <div className="text-sm text-black px-5 py-2 flex items-center gap-2 w-full">
+                {trip.acceptedFriends && trip.acceptedFriends.length > 0 &&<i className='bx bx-group text-3xl text-gray-500'></i>}
+
                 {trip.acceptedFriends && trip.acceptedFriends.length > 0 && (
-                  <div className="flex -space-x-2 w-full px-2 h-[50px]">
-                    <span>
+                  <div className=" flex -space-x-3  px-2 ">
+                    <span className='h-16 w-16 overflow-hidden rounded-full border-2 border-white'>
                       <img
                         src={
                           trip.acceptedFriends[0].user.avatar?.url ||
                           trip.acceptedFriends[0].user.avatar
                         }
-                        className="h-full object-cover"
+                        className="h-full object-cover "
                       />
                     </span>
                     {trip.acceptedFriends.length > 1 && (
-                      <span>
+                      <span className='h-16 w-16 overflow-hidden rounded-full border-2 border-white'>
                         <img
                           src={
                             trip.acceptedFriends[1].user.avatar?.url ||
                             trip.acceptedFriends[1].user.avatar
                           }
-                          className="h-full object-cover"
+                          className="h-full object-cover "
                         />
                       </span>
                     )}
-                    and
+                    
                     {trip.acceptedFriends.length > 2 && (
                       <span>
-                        {trip.acceptedFriends.length - 2} other collaborators
+                       and {trip.acceptedFriends.length - 2} other collaborators
                       </span>
                     )}
                   </div>

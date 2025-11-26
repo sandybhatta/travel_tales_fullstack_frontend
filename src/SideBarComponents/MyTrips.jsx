@@ -17,13 +17,13 @@ const MyTrips = () => {
   const [error, setError] = useState("");
 
   const [upcomingTripNo, setUpcomingTripNo] = useState("0");
-  const [upcomingTrips, setUpcomingTrips] = useState("");
+  const [upcomingTrips, setUpcomingTrips] = useState([]);
 
   const [ongoingTripNo, setOnGoingTripNo] = useState("0");
-  const [ongoingTrips, setOnGoingTrips] = useState("");
+  const [ongoingTrips, setOnGoingTrips] = useState([]);
 
   const [completedTripNo, setCompletedTripNo] = useState("0");
-  const [completedTrips, setCompletedTrips] = useState("");
+  const [completedTrips, setCompletedTrips] = useState([]);
 
   const [allTripNo, setAllTripNo] = useState("0");
   const [allTrips, setAllTrips] = useState(null);
@@ -54,6 +54,7 @@ const MyTrips = () => {
         setAllTrips(isNoTrips ? [] : ownTrips.data.trips);
         setAllTripNo(isNoTrips ? 0 : ownTrips.data.count);
   
+        
         setUpcomingTrips(upcomingTrip.data.upcomingTrips);
         setUpcomingTripNo(upcomingTrip.data.count);
   
@@ -142,7 +143,7 @@ const MyTrips = () => {
             </p>
             <i className="bx bx-chevron-down text-2xl text-gray-500"></i>
           </div>
-          
+
           <div className="px-3 relative w-full ">
             {dropdownOpen && (
               <div className="w-full absolute top-0 left-1/2 -translate-x-1/2 bg-white flex flex-col items-center justify-center gap-3 px-3 py-2  rounded-lg shadow-2xl ">
@@ -245,18 +246,22 @@ const MyTrips = () => {
         </div>
       </div>
             {
-              error && <p>{error}</p>
+              error && <p className="text-red-500 text-3xl font-bold">{error}</p>
+            }
+
+            {
+              loading && <p className="text-3xl font-semibold"> Loading... </p>
             }
       {/* my trips */}
       <div className="w-[80%] ">
         {activePage === "own-trip" ? (
           <AllTrips allTrips={allTrips} sortBy={sortBy}/>
         ) : activePage === "upcoming" ? (
-          <UpcomingTrips />
+          <UpcomingTrips upcomingTrips = {upcomingTrips} sortBy={sortBy} />
         ) : activePage === "ongoing" ? (
-          <OngoingTrips />
+          <OngoingTrips ongoingTrips={ongoingTrips} sortBy={sortBy}/>
         ) : (
-          <PastTrips />
+          <PastTrips completedTrips={completedTrips} sortBy={sortBy}/>
         )}
       </div>
     </div>
