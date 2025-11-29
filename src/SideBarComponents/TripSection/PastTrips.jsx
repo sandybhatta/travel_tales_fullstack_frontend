@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom';
 
 const PastTrips = ({completedTrips,sortBy}) => {
   const [option, setOption] = useState(null);
@@ -158,9 +159,14 @@ const PastTrips = ({completedTrips,sortBy}) => {
                   <i className="bx bx-photo-album text-gray-500 text-2xl "></i>
                   {trip.posts.length} Posts
                 </div>
+                <Link
+                className=""
+                to={`/trip/${trip._id}`}
+                >
                 <div className="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg cursor-pointer">
                   View Trip
                 </div>
+                </Link>
               </div>
             </div>
           </div>
