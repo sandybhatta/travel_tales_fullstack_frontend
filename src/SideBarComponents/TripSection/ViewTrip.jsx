@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import mainApi from "../../Apis/axios";
-import { set } from "mongoose";
+
+import ViewNoteTrip from "./ViewNoteTrip";
 
 const ViewTrip = () => {
   const { tripId } = useParams();
@@ -17,27 +18,23 @@ const ViewTrip = () => {
   const [activeCollaboratorPage, setActiveCollaboratorPage] =
     useState("collaborators");
 
-    const [confirmCollaboratorRemoval , setConfirmCollaboratorRemoval] = useState({
-        confirm:false,
-        userId:null
-    })
+  const [confirmCollaboratorRemoval, setConfirmCollaboratorRemoval] = useState({
+    confirm: false,
+    userId: null,
+  });
 
-    const [confirmInvitedRemoval , setConfirmInvitedRemoval] = useState({
-        confirm:false,
-        userId:null
-    })
+  const [confirmInvitedRemoval, setConfirmInvitedRemoval] = useState({
+    confirm: false,
+    userId: null,
+  });
 
   const [invitedUsers, setInvitedUsers] = useState([]);
 
   const [trip, setTrip] = useState(null);
 
+  const[showTripStats , setShowTripStats] = useState(false)
 
-
-
-const [showDescription , setShowDescription] = useState(false);
-
-
-
+  const [showDescription, setShowDescription] = useState(false);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -65,9 +62,7 @@ const [showDescription , setShowDescription] = useState(false);
     }
   };
 
-
-
-  const handleRemoveCollaborator = async(userId)=>{
+  const handleRemoveCollaborator = async (userId) => {
     setError("");
     try {
       const result = await mainApi.delete(
@@ -83,20 +78,52 @@ const [showDescription , setShowDescription] = useState(false);
     } catch (error) {
       setError(error?.response?.data?.message || "Internal Server Error");
     }
-  }
+  };
 
-  const handleRemoveInviteds = async(userId)=>{
-
+  const handleRemoveInviteds = async (userId) => {
     setError("");
 
     try {
-        const result = await mainApi.delete(`/api/trips/${tripId}/invited/${userId}`);
-        setInvitedUsers((prev)=>prev.filter((friend)=>friend._id !== userId))
+      const result = await mainApi.delete(
+        `/api/trips/${tripId}/invited/${userId}`
+      );
+      setInvitedUsers((prev) => prev.filter((friend) => friend._id !== userId));
     } catch (error) {
-        setError(error?.response?.data?.message || "Internal Server Error");
+      setError(error?.response?.data?.message || "Internal Server Error");
     }
-  }
+  };
 
+
+
+  useEffect(()=>{
+
+    const fetchLikesOfTheTrip = async()=>{
+      try {
+        setError("")
+        const response = await mainApi.get(`/api/trips/${tripId}/likes`)
+        setLikedUsers({
+          totalLikes:response.data.totalLikes,
+          users:response.data.likes
+        })
+
+      } catch (error) {
+        setError(error?.response?.data?.message || "Error while fetching likes of the")
+      }
+    }
+
+
+    if(showLikedUsersModal){
+      fetchLikesOfTheTrip()
+    }
+
+  },[showLikedUsersModal])
+
+
+
+
+
+
+console.log(trip);
 
 
   useEffect(() => {
@@ -129,7 +156,6 @@ const [showDescription , setShowDescription] = useState(false);
       } catch (error) {
         if (error?.response?.data?.message) {
           setError(error.response.data.message);
-          
         } else if (error.code === "ERR_NETWORK") {
           setError("Network connection is bad");
         }
@@ -150,20 +176,88 @@ const [showDescription , setShowDescription] = useState(false);
     });
   }
 
+  const organizedExpenses = useMemo(() => {
+    if (!trip?.currentUser?.canAccessPrivateData) return null;
+    if (!trip?.expenses || trip.expenses.length === 0) return null;
+
+    const expensesByUser = {};
+
+    trip.expenses.forEach((expense) => {
+      const userId = expense.spentBy._id;
+
+      if (!expensesByUser[userId]) {
+        expensesByUser[userId] = {
+          user: expense.spentBy,
+          totalAmount: 0,
+          expenses: [],
+        };
+      }
+
+      expensesByUser[userId].totalAmount += expense.amount;
+      expensesByUser[userId].expenses.push(expense);
+    });
+
+    return expensesByUser;
+  }, [trip?.currentUser?.canAccessPrivateData, trip?.expenses]);
+
+  const stats = useMemo(() => {
+    const tripsStats = {
+      ...trip?.engagement,
+
+      highlightedPostCount: 0,
+      totalExpense: 0,
+      totalPinnedNotes: 0,
+    };
+
+    trip?.posts.forEach(({ post, isHighlighted }) => {
+      
+      if (isHighlighted) {
+        tripsStats.highlightedPostCount += 1;
+      }
+    });
+    tripsStats.isCollaborative = trip?.virtuals.isCollaborative;
+    tripsStats.duration = trip?.virtuals.duration;
+    tripsStats.tripStatus = trip?.virtuals.tripStatus;
+
+    if (trip?.currentUser.canAccessPrivateData) {
+      tripsStats.travelBudget = trip.travelBudget;
+
+      if (trip?.expenses && trip?.expenses.length > 0) {
+        const totalExpense = trip.expenses.reduce(
+          (acc, expense) => acc + expense.amount,
+          0
+        );
+        tripsStats.totalExpense = totalExpense;
+      }
+      if (trip?.notes && trip?.notes.length > 0) {
+        const totalPinnedNotes = trip.notes.reduce(
+          (acc, note) => (note.isPinned ? acc + 1 : acc),
+          0
+        );
+        tripsStats.totalPinnedNotes = totalPinnedNotes;
+      }
+      tripsStats.totalTasks = trip?.taskStats.totalTasks;
+      tripsStats.completedTasks = trip?.taskStats.completedTasks;
+    }
+
+    return tripsStats;
+  }, [trip]);
+
+
   return (
     <div
-      className="w-full min-h-screen grid grid-cols-[1fr_5fr_1fr] gap-4 bg-[#EDF2F4]"
+      className="w-full min-h-screen h-fit pb-8 grid grid-cols-[1fr_5fr_1fr] gap-4 bg-[#EDF2F4]"
       onClick={() => {
         setShowCollaboratorModal(false);
         setShowEditModal(false);
         setConfirmCollaboratorRemoval({
-            confirm:false,
-            userId:null
-        })
+          confirm: false,
+          userId: null,
+        });
         setConfirmInvitedRemoval({
-            confirm:false,
-            userId:null
-        })
+          confirm: false,
+          userId: null,
+        });
       }}
     >
       <div className="col-start-2 col-end-3 ">
@@ -178,103 +272,105 @@ const [showDescription , setShowDescription] = useState(false);
           </p>
         )}
 
-
         {/* confirmation before removing the collaborators */}
 
-            {
-                confirmCollaboratorRemoval.confirm && 
-                <div className="w-screen h-screen fixed top-0 left-0 bg-black/40 flex items-center justify-center z-40">
-                    <div className="w-[40%] h-[30%] bg-white rounded-xl flex flex-col items-center justify-center gap-5 p-5 relative">
+        {confirmCollaboratorRemoval.confirm && (
+          <div className="w-screen h-screen fixed top-0 left-0 bg-black/40 flex items-center justify-center z-40">
+            <div className="w-[40%] h-[30%] bg-white rounded-xl flex flex-col items-center justify-center gap-5 p-5 relative">
+              <i
+                className="text-3xl bx bx-x text-red-500 font-bold p-2   absolute right-3 top-3 shadow-lg"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmCollaboratorRemoval({
+                    confirm: false,
+                    userId: null,
+                  });
+                }}
+              ></i>
 
+              <p className="text-2xl font-semibold text-black">
+                Are you Sure to remove this Collaborator
+              </p>
+              <div className="w-full flex items-center justify-center gap-8 ">
+                <p
+                  className="bg-red-500 text-white text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveCollaborator(confirmCollaboratorRemoval.userId);
+                    setConfirmCollaboratorRemoval({
+                      confirm: false,
+                      userId: null,
+                    });
+                  }}
+                >
+                  Yes
+                </p>
+                <p
+                  className="bg-gray-400 text-black text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmCollaboratorRemoval({
+                      confirm: false,
+                      userId: null,
+                    });
+                  }}
+                >
+                  No
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
-                        <i className="text-3xl bx bx-x text-red-500 font-bold p-2   absolute right-3 top-3 shadow-lg"
-                        onClick={(e)=>{
-                            e.stopPropagation();
-                            setConfirmCollaboratorRemoval({
-                                confirm:false,
-                                userId:null
-                            })
-                        }}
-                        ></i>
+        {/* confirmation before removing the inviteds */}
 
-                        <p className="text-2xl font-semibold text-black">Are you Sure to remove this Collaborator</p>
-                        <div className="w-full flex items-center justify-center gap-8 "
-                        >
+        {confirmInvitedRemoval.confirm && (
+          <div className="w-screen h-screen fixed top-0 left-0 bg-black/40 flex items-center justify-center z-40">
+            <div className="w-[40%] h-[30%] bg-white rounded-xl flex flex-col items-center justify-center gap-5 p-5 relative">
+              <i
+                className="text-3xl bx bx-x text-red-500 font-bold p-2   absolute right-3 top-3 shadow-lg"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmInvitedRemoval({
+                    confirm: false,
+                    userId: null,
+                  });
+                }}
+              ></i>
 
-                            <p className="bg-red-500 text-white text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
-                            onClick={(e)=>{
-                                e.stopPropagation()
-                                handleRemoveCollaborator(confirmCollaboratorRemoval.userId)
-                                setConfirmCollaboratorRemoval({
-                                    confirm:false,
-                                    userId:null
-                                })
-                            }}
-                            >Yes</p>
-                            <p className="bg-gray-400 text-black text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
-                        
-                        onClick={(e)=>{
-                            e.stopPropagation()
-                            setConfirmCollaboratorRemoval({
-                                confirm:false,
-                                userId:null
-                            })
-                        }}>No</p>
-                        </div>
-                    </div>
-
-                </div>
-            }
-
-            {/* confirmation before removing the inviteds */}
-
-            {
-                confirmInvitedRemoval.confirm && 
-                <div className="w-screen h-screen fixed top-0 left-0 bg-black/40 flex items-center justify-center z-40">
-                    <div className="w-[40%] h-[30%] bg-white rounded-xl flex flex-col items-center justify-center gap-5 p-5 relative">
-
-
-                        <i className="text-3xl bx bx-x text-red-500 font-bold p-2   absolute right-3 top-3 shadow-lg"
-                        onClick={(e)=>{
-                            e.stopPropagation();
-                            setConfirmInvitedRemoval({
-                                confirm:false,
-                                userId:null
-                            })
-                        }}
-                        ></i>
-
-                        <p className="text-2xl font-semibold text-black">Are you Sure to remove this Invited User</p>
-                        <div className="w-full flex items-center justify-center gap-8 "
-                        >
-
-                            <p className="bg-red-500 text-white text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
-                            onClick={(e)=>{
-                                e.stopPropagation()
-                                handleRemoveInviteds(confirmCollaboratorRemoval.userId)
-                                setConfirmInvitedRemoval({
-                                    confirm:false,
-                                    userId:null
-                                })
-                            }}
-                            >Yes</p>
-                            <p className="bg-gray-400 text-black text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
-                        
-                        onClick={(e)=>{
-                            e.stopPropagation()
-                            setConfirmInvitedRemoval({
-                                confirm:false,
-                                userId:null
-                            })
-                        }}>No</p>
-                        </div>
-                    </div>
-
-                </div>
-            }
-
-
-
+              <p className="text-2xl font-semibold text-black">
+                Are you Sure to remove this Invited User
+              </p>
+              <div className="w-full flex items-center justify-center gap-8 ">
+                <p
+                  className="bg-red-500 text-white text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveInviteds(confirmCollaboratorRemoval.userId);
+                    setConfirmInvitedRemoval({
+                      confirm: false,
+                      userId: null,
+                    });
+                  }}
+                >
+                  Yes
+                </p>
+                <p
+                  className="bg-gray-400 text-black text-xl px-3 py-1 rounded-lg font-semibold cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmInvitedRemoval({
+                      confirm: false,
+                      userId: null,
+                    });
+                  }}
+                >
+                  No
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {trip && (
           <div className="w-full flex flex-col items-center justify-around gap-10 ">
@@ -385,7 +481,12 @@ const [showDescription , setShowDescription] = useState(false);
                       )}
                     </div>
 
-                    <p className="text-white text-xl font-semibold">
+                    <p className="text-white text-xl font-semibold cursor-pointer hover:bg-black/40"
+                    
+                    onClick={(e)=>{
+                      e.stopPropagation()
+                      setShowLikedUsersModal(true)
+                    }}>
                       {trip.totalLikes} Likes
                     </p>
 
@@ -551,7 +652,7 @@ const [showDescription , setShowDescription] = useState(false);
               </div>
             )}
 
-{/* -------------- Owner and collaborator info------------------------ */}
+            {/* -------------- Owner and collaborator info------------------------ */}
             <div className="w-full px-5 py-6 bg-white rounded-lg flex items-start justify-start gap-5">
               {/* owner */}
               <div className="h-15 w-[35%] flex items-center justify-center gap-2">
@@ -569,7 +670,7 @@ const [showDescription , setShowDescription] = useState(false);
                 </div>
               </div>
 
-              <div className="bg-gray-500 shadow-2xl h-15 w-[2px] rounded-lg" ></div>
+              <div className="bg-gray-500 shadow-2xl h-15 w-[2px] rounded-lg"></div>
 
               {/* collaborators */}
               <div className="w-[60%] flex items-center justify-start gap-5 relative">
@@ -629,11 +730,11 @@ const [showDescription , setShowDescription] = useState(false);
 
                 {showCollaboratorModal && (
                   <div className="w-full flex flex-col items-start justify-start gap-2 shadow-2xl p-5 rounded-xl relative">
-
-                    <i className="text-3xl bx bx-x text-red-500 font-bold p-2   absolute right-3 top-3 cursor-pointer"
-                    onClick={()=>{
+                    <i
+                      className="text-3xl bx bx-x text-red-500 font-bold p-2   absolute right-3 top-3 cursor-pointer"
+                      onClick={() => {
                         setShowCollaboratorModal(false);
-                    }}
+                      }}
                     ></i>
                     {/* page to see colloborators or inviteds */}
                     <div className="flex items-center justify-start w-full gap-3">
@@ -698,14 +799,15 @@ const [showDescription , setShowDescription] = useState(false);
                               </div>
 
                               {trip.currentUser.userStatus === "owner" && (
-                                <div className="flex items-center justify-around gap-2 rounded-lg shadow-2xl bg-red-500 px-3 py-2 cursor-pointer"
-                                onClick={(e)=>{
+                                <div
+                                  className="flex items-center justify-around gap-2 rounded-lg shadow-2xl bg-red-500 px-3 py-2 cursor-pointer"
+                                  onClick={(e) => {
                                     e.stopPropagation();
                                     setConfirmCollaboratorRemoval({
-                                        confirm:true,
-                                        userId:friend.user._id
-                                    })
-                                }}
+                                      confirm: true,
+                                      userId: friend.user._id,
+                                    });
+                                  }}
                                 >
                                   <i className="bx bx-user-minus text-2xl text-white"></i>
                                   <p className="text-base font-semibold text-white">
@@ -735,10 +837,7 @@ const [showDescription , setShowDescription] = useState(false);
                                 >
                                   <div className="flex flex-wrap items-center justify-start gap-3 ">
                                     <img
-                                      src={
-                                        friend.avatar?.url ||
-                                        friend.avatar
-                                      }
+                                      src={friend.avatar?.url || friend.avatar}
                                       className="h-16 w-16 object-cover rounded-full "
                                     />
                                     <div className="flex flex-col items-start justify-center gap-1">
@@ -749,23 +848,23 @@ const [showDescription , setShowDescription] = useState(false);
                                       <p className="text-sm text-gray-500 ">
                                         @{friend.username}
                                       </p>
-                                      
                                     </div>
 
                                     {trip.currentUser.userStatus ===
                                       "owner" && (
-                                      <div className="flex items-center justify-around gap-2 rounded-lg shadow-2xl bg-red-500 px-3 py-2"
-                                      onClick={(e)=>{
-                                        e.stopPropagation();
-                                        setConfirmInvitedRemoval({
-                                            confirm:true,
-                                            userId:friend._id
-                                        })
-                                      }}
+                                      <div
+                                        className="flex items-center justify-around gap-2 rounded-lg shadow-2xl bg-red-500 px-3 py-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setConfirmInvitedRemoval({
+                                            confirm: true,
+                                            userId: friend._id,
+                                          });
+                                        }}
                                       >
                                         <i className="bx bx-user-minus text-2xl text-white"></i>
                                         <p className="text-base font-semibold text-white">
-                                          Remove 
+                                          Remove
                                         </p>
                                       </div>
                                     )}
@@ -783,111 +882,369 @@ const [showDescription , setShowDescription] = useState(false);
 
             {/* description box */}
             <div className="w-full px-5 py-5 rounded-lg bg-white flex flex-col items-start jusitfy-center gap-5">
-                <h2 className="text-2xl font-semibold text-black ">
-                    Trip Description :
-                </h2>
-                <div className="w-full px-5 py-3  rounded-lg ">
-
-                    {trip.description.length > 0 ?
-                        <p className="text-base text-gray-700 whitespace-pre-wrap">
-                            {showDescription ? 
-                            trip.description :    trip.description.slice(0,150)
-                        } <span className="text-red-500 font-semibold cursor-pointer text-lg"
-                        onClick={(e)=>{
-                            e.stopPropagation();
-                            setShowDescription(prev=>!prev)
-                        }}
-                        >{showDescription ? "... See Less" :"... See More"} </span>
-                        </p>:
-                        <p>
-                            No Description added for this trip.
-                        </p>
-                    }
-                    
-                </div>
+              <h2 className="text-2xl font-semibold text-black ">
+                About This Trip :
+              </h2>
+              <div className="w-full px-5 py-3  rounded-lg ">
+                {trip.description.length > 0 ? (
+                  <p className="text-base text-gray-700 whitespace-pre-wrap">
+                    {showDescription
+                      ? trip.description
+                      : trip.description.slice(0, 150)}{" "}
+                    <span
+                      className="text-red-500 font-semibold cursor-pointer text-lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDescription((prev) => !prev);
+                      }}
+                    >
+                      {showDescription ? "... See Less" : "... See More"}{" "}
+                    </span>
+                  </p>
+                ) : (
+                  <p>No Description added for this trip.</p>
+                )}
+              </div>
             </div>
 
+            {/* trip destinations and trip stats for others and for owner and collaborators expenses too */}
 
-                    {/* trip destinations and trip stats for others and for owner and collaborators expenses too */}
-            
-                
-                <div className={` w-full grid ${trip.currentUser.canAccessPrivateData ? "grid-cols-3":"grid-cols-2"} gap-5 px-5 py-5 `}>
+            <div
+              className={` w-full grid ${
+                trip.currentUser.canAccessPrivateData
+                  ? "grid-cols-3"
+                  : "grid-cols-2"
+              } gap-5 px-5 py-5 `}
+            >
+              {/* destinations */}
+              {trip.destinations && trip.destinations.length > 0 && (
+                <div className="flex flex-col items-start justify-start gap-5 bg-white rounded-lg px-3 shadow-2xl pb-5 h-fit">
+                  <div className="flex items-center justify-start gap-2 px-3 py-2 mb-3">
+                    <i className="bx bx-location text-2xl text-red-500"></i>
+                    <p className="text-xl text-black">Destinations</p>
+                  </div>
 
-                    {/* destinations */}
-                    {trip.destinations && trip.destinations.length>0 && 
-                    <div className="flex flex-col items-center justify-center gap-2 bg-white rounded-lg">
-                            <div className="flex items-center justify-start gap-2">
-                                <i className="bx bx-location text-2xl text-red-500"></i>
-                                <p>Destinations</p>
-                            </div>                
-
-                            <div className="flex flex-col items-center justify-around gap-2">
-                                {
-                                    trip.destinations.map((destination)=>(
-                                        <div
-                                        key={destination._id}
-                                        className="flex flex-col items-start justify-center gap-1 shadow-md w-full bg-[#EDF2F4] p-2"
-                                        >
-                                            <p className="text-lg text-black font-semibold">{destination.city}</p>
-                                            <p className="text-base text-gray-600">{destination.state}, {destination.country}</p>
-                                        </div>
-                                    ))
-                                }
-
-                            </div>    
-                    </div>}
-                    {/* trip expenses*/}
-
-                    {trip.currentUser.canAccessPrivateData && trip.expenses && trip.expenses.length>0 &&
-                    <div className="flex flex-col items-center justify-center gap-2 w-full bg-white rounded-lg">
-                    <div className="flex items-center justify-start gap-2">
-                        <i className="bx bx-dollar-circle text-2xl text-red-500"></i>
-                        <p>Expenses</p>
-                    </div>                
-
-                    <div className="flex flex-col items-center justify-around gap-2 ">
-                        {
-                            trip.expenses.map((expense)=>(
-                                <div
-                                key={expense._id}
-                                className="flex  items-center justify-between gap-1 shadow-md w-full bg-[#EDF2F4] p-2 "
-                                >
-                                    <div className="flex flex-col items-start justify-around">
-                                        {/* expense spentBy name username avatar  */}
-                                        <div className="flex items-center justify-around gap-2">
-                                            {/* avatar */}
-                                            <div className="h-12 w-12 rounded-full border-2 border-white">
-                                                <img
-                                                src={expense.spentBy.avatar?.url || expense.spentBy.avatar}
-                                                className="h-full object-cover"
-                                                />
-                                            </div>
-
-                                            {/* name and username */}
-                                            <div className="flex flex-col items-start justify-around gap-1">
-                                                <p className="text-black text-lg ">{expense.spentBy.name}</p>
-                                                <p className="text-gray-500 text-sm">@{expense.spentBy.username} </p>
-                                                <p className="text-gray-500 text-sm font-semibold">{formatAcceptedDate(expense.createdAt)}</p>
-                                            </div>
-                                            
-                                        </div>
-                                        {/* expense title */}
-                                        <p className="text-lg text-black font-semibold">{expense.title}</p>
-                                        
-                                    </div>
-                                    
-                                    <p className="text-lg text-black font-semibold flex items-center justify-center gap-1">
-                                       <i className="bx bx-rupee text-red-500 text-xl"></i>
-                                       <span> {expense.amount}</span>
-                                        </p>
-                                </div>
-                            ))
-                        }
-
-                    </div>    
-            </div>}
+                  <div className="flex flex-col items-center justify-around gap-4 w-full px-3">
+                    {trip.destinations.map((destination) => (
+                      <div
+                        key={destination._id}
+                        className="flex flex-col items-start justify-center gap-1 shadow-md w-full bg-[#EDF2F4] p-2"
+                      >
+                        <p className="text-lg text-black">{destination.city}</p>
+                        <p className="text-base text-gray-600">
+                          {destination.state}, {destination.country}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-            
+              )}
+              {/* trip expenses*/}
+
+              {trip.currentUser.canAccessPrivateData &&
+                trip.expenses &&
+                trip.expenses.length > 0 && (
+                  <div className="flex flex-col items-center justify-start h-fit gap-5 w-full bg-white rounded-lg  shadow-2xl pb-5 px-3">
+                    <div className="flex items-center justify-start gap-2 w-full px-3 py-2 mb-3">
+                      <i className="bx bx-dollar-circle text-2xl text-red-500"></i>
+                      <p className="text-xl text-black">Expenses</p>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-around gap-4 ">
+                      {Object.keys(organizedExpenses).map((expenseUser) => (
+                        <div
+                          key={organizedExpenses[expenseUser].user._id}
+                          className="flex  items-center justify-between gap-1 shadow-md w-full bg-[#EDF2F4] p-2 "
+                        >
+                          <div className="flex flex-col items-start justify-around">
+                            <div className="flex items-center justify-around gap-2">
+                              <div className="h-12 w-12 rounded-full border-2 border-white">
+                                <img
+                                  src={
+                                    organizedExpenses[expenseUser].user.avatar
+                                      ?.url ||
+                                    organizedExpenses[expenseUser].user.avatar
+                                  }
+                                  className="h-full object-cover"
+                                />
+                              </div>
+
+                              {/* name and username */}
+                              <div className="flex flex-col items-start justify-around gap-1">
+                                <p className="text-black text-lg ">
+                                  {organizedExpenses[expenseUser].user.name}
+                                </p>
+                                <p className="text-gray-500 text-sm">
+                                  @
+                                  {organizedExpenses[expenseUser].user.username}{" "}
+                                </p>
+                              </div>
+                            </div>
+                            {/* all the expenses of the user */}
+                            <div className="w-full p-2 flex flex-col items-center justify-center gap-3">
+                              {organizedExpenses[expenseUser].expenses.map(
+                                (expense) => (
+                                  <div
+                                    key={expense._id}
+                                    className="w-full flex items-center justify-between bg-white px-3 py-2 rounded-lg shadow-md"
+                                  >
+                                    <div className="flex flex-col flex-wrap items-start jusitfy-center gap-2">
+                                      <p className="text-base text-black">
+                                        {expense.title}
+                                      </p>
+
+                                      <p className="text-sm text-gray-500 font-semibold">
+                                        {formatAcceptedDate(expense.createdAt)}{" "}
+                                      </p>
+                                    </div>
+                                    <p className="text-base text-red-500 font-semibold">
+                                      ${expense.amount}
+                                    </p>
+                                  </div>
+                                )
+                              )}
+                            </div>
+
+                            <div className="w-full h-[1.5px] bg-gray-500 rounded-full"></div>
+
+                            <p className="text-sm font-bold text-black">
+                              {`Total: $${organizedExpenses[expenseUser].totalAmount}`}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* trip stats */}
+              <div className="w-full bg-white shadow-2xl rounded-lg px-3 py-2 flex flex-col items-center  gap-5">
+                <div className="w-full px-3  flex items-center justify-start gap-2">
+                  <i className="bx  bx-chart-bar-columns text-red-500 text-2xl"></i>
+                  <h2 className="text-xl text-black"> Trip Stats </h2>
+                </div>
+
+                <div className="w-full flex flex-col items-center justify-start gap-3 px-3 py-2 relative">
+                  {/* common stats */}
+                  
+                  {/* duration */}
+                  <div className=" flex items-center justify-between  w-full p-2">
+                    <p className="text-base text-gray-500">
+                      Trip Duration :
+                    </p>
+                    <p className="text-base text-black font-bold">
+                      {stats.duration} days{" "}
+                    </p>
+                  </div>
+
+
+                  {/* trip status */}
+                  <div className=" flex items-center justify-between  w-full p-2">
+                    <p className="text-base text-gray-500 ">
+                      Trip Status :
+                    </p>
+                    <p className="text-base text-black font-bold ">
+                      {stats.tripStatus}{" "}
+                    </p>
+                  </div>
+
+                  <div className=" flex items-center justify-between  w-full p-2">
+                    <p className="text-base text-gray-500">
+                      Posts :
+                    </p>
+                    <p className="text-base text-black font-bold">
+                      {stats.totalPosts}
+                    </p>
+                  </div>
+
+                  <div className=" flex items-center justify-between  w-full p-2">
+                    <p className="text-base text-gray-500">
+                      Highlighted Posts :
+                    </p>
+                    <p className="text-base text-black font-bold">
+                      {stats.highlightedPostCount}
+                    </p>
+                  </div>
+                  
+                  <div className=" flex items-center justify-between  w-full p-2">
+                    <p className="text-base text-gray-500">
+                      Total Destinations :
+                    </p>
+                    <p className="text-base text-black font-bold">
+                      {trip.destinations.length}
+                    </p>
+                  </div>
+
+                  <div className=" flex items-center justify-between  w-full p-2">
+                    <p className="text-base text-gray-500">
+                      Trip Type :
+                    </p>
+                    <p className="text-base text-black font-bold">
+                      {stats.isCollaborative ? "Collaborative" : "Single"}
+                    </p>
+                  </div>
+
+                                  
+                                  
+                    { trip.currentUser.canAccessPrivateData && 
+                    <div className=" flex items-center justify-start gap-2 cursor-pointer w-full bg-red-500/50 px-2 py-2 rounded-lg hover:bg-red-500/70"
+                    onClick={(e)=>{
+                      e.stopPropagation();
+                      setShowTripStats(prev=>!prev)
+                    }}
+                    >
+                      <p className="text-white text-lg leckerli">Advance stats</p>
+                      <i className= {`bx bx-chevron-${showTripStats ?"up":"down"} text-white text-xl`}></i>
+                     </div>
+                     }
+
+                  {/* private data only for owners and collaborators */}
+                  {trip.currentUser.canAccessPrivateData && showTripStats && (
+                    <>
+                      <div className=" flex items-center justify-between  w-full p-2">
+                        <p className="text-base text-gray-500">
+                          Total Travel Budget :
+                        </p>
+                        <p className="text-base text-black font-bold">
+                          {stats.travelBudget}
+                        </p>
+                      </div>
+                      <div className=" flex items-center justify-between  w-full p-2">
+                        <p className="text-base text-gray-500">
+                          Total Travel Expense :
+                        </p>
+                        <p className="text-base text-black font-bold">
+                          {stats.totalExpense}
+                        </p>
+                      </div>
+                      <div className=" flex items-center justify-between  w-full p-2">
+                        <p className="text-base text-gray-500">
+                          Total Pinned Notes:
+                        </p>
+                        <p className="text-base text-black font-bold">
+                          {stats.totalPinnedNotes}
+                        </p>
+                      </div>
+                      <div className=" flex items-center justify-between  w-full p-2">
+                        <p className="text-base text-gray-500">
+                          Todos Completed:
+                        </p>
+                        <p className="text-base text-black font-bold">
+                          {stats.completedTasks} / {stats.totalTasks}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* notes and todo lists */}
+            {trip.currentUser.canAccessPrivateData && (
+              <div className="w-full grid grid-cols-2 gap-10">
+                {/* notes */}
+                <ViewNoteTrip trip={trip} setTrip={setTrip}/>
+
+                {/* todoList */}
+                {trip?.todoList && trip?.todoList.length > 0 && (
+                  <div className="w-full flex flex-col gap-6 p-5 bg-white rounded-2xl shadow-sm border border-gray-200">
+                    {/* Header */}
+                    <div className="flex items-center gap-3">
+                      <i className="bx bx-check-square text-3xl text-red-500"></i>
+                      <h2 className="text-xl font-semibold text-gray-800">
+                        Todo List
+                      </h2>
+                    </div>
+
+                    {/* Todo List Items */}
+                    <div className="w-full flex flex-col gap-4">
+                      {trip.todoList.map((todo) => (
+                        <div
+                          key={todo._id}
+                          className="w-full flex flex-col items-center justify-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 group "
+                        >
+                          {/* Left Section (checkbox + task) */}
+                          <div className="flex items-center gap-3 w-full bg-white justify-start px-2">
+                            <div className= {` rounded-md ${todo.done?"bg-red-500" : "bg-gray-200"}`} >
+                              {
+                                todo.done ? <i className="bx bx-check text-white text-base p-1"></i>
+                                :
+                                <i className="bx bx-x text-black text-base p-1"></i>
+                              }
+                            </div>
+
+                            <p
+                              className={`text-base ${
+                                todo.done
+                                  ? "line-through text-gray-500"
+                                  : "text-black"
+                              }`}
+                            >
+                              {todo.task}
+                            </p>
+                          </div>
+
+                          {/* Middle Section (createdBy + assignedTo) */}
+                          <div className="hidden group-hover:flex flex-col items-start justify-center gap-6 px-3 w-full transition-all duration-300 ">
+                            {/* Created By */}
+                            <div className="flex items-center justify-start px-3 gap-2 w-full">
+
+                              <p className="text-lg text-gray-500">Created By: </p>
+                              <div className="h-10 w-10 rounded-full overflow-hidden shadow ring-2 ring-white">
+                                <img
+                                  src={
+                                    todo.createdBy.avatar?.url ||
+                                    todo.createdBy.avatar
+                                  }
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div className="flex flex-col leading-tight">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {todo.createdBy.name}
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  @{todo.createdBy.username}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Assigned To */}
+                            <div className="flex items-center justify-start px-3 gap-2 w-full">
+                            <p className="text-lg text-gray-500">Assigned To: </p>
+                              <div className="h-10 w-10 rounded-full overflow-hidden shadow ring-2 ring-white">
+                                <img
+                                  src={
+                                    todo.assignedTo.avatar?.url ||
+                                    todo.assignedTo.avatar
+                                  }
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div className="flex flex-col leading-tight">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {todo.assignedTo.name}
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  @{todo.assignedTo.username}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Due Date */}
+                          <div className="w-full flex items-center justify-end">
+                            <span className="text-sm font-semibold text-gray-700 bg-white px-3 py-1 rounded-lg border border-gray-200 shadow-sm">
+                              {formatAcceptedDate(todo.dueDate)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
