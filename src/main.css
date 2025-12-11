@@ -49,7 +49,21 @@ html{
 
 
 
+.strike-thick {
+  text-decoration: none;  /* remove default thin line */
+}
 
+.strike-thick::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;     /* thickness of the line */
+  background: black;
+  transform: translateY(-50%);
+  opacity: 0.87;
+}
 
 
 

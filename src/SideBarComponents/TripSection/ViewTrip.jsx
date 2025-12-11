@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import mainApi from "../../Apis/axios";
 
 import ViewNoteTrip from "./ViewNoteTrip";
+import ViewTodoTrip from "./ViewTodoTrip";
 
 const ViewTrip = () => {
   const { tripId } = useParams();
@@ -1146,103 +1147,7 @@ console.log(trip);
                 <ViewNoteTrip trip={trip} setTrip={setTrip}/>
 
                 {/* todoList */}
-                {trip?.todoList && trip?.todoList.length > 0 && (
-                  <div className="w-full flex flex-col gap-6 p-5 bg-white rounded-2xl shadow-sm border border-gray-200">
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                      <i className="bx bx-check-square text-3xl text-red-500"></i>
-                      <h2 className="text-xl font-semibold text-gray-800">
-                        Todo List
-                      </h2>
-                    </div>
-
-                    {/* Todo List Items */}
-                    <div className="w-full flex flex-col gap-4">
-                      {trip.todoList.map((todo) => (
-                        <div
-                          key={todo._id}
-                          className="w-full flex flex-col items-center justify-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 group "
-                        >
-                          {/* Left Section (checkbox + task) */}
-                          <div className="flex items-center gap-3 w-full bg-white justify-start px-2">
-                            <div className= {` rounded-md ${todo.done?"bg-red-500" : "bg-gray-200"}`} >
-                              {
-                                todo.done ? <i className="bx bx-check text-white text-base p-1"></i>
-                                :
-                                <i className="bx bx-x text-black text-base p-1"></i>
-                              }
-                            </div>
-
-                            <p
-                              className={`text-base ${
-                                todo.done
-                                  ? "line-through text-gray-500"
-                                  : "text-black"
-                              }`}
-                            >
-                              {todo.task}
-                            </p>
-                          </div>
-
-                          {/* Middle Section (createdBy + assignedTo) */}
-                          <div className="hidden group-hover:flex flex-col items-start justify-center gap-6 px-3 w-full transition-all duration-300 ">
-                            {/* Created By */}
-                            <div className="flex items-center justify-start px-3 gap-2 w-full">
-
-                              <p className="text-lg text-gray-500">Created By: </p>
-                              <div className="h-10 w-10 rounded-full overflow-hidden shadow ring-2 ring-white">
-                                <img
-                                  src={
-                                    todo.createdBy.avatar?.url ||
-                                    todo.createdBy.avatar
-                                  }
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                              <div className="flex flex-col leading-tight">
-                                <p className="text-sm font-medium text-gray-900">
-                                  {todo.createdBy.name}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  @{todo.createdBy.username}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Assigned To */}
-                            <div className="flex items-center justify-start px-3 gap-2 w-full">
-                            <p className="text-lg text-gray-500">Assigned To: </p>
-                              <div className="h-10 w-10 rounded-full overflow-hidden shadow ring-2 ring-white">
-                                <img
-                                  src={
-                                    todo.assignedTo.avatar?.url ||
-                                    todo.assignedTo.avatar
-                                  }
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                              <div className="flex flex-col leading-tight">
-                                <p className="text-sm font-medium text-gray-900">
-                                  {todo.assignedTo.name}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  @{todo.assignedTo.username}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Due Date */}
-                          <div className="w-full flex items-center justify-end">
-                            <span className="text-sm font-semibold text-gray-700 bg-white px-3 py-1 rounded-lg border border-gray-200 shadow-sm">
-                              {formatAcceptedDate(todo.dueDate)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <ViewTodoTrip trip={trip} setTrip={setTrip} />
               </div>
             )}
           </div>

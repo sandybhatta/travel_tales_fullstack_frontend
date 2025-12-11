@@ -210,7 +210,7 @@ const ViewNoteTrip = ({ trip, setTrip }) => {
               
             </div>
 
-            <div className="px-3 py-3 bg-red-500 rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-2xl" 
+            <div className="px-3 py-2 bg-red-500 rounded-lg flex items-center justify-center gap-2 cursor-pointer shadow-2xl" 
             onClick={(e)=>{
               e.stopPropagation()
               setAddNoteModal(true)
@@ -270,13 +270,13 @@ const ViewNoteTrip = ({ trip, setTrip }) => {
                   key={note._id}
                   className={`w-full group rounded-xl px-4 py-1 relative transition-all duration-300 border ${
                     note.isPinned
-                      ? "bg-red-500/10 border-red-200"
+                      ? "bg-red-500/10 border-red-500"
                       : "bg-gray-100 border-gray-200"
                   } hover:shadow-md hover:bg-white`}
                   onClick={() => handlePinUnpinNote(note._id)}
                 >
                   {/* Header Row */}
-                  <div className="flex items-center justify-start gap-3 w-full cursor-pointer ">
+                  <div className="flex items-center justify-between gap-3 w-full cursor-pointer ">
                     {note.isPinned ? (
                       <i className="bx bx-pin-alt text-2xl text-red-500"></i>
                     ) : (
@@ -301,7 +301,7 @@ const ViewNoteTrip = ({ trip, setTrip }) => {
                         </p>
                       </div>
 
-                      <p className="text-xs text-red-400 opacity-0 group-hover:opacity-100 ">
+                      <p className="text-xs text-red-400 opacity-0 group-hover:opacity-100 mt-2 font-semibold">
                         {note.isPinned ? " Click to Unpin" : "Click to Pin"}
                       </p>
                     </div>
@@ -321,7 +321,7 @@ const ViewNoteTrip = ({ trip, setTrip }) => {
                     )}
                   </div>
 
-                  {/* Hover Reveal User Info */}
+                  
                 </div>
               );
             })}
@@ -332,7 +332,7 @@ const ViewNoteTrip = ({ trip, setTrip }) => {
               <div className="w-full px-4 py-2 bg-white text-red-500 hover:text-white hover:bg-red-500 flex items-center justify-center gap-3 cursor-pointer"
               onClick={(e)=>{
                 e.stopPropagation()
-                setShowMore(true)
+                setShowMore(prev=>!prev)
               }}
               >
                 <i
