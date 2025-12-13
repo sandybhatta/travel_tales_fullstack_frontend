@@ -70,9 +70,9 @@ const TagUsers = ({ taggedUsers, setTaggedUsers, setTagOpen }) => {
   );
 
   return (
-    <div className="w-full h-[100vh] absolute top-0 left-0 bg-[#8D99AE] border z-20 flex flex-col items-center gap-5 px-5">
+    <div className="w-full h-fit min-h-screen absolute top-0 left-0 bg-black/50 shadow-2xl z-20 flex flex-col items-center gap-5 px-5 py-5 backdrop-blur-2xl rounded-lg">
       <i
-        className="bx bx-x text-3xl cursor-pointer text-black absolute top-5 right-2"
+        className="bx bx-x text-3xl cursor-pointer text-white absolute top-5 right-2"
         onClick={() => {
           setTagOpen(false);
         }}

@@ -53,7 +53,7 @@ const isStateIncomplete = !userState.accessToken || !userState.username || !user
     </div>
 
     {/* Main content area */}
-    <div className= {` ${isSidebarOpen ? "w-4/5":"w-[calc(100%-100px)] "}  h-auto absolute top-[80px] right-0 flex items-center justify-center  bg-[#8D99AE]/60`}>
+    <div className= {` ${isSidebarOpen ? "w-4/5":"w-[calc(100%-100px)] "}  h-auto absolute top-[80px] right-0 flex items-center justify-center  bg-[#edf2f4]`}>
       <Outlet />
     </div>
 

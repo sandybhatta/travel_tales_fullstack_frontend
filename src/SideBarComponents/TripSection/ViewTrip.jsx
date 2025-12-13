@@ -4,6 +4,7 @@ import mainApi from "../../Apis/axios";
 
 import ViewNoteTrip from "./ViewNoteTrip";
 import ViewTodoTrip from "./ViewTodoTrip";
+import PostsOfTrip from "./PostsOfTrip";
 
 const ViewTrip = () => {
   const { tripId } = useParams();
@@ -1142,7 +1143,7 @@ console.log(trip);
 
             {/* notes and todo lists */}
             {trip.currentUser.canAccessPrivateData && (
-              <div className="w-full grid grid-cols-2 gap-10">
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* notes */}
                 <ViewNoteTrip trip={trip} setTrip={setTrip}/>
 
@@ -1150,6 +1151,12 @@ console.log(trip);
                 <ViewTodoTrip trip={trip} setTrip={setTrip} />
               </div>
             )}
+
+              <PostsOfTrip trip={trip} setTrip={setTrip}/>
+
+
+
+            
           </div>
         )}
       </div>

@@ -74,7 +74,7 @@ const PhotoEditor = ({files,setFiles,caption,setCaption,visibilityStatus, setVis
         setFiles([...media]);
     }
   return (
-    <div className=' w-full h-[calc(100vh-80px)] bg-[#FFF] flex justify-center items-center gap-5 px-5'>
+    <div className=' w-full h-auto  flex justify-center items-center gap-5 px-5'>
         {/* image previewer */}
         <div className='w-[50%] h-[50%]  flex flex-col justify-center items-center'> 
                     <div className='w-full h-[3/4] overflow-hidden'>

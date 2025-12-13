@@ -23,7 +23,7 @@ const App = () => {
   return (
     <>
     
-    <div className=' bg-[#8D99AE]'>
+    <div className=' bg-[#EDF2F4]'>
         <Routes>
           <Route path='/' element={<LandingPage/>}/>
           

@@ -36,7 +36,7 @@ const AddCaptionTab = ({handleFiles, visibilityStatus,setCreateModal,setCreation
 
         <div className='w-full h-[65%] relative'>
             <textarea
-            className='resize-none  bg-[#EDF2F4] rounded-3xl border-1 border-[#878a8b]/50 shadow-lg px-2 pt-3 pb-10 placeholder:text-lg   w-full  h-full focus:outline-none'
+            className='resize-none  bg-[#fff] rounded-3xl border-1 border-[#878a8b]/50 shadow-lg px-2 pt-3 pb-10 placeholder:text-lg   w-full  h-full focus:outline-none'
             value={caption}
             onChange={handleCaption}
             

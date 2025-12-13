@@ -59,7 +59,7 @@ const PostCreation = ({setCreationTab,setCreateModal}) => {
 
 
   return (
-    <div className='w-full h-[calc(100vh-80px)]  bg-[#fff] absolute left-[50%] -translate-x-[50%] flex flex-col items-center justify-between '>
+    <div className='w-full h-[calc(100vh-80px)]  bg-[#edf2f4] shadow-2xl  absolute left-[50%] -translate-x-[50%] flex flex-col items-center justify-between '>
 
 
 

@@ -16,7 +16,7 @@ const SeeAllTaggedUsers = ({taggedUsers,setTaggedUsers,users}) => {
                     <img
                       src={avatar}
                       alt="user"
-                      className="object-contain h-1/2 w-full"
+                      className="object-cover h-1/2 w-full"
                     />
                   </div>
                   <div className="h-full w-[80%] flex flex-col items-center justify-center gap-1">
