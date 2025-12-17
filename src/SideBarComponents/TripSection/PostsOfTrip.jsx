@@ -6,11 +6,13 @@ const PostsOfTrip = ({ trip, setTrip }) => {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  useEffect(() => { 
+    const controller = new AbortController()
+
     async function fetchPostsOfMine() {
       setError("");
       try {
-        const result = await mainApi.get("/api/posts/me");
+        const result = await mainApi.get("/api/posts/me", {signal:controller.signal});
         setPosts(result.data.message ? [] : result.data.post);
       } catch (error) {
         setError(error?.response?.data?.message || "Something went wrong");
@@ -19,6 +21,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
     if (addPostModal) {
       fetchPostsOfMine();
+    }
+
+    return()=>{
+      controller.abort()
     }
   }, [addPostModal]);
 
@@ -46,7 +52,12 @@ const PostsOfTrip = ({ trip, setTrip }) => {
             setAddPostModal(false);
           }}
         >
-          <div className="w-2/3 h-full pt-5 px-3 pb-3 rounded-xl bg-white flex flex-col items-center gap-3">
+          <div className="w-2/3 h-full pt-5 px-3 pb-3 rounded-xl bg-white flex flex-col items-center gap-3"
+          onClick={(e) => {
+            e.stopPropagation();
+            
+          }}
+          >
             {/* header */}
             <div className="flex items-center justify-start gap-2 w-full">
               <i className="bx bx-image-plus text-3xl text-red-500"></i>
@@ -81,7 +92,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                           })}
                         </div>
                       ) : (
-                        <div></div>
+                        <div className="w-full rounded-lg overflow-hidden">
+                            <p>{post.caption}</p>
+                        </div>
                       )}
                     </div>
                   );

@@ -190,8 +190,8 @@ const ViewTodoTrip = ({ trip, setTrip }) => {
             {/* Dropdown */}
             {showCollaboratorModal && (
               <div className="mt-1 flex flex-col w-full gap-1 py-2 animate-slideDown">
-                {[{_id,username},...trip.acceptedFriends].map((friend) => {
-                  const isMe = friend._id === _id;
+                {trip.acceptedFriends.map((friend) => {
+                  
                   return (
                     <div
                       key={friend._id}
@@ -200,18 +200,39 @@ const ViewTodoTrip = ({ trip, setTrip }) => {
                         setTodo((prev) => ({
                           ...prev,
                           assignedTo: {
-                            _id:friend._id,
-                            username:friend.username
+                            _id:friend.user._id,
+                            username:friend.user.username
                           },
                         }));
                         setShowCollaboratorModal(false);
                       }}
                     >
-                      {friend.username}{" "}
-                      {isMe && <span className="text-xs">(me)</span>}
+                      {friend.user.username}{" "}
+                      
                     </div>
                   );
                 })}
+                  <div
+                      
+                      className="px-3 py-2 rounded-lg bg-white hover:bg-red-500 hover:text-white cursor-pointer transition"
+                      onClick={() => {
+                        setTodo((prev) => ({
+                          ...prev,
+                          assignedTo: {
+                            _id:_id,
+                            username:username
+                          },
+                        }));
+                        setShowCollaboratorModal(false);
+                      }}
+                    >
+                      {username}<span className="text-xs">(me)</span>
+                      
+                    </div>
+
+
+                
+
               </div>
             )}
           </div>
