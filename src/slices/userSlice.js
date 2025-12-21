@@ -19,10 +19,21 @@ const initialState={
     isAccessToken:false,
     
     followersCount:0,
+    followers:[],
+
     followingsCount:0,
+    following:[],
+
     closeFriendsCount:0,
+    closeFriends:[],
+
     blockedUsersCount:0,
-    
+    blockedUsers:[],
+
+    privacy:{
+        profileVisibility:"public",
+        allowComments:"everyone"
+    }
 
 }
 
@@ -36,7 +47,21 @@ const userSlice = createSlice({
             localStorage.setItem("accessToken", action.payload)
         },
         setUserInformation:(state,action)=>{
-            const {_id,name, username,email, avatar,usernameChangedAt,bio,location,followers,followings,closeFriends,blockedUsers, interests }=action.payload;
+            const {_id,
+                name, 
+                username,
+                email,
+                 avatar,
+                 usernameChangedAt,
+                 bio,
+                 location,
+                 followers,
+                 following,
+                 closeFriends,
+                 blockedUsers,
+                 interests,
+                privacy
+                }=action.payload;
             state._id=_id;
 
             state.name=name;
@@ -56,16 +81,22 @@ const userSlice = createSlice({
 
             state.location={...location}
 
-            state.followersCount=followers?.length>0 ? followers.length:0
+            state.followersCount = followers?.length>0 ? followers.length : 0
+            state.followers = followers.length > 0? followers : []
 
-            state.followingsCount=followings?.length>0 ? followings.length:0
+            state.followingsCount = following?.length>0 ? following.length : 0
+            state.following = following?.length>0 ? following : []
+ 
+            state.closeFriendsCount = closeFriends?.length>0 ? closeFriends.length:0
+            state.closeFriends = closeFriends?.length>0 ? closeFriends : []
 
-            state.closeFriendsCount=closeFriends?.length>0 ? closeFriends.length:0
 
-            state.blockedUsersCount=blockedUsers?.length>0 ? blockedUsers.length:0
-            
-            state.interests=interests?.length>0 ? interests:[]
+            state.blockedUsersCount = blockedUsers?.length>0 ? blockedUsers.length : 0
+            state.blockedUsers = blockedUsers?.length>0 ? blockedUsers : []
 
+
+            state.interests = interests?.length>0 ? interests:[]
+            state.privacy = privacy
 
             localStorage.setItem("userInfo", JSON.stringify(state))
         },
