@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import VisibilityOfPost from "./VisibilityOfPost";
-import TagUsers from "./TagUsers";
+
 import Destinations from "./Destinations";
 import Expense from "./Expense";
 import Notes from "./Notes";
@@ -296,76 +295,7 @@ const TripCreation = ({ setCreationTab }) => {
 
   return (
     <div className="w-full h-auto  bg-[#8D99AE] absolute left-[50%] -translate-x-[50%] flex flex-col items-center justify-start py-5">
-      {visibilityOpen && (
-        <VisibilityOfPost
-          visibilityStatus={visibilityStatus}
-          setVisibilityStatus={setVisibilityStatus}
-          setVisibilityOpen={setVisibilityOpen}
-        />
-      )}
-
-      <div className="flex flex-wrap w-auto h-auto gap-5  ">
-        <div className="w-[50px] h-full">
-          <img src={avatar} className="object-contain w-full" />
-        </div>
-        <div className="flex flex-col">
-          <p className="text-2xl text-white">{name} </p>
-          <p className="text-sm text-white">@{username} </p>
-        </div>
-        <div className="ml-5 flex gap-3">
-          {/* tag a user */}
-          <i
-            className="text-4xl text-white bx  bx-user-plus relative group   cursor-pointer"
-            onClick={() => {
-              setTagOpen(!tagOpen);
-              setVisibilityOpen(false);
-            }}
-          >
-            <span
-              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
-                   bg-black text-white text-sm px-2 py-1 rounded 
-                   opacity-0 group-hover:opacity-100 
-                   transition-opacity duration-300 whitespace-nowrap"
-            >
-              Invite
-            </span>
-          </i>
-
-          {/* set visibility */}
-          <i
-            className={`text-4xl text-white bx  ${
-              visibilityStatus === "public"
-                ? "bx-community"
-                : visibilityStatus === "followers"
-                ? "bx-group"
-                : visibilityStatus === "close_friends"
-                ? "bxs-user-check"
-                : "bx-lock-keyhole"
-            } text-3xl cursor-pointer  relative group `}
-            onClick={() => {
-              setTagOpen(false);
-              setVisibilityOpen(!visibilityOpen);
-            }}
-          >
-            <span
-              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 
-                   bg-black text-white text-sm px-2 py-1 rounded 
-                   opacity-0 group-hover:opacity-100 
-                   transition-opacity duration-300 whitespace-nowrap"
-            >
-              Visibility
-            </span>
-          </i>
-
-          {tagOpen && (
-            <TagUsers
-              taggedUsers={taggedUsers}
-              setTaggedUsers={setTaggedUsers}
-              setTagOpen={setTagOpen}
-            />
-          )}
-        </div>
-      </div>
+      
       {/* to exit from trip creation */}
 
       <i

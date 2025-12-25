@@ -5,6 +5,9 @@ import useDebounce from "../CustomHooks/useDebounceHook";
 
 const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const [error, setError] = useState("");
+  const [createLoading, setCreateLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const [hasMore, setHasMore] = useState(true);
   const [followings, setFollowings] = useState([]);
   const [skip, setSkip] = useState(0);
@@ -214,6 +217,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
     setMentionOpen(false);
     setMentionQuery("");
+    captionRef.current.focus();
   };
 
   const handleFiles = (newFiles) => {
@@ -286,7 +290,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
         if (isMentioned) {
           return (
-            <span key={index} className="text-red-500 font-medium">
+            <span key={index} className="text-red-500 text-sm ">
               {word}
             </span>
           );
@@ -295,29 +299,46 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
       if (word.startsWith("#")) {
         return (
-          <span key={index} className="text-red-500 font-medium leckerli">
+          <span key={index} className="text-red-500 text-sm  ">
             {word}
           </span>
         );
       }
 
-      return <span key={index}>{word}</span>;
+      return (
+        <span key={index} className="text-sm ">
+          {word}
+        </span>
+      );
     });
   };
 
   const handleCreatePost = async () => {
+    setError("");
+    setCreateLoading(true);
     const formData = new FormData();
     formData.append("caption", caption);
-    formData.append("taggedUsers", [...taggedUsers.map((user) => user._id)]);
+
+
+    if(taggedUsers.length > 0){
+        taggedUsers.forEach((user) => {
+            formData.append("taggedUsers[]", user._id);
+          });
+    }
+
     if (selectedTrip) {
       formData.append("tripId", selectedTrip._id);
       formData.append("visibility", selectedTrip.visibility);
     } else {
       formData.append("visibility", visibilityStatus);
     }
-    formData.append("location", locationArea);
+
+    formData.append("location", JSON.stringify(locationArea));
+
     if (mentionedUsers && mentionedUsers.length > 0) {
-      formData.append("mentions", [...mentionedUsers.map((user) => user._id)]);
+      mentionedUsers.forEach((user) => {
+        formData.append("mentions[]", user._id);
+      });
     }
 
     if (files && files.length > 0) {
@@ -325,7 +346,28 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
         formData.append("post", post.file);
       });
     }
-    console.log(formData);
+
+    try {
+      await mainApi.post("/api/posts", formData, {
+        onUploadProgress: (event) => {
+          if (!event.total) return;
+
+          const percent = Math.round((event.loaded * 100) / event.total);
+
+          setUploadProgress(percent);
+        },
+      });
+
+      setCreateModal(false)
+      setCreationTab("")
+    } catch (error) {
+      setError(error?.response?.data?.message || "Some thing went worng");
+      setTimeout(()=>{
+        setError("")
+      },5000)
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -348,10 +390,12 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
       }
     };
 
-    fetchTrips();
+    if(showTripModal){
+        fetchTrips()
+    }
 
     return () => controller.abort();
-  }, [activatedTripPage]);
+  }, [activatedTripPage,showTripModal]);
 
   const handleTripSelect = (trip) => {
     setSelectedTrip(trip);
@@ -453,7 +497,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                 <div
                   className="absolute inset-0 px-4 py-3 bg-white rounded-2xl
              pointer-events-none text-gray-700
-             whitespace-pre-wrap break-words overflow-hidden"
+             whitespace-pre-wrap break-words overflow-hidden text-sm font-normal leading-[22px]"
                 >
                   {renderStyledCaption(caption)}
                 </div>
@@ -464,7 +508,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                   onChange={handleCaption}
                   ref={captionRef}
                   className="relative w-full min-h-[120px] px-4 py-3 bg-transparent
-               text-transparent caret-black resize-none outline-none rounded-2xl"
+               text-transparent caret-black resize-none outline-none rounded-2xl text-sm font-normal leading-[22px] box-border"
                   placeholder="Write something..."
                 />
               </div>
@@ -1006,8 +1050,8 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               <div
                 className={`leckerli text-3xl font-semibold px-2 py-1.5 rounded-md bg-red-500 shadow-2xl  text-white ${
                   caption.length === 0 && files.length === 0
-                    ? "cursor-not-allowed pointer-events-none" :"cursor-pointer"
-                     
+                    ? "cursor-not-allowed pointer-events-none"
+                    : "cursor-pointer"
                 } `}
                 onClick={
                   caption.length > 0 || files.length > 0
@@ -1018,6 +1062,23 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                 Create Post
               </div>
             </div>
+
+            {error && <p className="text-red-500 text-3xl">{error} </p>}
+
+            {createLoading && (
+              <div className="w-full mt-3">
+                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-500 transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+
+                <p className="text-sm text-gray-600 mt-1 text-right">
+                  Uploading… {uploadProgress}%
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

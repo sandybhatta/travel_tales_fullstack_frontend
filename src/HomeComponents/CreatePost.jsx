@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import PostCreation from "./PostCreation";
 import TripCreation from "./TripCreation";
 import PostCreate from "./PostCreate";
 
@@ -189,12 +188,14 @@ const CreatePost = ({ createModal, setCreateModal }) => {
 )}
 
 
-      {creationTab === "Post" ? (
+      {creationTab === "Post" && (
         <PostCreate
           setCreationTab={setCreationTab}
           setCreateModal={setCreateModal}
         />
-      ) : creationTab === "Trip" ? (
+      )} 
+       
+       {creationTab === "Trip" ? (
         <TripCreation setCreationTab={setCreationTab} />
       ) : (
         ""
