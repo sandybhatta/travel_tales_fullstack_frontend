@@ -2,78 +2,29 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import TripCreation from "./TripCreation";
 import PostCreate from "./PostCreate";
+import TripCreate from "./TripCreate";
 
 const CreatePost = ({ createModal, setCreateModal }) => {
-  const textRef = useRef("");
-  const timerRef = useRef(null);
+
   const [creationTab, setCreationTab] = useState("");
 
   const reduxAvatar = useSelector((state) => state.user.avatar);
   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
   const userAvatar = userInfo.avatar;
   const avatar = reduxAvatar || userAvatar;
-  const createText = [
-    "share your travel journey",
-    "make trip, and collaborate with your friends",
-    "control who can see your posts and trips",
-    "create memories , make friends",
-  ];
-  let maxChar = 0;
-  createText.forEach((text) => {
-    maxChar = Math.max(maxChar, text.length);
-  });
 
-  //  tyoe effect
-  useEffect(() => {
-    let textIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-
-    function typeEffect() {
-      const currentText = createText[textIndex];
-      const display = textRef.current;
-
-      if (isDeleting) {
-        // Deleting text
-        display.innerText = currentText.substring(0, charIndex - 1);
-        charIndex--;
-      } else {
-        // Typing text
-        display.innerText = currentText.substring(0, charIndex + 1);
-        charIndex++;
-      }
-
-      // Speed control
-      let typeSpeed = isDeleting ? 5 : 100;
-
-      if (!isDeleting && charIndex === currentText.length) {
-        // Pause before deleting
-        typeSpeed = 1500;
-        isDeleting = true;
-      } else if (isDeleting && charIndex === 0) {
-        // Move to next text
-        isDeleting = false;
-        textIndex = (textIndex + 1) % createText.length;
-      }
-
-      timerRef.current = setTimeout(typeEffect, typeSpeed);
-    }
-
-    typeEffect();
-
-    return () => clearTimeout(timerRef.current);
-  }, []);
+  
 
   return (
     <div className="w-[70%] h-auto flex justify-center overflow-x-hidden mt-5  ">
       <div
-        className="w-full px-2 py-2 bg-[#fff] rounded-xl shadow-2xl     flex items-center justify-center  gap-4 transition-all duration-300   cursor-pointer"
+        className="w-full px-2 py-2 bg-[#fff] rounded-xl shadow-2xl flex items-center justify-center  gap-4 transition-all duration-300   cursor-pointe r"
         onClick={(e) => {
           e.stopPropagation();
           setCreateModal(true);
         }}
       >
-        <div className=" w-full h-full  flex flex-wrap justify-start items-center  px-4 py-2">
+        <div className=" w-full h-full  flex flex-wrap justify-start items-center  px-4 py-2 ">
           <img
             src={avatar}
             alt="User Avatar"
@@ -82,17 +33,14 @@ const CreatePost = ({ createModal, setCreateModal }) => {
 
           <div className="flex flex-col items-start justify-start gap-2 px-2 ">
 
-            <div className="flex items-center justify-start w-full">
-            <i className='bx  bx-pencil-sparkles text-3xl text-red-500'></i>
+            <div className="flex items-center justify-start w-full ">
+            <i className='bx  bx-pencil-sparkles text-4xl text-red-500'></i>
             <h3 className="text-2xl text-red-500 font-semibold leckerli">Create Posts & Trips</h3> 
             </div>
 
 
 
-            <div
-              className="h-full  text-lg  rounded-xl  text-[#000]/50 flex items-center  px-2  "
-              ref={textRef}
-            ></div>
+            
           </div>
         </div>
       </div>
@@ -195,10 +143,9 @@ const CreatePost = ({ createModal, setCreateModal }) => {
         />
       )} 
        
-       {creationTab === "Trip" ? (
-        <TripCreation setCreationTab={setCreationTab} />
-      ) : (
-        ""
+       {creationTab === "Trip" && (
+        <TripCreate  setCreationTab={setCreationTab}
+        setCreateModal={setCreateModal}/>
       )}
     </div>
   );

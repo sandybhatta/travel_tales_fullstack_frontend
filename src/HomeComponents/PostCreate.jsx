@@ -1046,7 +1046,19 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               )}
             </div>
 
-            <div className="w-full flex items-center justify-end ">
+            <div className="w-full flex items-center justify-end gap-5">
+
+            <div className="bg-gray-300 text-black px-3 py-1.5 rounded-md  text-center cursor-pointer text-2xl font-medium shadow-md hover:shadow-2xl"
+              onClick={(e)=>{
+                e.stopPropagation()
+                setCreationTab("")
+                setCreateModal(false)
+              }}
+              >
+               Go Back
+              </div>
+
+
               <div
                 className={`leckerli text-3xl font-semibold px-2 py-1.5 rounded-md bg-red-500 shadow-2xl  text-white ${
                   caption.length === 0 && files.length === 0
@@ -1061,6 +1073,9 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               >
                 Create Post
               </div>
+
+
+              
             </div>
 
             {error && <p className="text-red-500 text-3xl">{error} </p>}
