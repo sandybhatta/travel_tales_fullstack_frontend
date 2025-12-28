@@ -6,10 +6,7 @@ import Settings from "./Settings";
 import { useSelector } from "react-redux";
 
 const TripCreate = ({ setCreationTab, setCreateModal }) => {
-
-
-    const {_id } = useSelector((state) => state.user);
-
+  const { _id } = useSelector((state) => state.user);
 
   const [activeTab, setActiveTab] = useState("basic_info");
 
@@ -22,7 +19,9 @@ const TripCreate = ({ setCreationTab, setCreateModal }) => {
 
   const [tags, setTags] = useState([]);
   const [visibility, setVisibility] = useState("public");
-  const [destinations, setDestinations] = useState([]);
+  const [destinations, setDestinations] = useState([
+    { city: "", state: "", country: "", error: "" },
+  ]);
   const [travelBudget, setTravelBudget] = useState(0);
 
   const [expenses, setExpenses] = useState([
@@ -32,19 +31,23 @@ const TripCreate = ({ setCreationTab, setCreateModal }) => {
       spentBy: _id,
     },
   ]);
-  const [notes, setNotes] = useState([{
-    body: "",
-    createdBy:_id,
-    createdAt: new Date(),
-    isPinned: false,
-  }]);
-  const [todoList, setTodoList] = useState([{
-    task: "",
-    dueDate: new Date(),
-    done: false,
-    createdBy: _id,
-    assignedTo: _id,
-  }]);
+  const [notes, setNotes] = useState([
+    {
+      body: "",
+      createdBy: _id,
+      createdAt: new Date(),
+      isPinned: false,
+    },
+  ]);
+  const [todoList, setTodoList] = useState([
+    {
+      task: "",
+      dueDate: new Date(),
+      done: false,
+      createdBy: _id,
+      assignedTo: _id,
+    },
+  ]);
 
   const [inviteFriends, setInviteFriends] = useState([]);
 
@@ -149,7 +152,7 @@ const TripCreate = ({ setCreationTab, setCreateModal }) => {
             expenses={expenses}
             notes={notes}
             todoList={todoList}
-            inviteFrineds={inviteFriends}
+            inviteFriends={inviteFriends}
             setCreationTab={setCreationTab}
             setCreateModal={setCreateModal}
           />
@@ -173,7 +176,7 @@ const TripCreate = ({ setCreationTab, setCreateModal }) => {
           />
         ) : (
           <Settings
-             visibility={visibility}
+            visibility={visibility}
             setVisibility={setVisibility}
             inviteFriends={inviteFriends}
             setInviteFriends={setInviteFriends}

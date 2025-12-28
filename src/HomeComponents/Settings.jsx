@@ -17,10 +17,10 @@ const Settings = ({
 }) => {
   const { _id } = useSelector((state) => state.user);
 
-  /* ================= VISIBILITY ================= */
+
   const [openVisibility, setOpenVisibility] = useState(false);
 
-  /* ================= FOLLOWING FETCH ================= */
+ 
   const [query, setQuery] = useState("");
   const [followings, setFollowings] = useState([]);
   const [skip, setSkip] = useState(0);
@@ -32,7 +32,8 @@ const Settings = ({
 
   const LIMIT = 10;
 
-  /* ================= FETCH FOLLOWINGS ================= */
+
+  
   const fetchFollowings = async (reset = false) => {
     if (loading || (!hasMore && !reset)) return;
 
@@ -57,14 +58,16 @@ const Settings = ({
     }
   };
 
-  /* ================= INPUT CHANGE ================= */
+
+  
   useEffect(() => {
     setSkip(0);
     setHasMore(true);
     fetchFollowings(true);
   }, [query]);
 
-  /* ================= INTERSECTION OBSERVER ================= */
+
+  
   useEffect(() => {
     if (loading) return;
 
@@ -84,46 +87,65 @@ const Settings = ({
       observerRef.current.observe(lastItemRef.current);
   }, [followings, loading, hasMore]);
 
-  /* ================= ADD FRIEND ================= */
+
+  
   const addFriend = (user) => {
     if (inviteFriends.some((u) => u._id === user._id)) return;
     setInviteFriends([...inviteFriends, user]);
   };
 
-  /* ================= REMOVE FRIEND ================= */
+
+  
   const removeFriend = (id) => {
     setInviteFriends(inviteFriends.filter((u) => u._id !== id));
   };
 
-  /* ================= FILTERED LIST ================= */
+
   const filteredFollowings = followings.filter((u) =>
-    u.username.toLowerCase().includes(query.toLowerCase())
+    u.username.toLowerCase().includes(query.toLowerCase()) || u.name.toLowerCase().includes(query.toLowerCase())
   );
+
+  const isSelectedInvites = (user)=>{
+    return inviteFriends?.some(u=> u._id === user._id)
+  }
 
   return (
     <div className="w-full flex flex-col gap-10">
-      {/* ================= VISIBILITY ================= */}
+   
+   
       <section className="bg-white p-6 rounded-2xl shadow-md">
         <h3 className="font-semibold text-gray-800 mb-3">
           Profile Visibility
         </h3>
 
         <div
-          onClick={() => setOpenVisibility(true)}
+          onClick={() => setOpenVisibility(prev=>!prev)}
           className="cursor-pointer flex justify-between items-center px-4 py-3 rounded-xl border border-gray-300 hover:border-red-500 transition"
         >
-          <span className="capitalize">{visibility}</span>
-          <i className="bx bx-chevron-down text-xl" />
+            <div className="flex items-center justify-start gap-3">
+            <i
+                      className={`bx text-2xl text-red-500 bx-${
+                        visibility === "public"
+                          ? "globe"
+                          : visibility === "followers"
+                          ? "group"
+                          : visibility === "close_friends"
+                          ? "user-check"
+                          : "lock"
+                      }`}
+                    ></i>
+
+                    <span className="capitalize">{visibility.replace("_", " ")}</span>
+            </div>
+          
+          <i className= {`bx bx-chevron-${openVisibility?"up":"down"} text-3xl`}  />
         </div>
 
         {openVisibility && (
-          <div
-            onClick={() => setOpenVisibility(false)}
-            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center"
-          >
+          
             <div
               onClick={(e) => e.stopPropagation()}
-              className="bg-white w-72 rounded-2xl p-4 shadow-xl flex flex-col gap-2"
+              className="bg-white w-full rounded-2xl p-4 shadow-xl flex flex-col gap-2"
             >
               {VISIBILITY_OPTIONS.map((opt) => (
                 <button
@@ -132,21 +154,33 @@ const Settings = ({
                     setVisibility(opt);
                     setOpenVisibility(false);
                   }}
-                  className={`px-4 py-2 rounded-xl text-left capitalize transition ${
+                  className={`px-4 py-2 rounded-xl text-left capitalize transition flex item-center justify-start gap-3 ${
                     visibility === opt
                       ? "bg-red-500 text-white"
                       : "hover:bg-gray-100"
                   }`}
                 >
+                    <i
+                      className={`bx text-2xl  bx-${
+                        opt === "public"
+                          ? "globe"
+                          : opt === "followers"
+                          ? "group"
+                          : opt === "close_friends"
+                          ? "user-check"
+                          : "lock"
+                      }`}
+                    ></i>
                   {opt.replace("_", " ")}
                 </button>
               ))}
             </div>
-          </div>
+          
         )}
       </section>
 
-      {/* ================= INVITE FRIENDS ================= */}
+ 
+ 
       <section className="bg-white p-6 rounded-2xl shadow-md flex flex-col gap-4">
         <h3 className="font-semibold text-gray-800">
           Invite Friends
@@ -158,11 +192,12 @@ const Settings = ({
             {inviteFriends.map((u) => (
               <span
                 key={u._id}
-                className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm"
+                className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm cursor-pointer font-semibold"
+                onClick={() => removeFriend(u._id)}
               >
                 @{u.username}
-                <button onClick={() => removeFriend(u._id)}>
-                  <i className="bx bx-x" />
+                <button>
+                  <i className="bx bx-x text-xl" />
                 </button>
               </span>
             ))}
@@ -187,10 +222,10 @@ const Settings = ({
                 ref={isLast ? lastItemRef : null}
                 key={user._id}
                 onClick={() => addFriend(user)}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 cursor-pointer transition"
+                className= {`flex items-center gap-3 p-3 rounded-xl hover:bg-red-100 cursor-pointer transition ${isSelectedInvites(user)?" bg-gray-300 cursor-not-allowed pointer-events-none":"bg-gray-100 cursor-pointer"}`}
               >
                 <img
-                  src={user.avatar}
+                  src={user.avatar?.url || user.avatar}
                   alt=""
                   className="w-10 h-10 rounded-full object-cover"
                 />

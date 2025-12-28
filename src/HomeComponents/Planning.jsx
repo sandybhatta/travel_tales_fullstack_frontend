@@ -215,7 +215,7 @@ setTravelBudget
               <span>
                 @{username}{" "}
                 <span className="text-2xl text-gray-700 p-2"> | </span>{" "}
-                {new Date(note.createdAt).toDateString()}
+                {new Date(note.createdAt).toDateString()} 
               </span>
 
               <div className="flex gap-4">

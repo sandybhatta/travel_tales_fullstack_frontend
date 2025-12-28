@@ -1,10 +1,26 @@
 import React from "react";
 
 const TAG_OPTIONS = [
-  "adventure","beach","mountains","history","food","wildlife",
-  "culture","luxury","budget","road_trip","solo","group",
-  "trekking","spiritual","nature","photography","festivals",
-  "architecture","offbeat","shopping",
+  "adventure",
+  "beach",
+  "mountains",
+  "history",
+  "food",
+  "wildlife",
+  "culture",
+  "luxury",
+  "budget",
+  "road_trip",
+  "solo",
+  "group",
+  "trekking",
+  "spiritual",
+  "nature",
+  "photography",
+  "festivals",
+  "architecture",
+  "offbeat",
+  "shopping",
 ];
 
 const Details = ({ tags, setTags, destinations, setDestinations }) => {
@@ -59,14 +75,14 @@ const Details = ({ tags, setTags, destinations, setDestinations }) => {
             className="w-full bg-white rounded-2xl shadow-lg p-5 flex flex-col gap-4 relative"
           >
             <h2 className="text-black font-semibold text-xl">Destination {index+1}</h2>
-            {index !== 0 && (
+            
               <button
                 onClick={() => removeDestination(index)}
                 className="absolute top-4 right-4 text-red-500 hover:scale-110 transition"
               >
                 <i className="bx bx-trash text-xl" />
               </button>
-            )}
+            
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <input

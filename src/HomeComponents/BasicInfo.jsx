@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef,useState } from "react";
+import mainApi from "../Apis/axios";
 
 const BasicInfo = ({
     title,
@@ -20,7 +21,7 @@ const BasicInfo = ({
     expenses,
     notes,
     todoList,
-    inviteFrineds,
+    inviteFriends,
     setCreationTab,
     setCreateModal,
 }) => {
@@ -29,10 +30,14 @@ const BasicInfo = ({
   const endDateRef = useRef(null);
   const coverPhotoRef = useRef(null);
 
+  const [ progress, setProgress] = useState(0)
+  const [ isUploading , setIsUploading ] = useState(false)
+  const [uploadError , setUploadError] = useState("")
+
   useEffect(() => {
     descriptionRef.current.style.height = "auto";
-    descriptionRef.current.style.height =
-      descriptionRef.current.scrollHeight + "px";
+    descriptionRef.current.style.height =descriptionRef.current.scrollHeight + "px";
+      
   }, [description]);
 
   const handleTitle = (e) => {
@@ -72,49 +77,119 @@ const BasicInfo = ({
     }
   };
 
-  const canCreatePost = () => {
-    if (title.trim() === "" || !startDate || !endDate || endDate < startDate) {
-      return false;
-    }
+  const canCreateTrip = () => {
+    if (!title.trim()) return false;
+    if (!startDate || !endDate) return false;
+    if (endDate < startDate) return false;
     return true;
   };
 
+
   const handleCreate = async () => {
     const err = {};
-    if (title.trim() === "") {
-      err.titleError = "Title Cannot be Empty";
+
+    if (!title.trim()) err.titleError = "Title cannot be empty";
+    if (!startDate || !endDate || endDate < startDate)
+      err.dateError = "Invalid start or end date";
+
+    if (Object.keys(err).length) {
+      setError(err);
+      setTimeout(
+        () => setError({ titleError: "", dateError: "", coverPhotoError: "" }),
+        4000
+      );
+      return;
     }
-    if (!startDate || !endDate || endDate < startDate) {
-      err.dateError =
-        "Start Date and End Date should be provided and End date should not be before Start Date";
+
+    const formData = new FormData();
+
+    
+    formData.append("title", title.trim());
+    formData.append("visibility", visibility);
+    formData.append("startDate", startDate.toISOString());
+    formData.append("endDate", endDate.toISOString());
+
+    if (description.trim()) {
+      formData.append("description", description.trim());
     }
-    if (Object.keys(err).length > 0) {
-      setError({ ...err });
+
+    if (coverPhoto) {
+      formData.append("coverPhoto", coverPhoto);
+    }
+
+    if (tags.length) {
+      formData.append("tags", JSON.stringify(tags));
+    }
+
+    const cleanDestinations = destinations
+      .filter(
+        (d) =>
+          d.city.trim() &&
+          d.state.trim() &&
+          d.country.trim() &&
+          !d.error
+      )
+      .map(({ city, state, country }) => ({ city, state, country }));
+
+    if (cleanDestinations.length) {
+      formData.append("destinations", JSON.stringify(cleanDestinations));
+    }
+
+    if (travelBudget !== "" && Number(travelBudget) >= 0) {
+      formData.append("travelBudget", travelBudget);
+    }
+
+    const cleanExpenses = expenses
+      .filter((e) => e.title.trim())
+      .map((e) => ({
+        title: e.title.trim(),
+        amount: Number(e.amount),
+        spentBy: e.spentBy,
+      }));
+
+    if (cleanExpenses.length) {
+      formData.append("expenses", JSON.stringify(cleanExpenses));
+    }
+
+    const cleanNotes = notes.filter((n) => n.body.trim());
+    if (cleanNotes.length) {
+      formData.append("notes", JSON.stringify(cleanNotes));
+    }
+
+    const cleanTodos = todoList.filter((t) => t.task.trim());
+    if (cleanTodos.length) {
+      formData.append("todoList", JSON.stringify(cleanTodos));
+    }
+
+    if (inviteFriends.length) {
+      formData.append(
+        "invitedFriends",
+        JSON.stringify(inviteFriends.map((u) => u._id))
+      );
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadError("");
+
+      await mainApi.post("/api/trips", formData, {
+        onUploadProgress: (e) => {
+          setProgress(Math.round((e.loaded * 100) / e.total));
+        },
+      });
+
       setTimeout(() => {
-        setError({
-            titleError:"",
-            dateError:"",
-            coverPhotoError:"",
-        });
-      }, 4000);
-
-      return
+        setCreateModal(false);
+        setCreationTab("");
+      }, 1500);
+    } catch (err) {
+      setUploadError(
+        err?.response?.data?.message || "Failed to create trip"
+      );
+      setTimeout(() => setUploadError(""), 4000);
+    } finally {
+      setIsUploading(false);
     }
-
-     const formData = new FormData();
-
-     formData.append("title",title)
-
-     if(description && description.length>0){
-        formData.append("description",description)
-     }
-
-     
-
-
-
-
-
   };
 
   return (
@@ -135,6 +210,8 @@ const BasicInfo = ({
           placeholder="Give your trip a memorable title..."
           className="bg-white outline-none rounded-lg shadow-md px-4 py-2 w-full border border-gray-300 focus:border-red-500 focus:outline-none transition-colors duration-200"
         />
+
+        {error.titleError && <p className="text-red-500 font-semibold text-lg"> {error.titleError}</p>}
       </div>
 
       {/* description */}
@@ -148,7 +225,7 @@ const BasicInfo = ({
           value={description}
           onChange={handleDescription}
           placeholder="Describe your journey, moments, emotions..."
-          className="min-h-60 w-full rounded-lg shadow-md bg-white px-3 py-2 resize-none border border-gray-300 focus:border-red-500 focus:outline-none transition-colors duration-200"
+          className="min-h-60 w-full rounded-lg shadow-md bg-white px-3 py-2 resize-none border border-gray-300 focus:border-red-500 focus:outline-none transition-colors duration-200 h-fit"
         />
       </div>
 
@@ -278,13 +355,26 @@ const BasicInfo = ({
         {/* create button */}
         <div
           className={`${
-            canCreatePost() ? "cursor-pointer" : "cursor-not-allowed"
+            canCreateTrip() ? "cursor-pointer" : "cursor-not-allowed"
           } bg-red-500 rounded-lg flex items-center justify-center gap-3 px-3 py-1`}
+
+          onClick={()=>{canCreateTrip()?handleCreate():undefined}}
         >
           <i className="bx  bx-pencil text-white text-3xl" />
           <p className="font-semibold text-white text-xl"> Create Trip</p>
         </div>
       </div>
+      {uploadError && <p className="text-red-500">{uploadError}</p>}
+      {isUploading && (
+        <div className="w-full bg-gray-200 rounded">
+          <div
+            style={{ width: `${progress}%` }}
+            className="bg-red-500 text-white text-center rounded"
+          >
+            {progress}%
+          </div>
+        </div>
+      )}
     </div>
   );
 };
