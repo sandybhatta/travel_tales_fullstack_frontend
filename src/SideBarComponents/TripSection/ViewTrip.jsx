@@ -246,6 +246,33 @@ console.log(trip);
   }, [trip]);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   return (
     <div
       className="w-full min-h-screen h-fit pb-8 grid grid-cols-[1fr_5fr_1fr] gap-4 bg-[#EDF2F4]"
@@ -1152,9 +1179,10 @@ console.log(trip);
               </div>
             )}
 
-              <PostsOfTrip trip={trip} setTrip={setTrip}/>
+              <PostsOfTrip trip={trip} setTrip={setTrip} />
 
 
+              
 
             
           </div>

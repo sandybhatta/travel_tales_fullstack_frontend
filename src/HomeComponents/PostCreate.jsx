@@ -61,6 +61,13 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const [dropdownOpen, setDropDownOpen] = useState(false);
   const [sortBy, setSortBy] = useState("Start Date");
 
+  // highlight and daynumber of a post in  a trip
+
+  const [isHighlighted, setIsHighlighted] = useState(false);
+  const [dayNumber, setDayNumber] = useState(1);
+  const [daysInATrip, setDaysInATrip] = useState(0)
+  const [dayDropdownOpen, setDayDropdownOpen] = useState(false);;
+
   //   files
   const MAX_FILES = 20;
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -69,7 +76,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const lastUserRef = useRef(null);
   const captionRef = useRef(null);
 
-  const fetchFollowingsController = new AbortController();
+
 
   const fetchFollowings = async () => {
     if (!hasMore || tagUsersLoading) return;
@@ -78,9 +85,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     setTagUsersError("");
 
     try {
-      const res = await mainApi.get(`/api/user/${_id}/following?skip=${skip}`, {
-        signal: fetchFollowingsController.signal,
-      });
+      const res = await mainApi.get(`/api/user/${_id}/following?skip=${skip}`);
 
       setFollowings((prev) => [...prev, ...res.data.followingList]);
       setHasMore(res.data.hasMore);
@@ -102,7 +107,9 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   // initial fetch of followings
   useEffect(() => {
-    if (!tagOpen) return;
+    if (!tagOpen) {
+      return
+    }
 
     setFollowings([]);
     setSkip(0);
@@ -198,7 +205,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   }, [mentionQuery, mentionOpen]);
 
   const handleMentionSelect = (user) => {
-    const textarea = document.querySelector("textarea");
+    const textarea = captionRef.current;
     const cursorPosition = textarea.selectionStart;
 
     const before = caption.slice(0, cursorPosition);
@@ -271,6 +278,11 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
       fetchFollowings();
     }
   };
+  useEffect(() => {
+    return () => {
+      files.forEach((f) => URL.revokeObjectURL(f.url));
+    };
+  }, []);
 
   useEffect(() => {
     captionRef.current.style.height = "auto";
@@ -319,16 +331,17 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     const formData = new FormData();
     formData.append("caption", caption);
 
-
-    if(taggedUsers.length > 0){
-        taggedUsers.forEach((user) => {
-            formData.append("taggedUsers[]", user._id);
-          });
+    if (taggedUsers.length > 0) {
+      taggedUsers.forEach((user) => {
+        formData.append("taggedUsers[]", user._id);
+      });
     }
 
     if (selectedTrip) {
       formData.append("tripId", selectedTrip._id);
       formData.append("visibility", selectedTrip.visibility);
+      formData.append("dayNumber", dayNumber);
+  formData.append("isHighlighted", isHighlighted);
     } else {
       formData.append("visibility", visibilityStatus);
     }
@@ -358,13 +371,13 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
         },
       });
 
-      setCreateModal(false)
-      setCreationTab("")
+      setCreateModal(false);
+      setCreationTab("");
     } catch (error) {
       setError(error?.response?.data?.message || "Some thing went worng");
-      setTimeout(()=>{
-        setError("")
-      },5000)
+      setTimeout(() => {
+        setError("");
+      }, 5000);
     } finally {
       setCreateLoading(false);
     }
@@ -390,22 +403,29 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
       }
     };
 
-    if(showTripModal){
-        fetchTrips()
+    if (showTripModal) {
+      fetchTrips();
     }
 
     return () => controller.abort();
-  }, [activatedTripPage,showTripModal]);
+  }, [activatedTripPage, showTripModal]);
 
   const handleTripSelect = (trip) => {
     setSelectedTrip(trip);
-    setShowTripModal(false);
   };
 
   useEffect(() => {
-    if (selectedTrip) {
-      setVisibilityStatus(selectedTrip.visibility);
-    }
+    if (!selectedTrip) return;
+
+    setVisibilityStatus(selectedTrip.visibility);
+
+    const ms =
+      new Date(selectedTrip.endDate) - new Date(selectedTrip.startDate);
+
+    const totalDays = Math.ceil(ms / (1000 * 60 * 60 * 24)) + 1;
+
+    setDaysInATrip(totalDays);
+    setDayNumber(1);
   }, [selectedTrip]);
 
   let sortedSearchTrips = useMemo(() => {
@@ -995,7 +1015,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               {selectedTrip && (
                 <div className="w-full ">
                   <div
-                    className={` bg-white rounded-2xl shadow-md overflow-hidden
+                    className={` bg-white rounded-2xl shadow-md 
                    hover:shadow-2xl transition cursor-pointer group relative`}
                   >
                     {/* to detach the trip */}
@@ -1041,23 +1061,101 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                         </span>
                       </div>
                     </div>
+
+                    {/* Day selector */}
+<div className="mt-4 bg-white rounded-xl shadow-sm p-4 flex flex-col gap-2 relative">
+  <h4 className="text-sm font-medium text-gray-700">
+    Assign post to trip day
+  </h4>
+
+  {/* Selected value */}
+  <div
+    onClick={() => setDayDropdownOpen((prev) => !prev)}
+    className="bg-[#edf2f4] px-4 py-2 rounded-lg
+    flex items-center justify-between gap-4
+    cursor-pointer shadow-inner text-sm font-medium"
+  >
+    <span>Day {dayNumber}</span>
+    <i
+      className={`bx bx-chevron-${
+        dayDropdownOpen ? "up" : "down"
+      } text-xl text-gray-600 transition`}
+    />
+  </div>
+
+  {/* Dropdown */}
+  {dayDropdownOpen && (
+    <div
+      className="absolute top-full mb-2 left-4
+      bg-white rounded-xl shadow-2xl
+      w-40 min-h-20 max-h-50  overflow-y-auto z-50"
+    >
+      {Array.from({ length: daysInATrip }, (_, i) => i + 1).map(
+        (day) => (
+          <div
+            key={day}
+            onClick={() => {
+              setDayNumber(day);
+              setDayDropdownOpen(false);
+            }}
+            className={`px-4 py-2 text-sm cursor-pointer
+            ${
+              day === dayNumber
+                ? "bg-red-100 text-red-600 font-medium"
+                : "hover:bg-red-50"
+            }`}
+          >
+            Day {day}
+          </div>
+        )
+      )}
+    </div>
+  )}
+</div>
+
+
+                    {/* Highlight post toggle */}
+                    <div className="mt-3 bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-800">
+                          Highlight this post
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          Highlighted posts appear at the top of the trip
+                          timeline
+                        </p>
+                      </div>
+
+                      {/* Custom checkbox */}
+                      <div
+                        onClick={() => setIsHighlighted((prev) => !prev)}
+                        className={`w-14 h-8 rounded-full cursor-pointer
+    transition-all duration-300 flex items-center px-1
+    ${isHighlighted ? "bg-red-500" : "bg-gray-300"}`}
+                      >
+                        <div
+                          className={`h-6 w-6 bg-white rounded-full shadow-md
+      transition-all duration-300
+      ${isHighlighted ? "translate-x-6" : "translate-x-0"}`}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
             <div className="w-full flex items-center justify-end gap-5">
-
-            <div className="bg-gray-300 text-black px-3 py-1.5 rounded-md  text-center cursor-pointer text-2xl font-medium shadow-md hover:shadow-2xl"
-              onClick={(e)=>{
-                e.stopPropagation()
-                setCreationTab("")
-                setCreateModal(false)
-              }}
+              <div
+                className="bg-gray-300 text-black px-3 py-1.5 rounded-md  text-center cursor-pointer text-2xl font-medium shadow-md hover:shadow-2xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCreationTab("");
+                  setCreateModal(false);
+                }}
               >
-               Go Back
+                Go Back
               </div>
-
 
               <div
                 className={`leckerli text-3xl font-semibold px-2 py-1.5 rounded-md bg-red-500 shadow-2xl  text-white ${
@@ -1073,9 +1171,6 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               >
                 Create Post
               </div>
-
-
-              
             </div>
 
             {error && <p className="text-red-500 text-3xl">{error} </p>}
@@ -1436,6 +1531,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                           </span>
                         </div>
                       </div>
+                      {selectedTrip && <div></div>}
                     </div>
                   ))}
                 </div>
