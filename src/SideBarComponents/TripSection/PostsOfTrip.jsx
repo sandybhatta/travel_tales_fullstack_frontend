@@ -243,43 +243,43 @@ const PostsOfTrip = ({ trip, setTrip }) => {
     {
       bg: "bg-gradient-to-br from-rose-50 to-pink-50",
       accent: "text-rose-700",
-      border: "border-rose-200",
+      border: "border-rose-500",
       badge: "bg-rose-500",
     },
     {
       bg: "bg-gradient-to-br from-blue-50 to-cyan-50",
       accent: "text-blue-700",
-      border: "border-blue-200",
+      border: "border-blue-500",
       badge: "bg-blue-500",
     },
     {
       bg: "bg-gradient-to-br from-purple-50 to-violet-50",
       accent: "text-purple-700",
-      border: "border-purple-200",
+      border: "border-purple-500",
       badge: "bg-purple-500",
     },
     {
       bg: "bg-gradient-to-br from-emerald-50 to-teal-50",
       accent: "text-emerald-700",
-      border: "border-emerald-200",
+      border: "border-emerald-500",
       badge: "bg-emerald-500",
     },
     {
       bg: "bg-gradient-to-br from-amber-50 to-orange-50",
       accent: "text-amber-700",
-      border: "border-amber-200",
+      border: "border-amber-500",
       badge: "bg-amber-500",
     },
     {
       bg: "bg-gradient-to-br from-indigo-50 to-blue-50",
       accent: "text-indigo-700",
-      border: "border-indigo-200",
+      border: "border-indigo-500",
       badge: "bg-indigo-500",
     },
     {
       bg: "bg-gradient-to-br from-fuchsia-50 to-pink-50",
       accent: "text-fuchsia-700",
-      border: "border-fuchsia-200",
+      border: "border-fuchsia-500",
       badge: "bg-fuchsia-500",
     },
   ];
@@ -298,6 +298,66 @@ const PostsOfTrip = ({ trip, setTrip }) => {
       totalPhotos,
     };
   }, [trip.posts.length]);
+
+  const [likedPostsIds, setLikedPostsIds] = useState([]);
+
+  const handlePostLikeInItinerary = async (postId, day) => {
+    if (likedPostsIds.includes(postId)) return;
+  
+    setLikedPostsIds(prev => [...prev, postId]);
+  
+    const post = trip.itinerary[day].find(p => p._id === postId);
+    const wasLiked = post.likes.includes(_id);
+  
+    // optimistic update
+    setTrip(prev => ({
+      ...prev,
+      itinerary: {
+        ...prev.itinerary,
+        [day]: prev.itinerary[day].map(p =>
+          p._id === postId
+            ? {
+                ...p,
+                likes: wasLiked
+                  ? p.likes.filter(id => id !== _id)
+                  : [...p.likes, _id],
+                likeCount: wasLiked
+                  ? p.likeCount - 1
+                  : p.likeCount + 1,
+              }
+            : p
+        ),
+      },
+    }));
+  
+    try {
+      await mainApi.patch(`/api/posts/${postId}/like`);
+    } catch (error) {
+      // rollback on failure
+      setTrip(prev => ({
+        ...prev,
+        itinerary: {
+          ...prev.itinerary,
+          [day]: prev.itinerary[day].map(p =>
+            p._id === postId
+              ? {
+                  ...p,
+                  likes: wasLiked
+                    ? [...p.likes, _id]
+                    : p.likes.filter(id => id !== _id),
+                  likeCount: wasLiked
+                    ? p.likeCount + 1
+                    : p.likeCount - 1,
+                }
+              : p
+          ),
+        },
+      }));
+    } finally {
+      setLikedPostsIds(prev => prev.filter(id => id !== postId));
+    }
+  };
+  
 
   return (
     <div className="w-full bg-white rounded-xl p-4 shadow-lg flex flex-col gap-5 z-2">
@@ -1128,7 +1188,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                     {/* posts in a day */}
                     <div className=" p-4 bg-white flex flex-col items-center gap-4 w-full rounded-b-xl">
                       {trip.itinerary[day].map((p) => {
-                        const isLikedByCurrentUser = p.isLikedByCurrentUser;
+                        const isLikedByCurrentUser = p.likes.some(id=>id===_id);
 
                         return (
                           <div
@@ -1271,10 +1331,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                               <>
                                 {p.media.length === 1 ? (
                                   // Single Image
-                                  <div
-                                    className="relative rounded-lg overflow-hidden cursor-pointer"
-                                    onClick={() => handleImageClick(p.media, 0)}
-                                  >
+                                  <div className="relative rounded-lg overflow-hidden cursor-pointer">
                                     <img
                                       src={p.media[0].url}
                                       alt=""
@@ -1295,8 +1352,8 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                       </span>
                                     </div>
                                     <div
-                                      className={`grid grid-cols-${
-                                        p.media.length === 2 ? "2" : "3"
+                                      className={`grid ${
+                                        p.media.length === 2 ? "grid-cols-2" : "grid-cols-3"
                                       } gap-2`}
                                     >
                                       {p.media
@@ -1338,7 +1395,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                               </>
                             )}
 
-                            <div className="w-full border-t-2 border-gray-600" />
+                            <div className={` w-full border-t-2  ${
+                                          dayThemes[i % dayThemes.length].border
+                                        } `}/>
 
                             {/*Likes and Comments  */}
 
@@ -1354,7 +1413,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     strokeWidth="2.625"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="lucide lucide-heart-icon lucide-heart h-6 w-6"
+                                    className="lucide lucide-heart-icon lucide-heart h-8 w-8"
+                                    onClick={(e) => {
+                                      handlePostLikeInItinerary(p._id, day);
+                                    }}
                                   >
                                     <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
                                   </svg>
@@ -1367,7 +1429,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     strokeWidth="1.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="lucide lucide-heart-icon lucide-heart h-6 w-6"
+                                    className="lucide lucide-heart-icon lucide-heart h-8 w-8"
+                                    onClick={(e) => {
+                                      handlePostLikeInItinerary(p._id, day);
+                                    }}
                                   >
                                     <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
                                   </svg>
@@ -1379,7 +1444,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                               {/* comments */}
                               <div className="flex items-center justify-start gap-2">
-                                <i className="bx  bx-message-circle-reply text-gray-600 text-2xl" />
+                                <i className="bx  bx-message-circle-reply text-gray-600 text-3xl" />
                                 <p className="text-gray-600 text-sm">
                                   {p.commentCount}
                                 </p>
@@ -1423,25 +1488,3 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
 export default PostsOfTrip;
 
-// like
-{
-  /* <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
-  <path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" />
-</svg> */
-}
-
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
-  class="lucide lucide-crown-icon lucide-crown"
->
-  <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
-  <path d="M5 21h14" />
-</svg>;

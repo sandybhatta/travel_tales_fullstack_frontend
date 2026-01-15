@@ -1,38 +1,54 @@
-import React from "react";
+import React from "react"; 
 import { NavLink } from "react-router-dom";
 
-const SideBar = ({setIsSidebarOpen}) => {
+const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const links = [
-    { name: "Home", path: "", icon:"bx-home-alt-2" },
-    { name: "My Trips", path: "my-trips", icon:"bx-trip" },
-    { name: "Collaborated Trips", path: "collaborated-trips", icon:"bx-community" },
-    { name: "Bookmarked Posts", path: "bookmarked-posts", icon:"bx-bookmark" },
-    { name: "Invited Trips", path: "invited-trips", icon:"bx-cursor-add" },
-    { name: "Friends", path: "friends", icon:"bx-group"},
-    { name: "Explore", path: "explore", icon:"bx-star-circle" },
-    
+    { name: "Home", path: "", icon: "bx-home-alt-2" },
+    { name: "My Trips", path: "my-trips", icon: "bx-trip" },
+    { name: "Collaborated Trips", path: "collaborated-trips", icon: "bx-community" },
+    { name: "Bookmarked Posts", path: "bookmarked-posts", icon: "bx-bookmark" },
+    { name: "Invited Trips", path: "invited-trips", icon: "bx-cursor-add" },
+    { name: "Friends", path: "friends", icon: "bx-group" },
+    { name: "Explore", path: "explore", icon: "bx-star-circle" },
   ];
 
   return (
-    <div className="w-full h-screen bg-[#2b2d42] border-2 border-white flex flex-col items-center justify-end sticky top-0 ">
+    <div className="w-full h-full bg-[#2b2d42] flex flex-col items-center relative">
+      
+      {/* Toggle Button */}
+      <i
+        className="bx bx-sidebar text-white px-2 py-3 text-4xl absolute right-2 top-2 cursor-pointer"
+        onClick={() => setIsSidebarOpen(prev => !prev)}
+      />
 
-        <i className='bx bx-sidebar text-white px-2 py-3 text-5xl absolute right-2 top-2'
-        onClick={()=>setIsSidebarOpen(prev=>!prev)}
-        ></i>
-      <div className="w-full  py-4 flex flex-col items-center justify-center">
+      {/* Links */}
+      <div className="w-full mt-20 flex flex-col items-center">
         {links.map((link) => (
           <NavLink
             key={link.path}
             to={link.path}
             end
             className={({ isActive }) =>
-              `w-[85%] py-3 px-2 mb-5 rounded-lg flex items-center justify-center relative text-white transition ${
-                isActive ? "bg-red-600" : "bg-transparent hover:bg-white/40"
-              }`
+              `
+              w-[85%] py-3 px-2 mb-3 rounded-lg
+              flex items-center
+              ${isSidebarOpen ? "justify-start gap-3" : "justify-center"}
+              text-white transition-all duration-300
+              ${isActive ? "bg-red-600" : "hover:bg-white/20"}
+              `
             }
           >
-            <i className={`bx ${link.icon} text-2xl absolute left-0 pl-2`}></i>
-            {link.name}
+            <i className={`bx ${link.icon} text-2xl`} />
+
+            {/* Text (only when open) */}
+            <span
+              className={`
+                whitespace-nowrap transition-all duration-300
+                ${isSidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"}
+              `}
+            >
+              {link.name}
+            </span>
           </NavLink>
         ))}
       </div>
@@ -40,4 +56,4 @@ const SideBar = ({setIsSidebarOpen}) => {
   );
 };
 
-export default SideBar;
+export default SideBar
