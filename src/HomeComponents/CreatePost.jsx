@@ -16,7 +16,7 @@ const CreatePost = ({ createModal, setCreateModal }) => {
   
 
   return (
-    <div className="w-1/3 h-auto flex justify-center overflow-x-hidden mt-5  ">
+    <div className="w-full h-auto flex justify-center overflow-x-hidden mt-5  ">
       <div
         className="w-full px-2 py-2 bg-[#fff] rounded-xl shadow-2xl flex items-center justify-center  gap-4 transition-all duration-300   cursor-pointe r"
         onClick={(e) => {

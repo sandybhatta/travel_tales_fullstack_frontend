@@ -51,7 +51,7 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
       </div>
 
       {/* Navigation Links (hidden on mobile/tablet) */}
-      <Link to={`/home/profile/${userId}`}
+      <Link to={`/profile/${userId}`}
       className='w-[20%]'>
           <div className="w-full hidden cursor-pointer lg:flex items-center text-[#EDF2F4] text-[1.1rem] relative ">
                 <div
