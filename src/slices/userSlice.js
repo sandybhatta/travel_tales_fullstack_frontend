@@ -1,4 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import mainApi from "../Apis/axios";
+
 const initialState={
     _id:"",
     name:"",
@@ -36,6 +38,14 @@ const initialState={
     }
 
 }
+
+export const logout = createAsyncThunk("user/logout", async () => {
+    try {
+        await mainApi.post("/api/auth/logout");
+    } catch (error) {
+        console.error("Logout error:", error);
+    }
+});
 
 const userSlice = createSlice({
     name:"user",
@@ -114,6 +124,18 @@ const userSlice = createSlice({
               state.isAccessToken = true;
             }
           },
+    },
+    extraReducers: (builder) => {
+        builder.addCase(logout.fulfilled, (state) => {
+            localStorage.removeItem("userInfo");
+            localStorage.removeItem("accessToken");
+            return initialState;
+        });
+        builder.addCase(logout.rejected, (state) => {
+            localStorage.removeItem("userInfo");
+            localStorage.removeItem("accessToken");
+            return initialState;
+        });
     }
 }) 
 export default userSlice.reducer
