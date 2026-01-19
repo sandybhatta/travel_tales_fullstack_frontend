@@ -17,6 +17,7 @@ import HomeFeed from './HomeComponents/HomeFeed'
 import Friends from './SideBarComponents/Friends'
 import ProfilePage from './ProfileSection/ProfilePage'
 import ViewTrip from './SideBarComponents/TripSection/ViewTrip'
+import PostDetailsPage from './PostDetails/PostDetailsPage'
 
 const App = () => {
   const [createModal, setCreateModal] = useState(false)
@@ -44,6 +45,7 @@ const App = () => {
             
           </Route>
           <Route path='/trip/:tripId' element={<ViewTrip/>}/>
+          <Route path='/post/:postId' element={<PostDetailsPage/>}/>
           <Route path='profile/:userId' element={<ProfilePage/>} />
 
 

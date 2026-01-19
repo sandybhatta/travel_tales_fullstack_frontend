@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Crown } from "lucide-react";
 import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 import mainApi from "../../Apis/axios";
 
 const PostsOfTrip = ({ trip, setTrip }) => {
@@ -406,7 +407,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                 <div className="w-[90%] h-1/3 rounded-t-[10px] bg-black/90 border-1 border-white"></div>
               </div>
             )}
-            <div className="w-full h-80 relative overflow-hidden group rounded-lg ">
+            <Link
+              to={`/post/${p.post._id}`}
+              className="w-full h-80 relative overflow-hidden group rounded-lg block"
+            >
               {/* Media / Caption */}
               {p.post.media?.length ? (
                 p.post.media[0].resource_type === "image" ? (
@@ -569,7 +573,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   Day {p.dayNumber}
                 </div>
               )}
-            </div>
+            </Link>
 
             {/* highlighted by  */}
 

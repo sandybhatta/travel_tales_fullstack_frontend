@@ -107,9 +107,10 @@ const ProfileContent = ({
           : item.coverPhoto?.url || item.coverPhoto;
 
         return (
-          <div
+          <Link
+            to={`/post/${item._id}`}
             key={item._id}
-            className="group relative w-full aspect-square bg-gray-100 overflow-hidden cursor-pointer"
+            className="group relative w-full aspect-square bg-gray-100 overflow-hidden cursor-pointer block"
           >
             {isPostTab ? (
               mediaSource ? (
@@ -151,7 +152,7 @@ const ProfileContent = ({
                 <i className="bx bx-image text-3xl" />
               </div>
             )}
-          </div>
+          </Link>
         );
       })}
     </div>

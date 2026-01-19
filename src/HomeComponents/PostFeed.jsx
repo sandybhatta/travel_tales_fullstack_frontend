@@ -197,7 +197,7 @@ const PostFeed = () => {
 
               {/* Media */}
               {media.length > 0 && (
-                <div className="relative w-full bg-black">
+                <Link to={`/post/${post._id}`} className="block relative w-full bg-black">
                   {media[0].resource_type === "image" ? (
                     <img
                       src={media[0].url}
@@ -218,14 +218,14 @@ const PostFeed = () => {
                       {media.length} photos
                     </div>
                   )}
-                </div>
+                </Link>
               )}
 
               {/* Caption (if no media) */}
               {media.length === 0 && caption && (
-                <div className="p-4">
+                <Link to={`/post/${post._id}`} className="block p-4">
                   <p className="text-gray-800 whitespace-pre-wrap">{caption}</p>
-                </div>
+                </Link>
               )}
 
               {/* Actions */}
@@ -257,10 +257,13 @@ const PostFeed = () => {
                   >
                     {likesCount} {likesCount === 1 ? "like" : "likes"}
                   </button>
-                  <button className="flex items-center gap-2 hover:opacity-70 transition">
+                  <Link
+                    to={`/post/${post._id}`}
+                    className="flex items-center gap-2 hover:opacity-70 transition"
+                  >
                     <i className="bx bx-message text-2xl text-gray-700"></i>
                     <span className="text-sm text-gray-700">{commentsCount}</span>
-                  </button>
+                  </Link>
                   <button className="flex items-center gap-2 hover:opacity-70 transition">
                     <i className="bx bx-share text-2xl text-gray-700"></i>
                   </button>
@@ -271,16 +274,21 @@ const PostFeed = () => {
                   <div className="pt-2">
                     <p className="text-gray-800">
                       <span className="font-semibold">{author?.username || "unknown"}</span>{" "}
-                      {caption}
+                      <Link to={`/post/${post._id}`} className="hover:text-gray-600">
+                        {caption}
+                      </Link>
                     </p>
                   </div>
                 )}
 
                 {/* View comments */}
                 {commentsCount > 0 && (
-                  <button className="text-sm text-gray-500 hover:text-gray-700">
+                  <Link
+                    to={`/post/${post._id}`}
+                    className="text-sm text-gray-500 hover:text-gray-700 block"
+                  >
                     View all {commentsCount} comments
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>

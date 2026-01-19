@@ -135,10 +135,8 @@ const ProfilePage = () => {
       setUserData((prev) => {
         if (!prev) return prev;
         const prevRel = prev.viewerRelationship || {};
-        const countDelta = isCloseFriend ? -1 : 1;
         return {
           ...prev,
-          closeFriendCount: (prev.closeFriendCount || 0) + countDelta,
           viewerRelationship: {
             ...prevRel,
             isCloseFriend: !isCloseFriend,

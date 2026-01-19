@@ -25,8 +25,8 @@ const ProfileHeader = ({
   const closeFriendLabel = ownProfile
     ? ""
     : viewerRelationship.isCloseFriend
-    ? "Close friend"
-    : "Add to close friends";
+    ? "Close Friends"
+    : "Add Close Friend";
 
   return (
     <div className="mt-4 flex flex-col md:flex-row items-center md:items-start md:justify-between gap-6 md:gap-8">
