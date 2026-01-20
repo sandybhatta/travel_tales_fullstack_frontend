@@ -11,7 +11,7 @@ const PostHeader = ({ post, onOpenTaggedUsers }) => {
       <div className="flex items-center gap-3">
         <Link to={`/profile/${author?._id}`}>
           <img
-            src={author?.avatar?.url || "/default-avatar.png"}
+            src={author?.avatar?.url || author?.avatar}
             alt={author?.name}
             className="w-12 h-12 rounded-full object-cover border border-gray-200"
           />
@@ -22,7 +22,7 @@ const PostHeader = ({ post, onOpenTaggedUsers }) => {
               to={`/profile/${author?._id}`}
               className="font-bold text-gray-900 hover:underline text-base"
             >
-              {author?.name || "Unknown"}
+              {author.name}
             </Link>
             
             {/* Tagged Users Logic */}

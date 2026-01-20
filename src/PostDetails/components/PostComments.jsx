@@ -29,7 +29,7 @@ const PostComments = ({ postId, rootComments, commentsCount, onCommentAdded }) =
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return new Date(date).toLocaleDateString("en-US", { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -55,7 +55,7 @@ const PostComments = ({ postId, rootComments, commentsCount, onCommentAdded }) =
                 disabled={!newComment.trim() || submitting}
                 className="text-blue-500 disabled:opacity-50"
             >
-                <i className="bx bxs-send text-lg"></i>
+                <i className="bx bx-paper-plane text-lg"></i>
             </button>
         </form>
       </div>
