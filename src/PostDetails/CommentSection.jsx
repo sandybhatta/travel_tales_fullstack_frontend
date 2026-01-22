@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { getPostComments, getReplies, createComment, replyToComment } from "../Apis/postApi";
-import { searchMentionableUsers } from "../Apis/userApi";
+import { getPostComments, getReplies, createComment, replyToComment, editComment, getCommentLikes } from "../Apis/postApi";
+import { searchMentionableUsers, followUser, unfollowUser } from "../Apis/userApi";
 import mainApi from "../Apis/axios";
 
 // Crown Icons
@@ -46,6 +46,77 @@ const renderCommentContent = (text, mentions = []) => {
   });
 };
 
+const LikesModal = ({ isOpen, onClose, likes, loading, currentUserId }) => {
+    const [localLikes, setLocalLikes] = useState(likes);
+
+    useEffect(() => {
+        setLocalLikes(likes);
+    }, [likes]);
+
+    const handleFollowToggle = async (user) => {
+        try {
+            if (user.isFollowing) {
+                await unfollowUser(user._id);
+                setLocalLikes(prev => prev.map(u => u._id === user._id ? { ...u, isFollowing: false } : u));
+            } else {
+                await followUser(user._id);
+                setLocalLikes(prev => prev.map(u => u._id === user._id ? { ...u, isFollowing: true } : u));
+            }
+        } catch (error) {
+            console.error("Follow/Unfollow failed", error);
+        }
+    };
+
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-xl w-96 max-h-[500px] flex flex-col shadow-2xl animate-fade-in">
+                <div className="flex items-center justify-between p-4 border-b">
+                    <h3 className="font-bold text-lg text-gray-800">Likes</h3>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800 transition">
+                        <i className='bx bx-x text-2xl'></i>
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    {loading ? (
+                        <div className="flex justify-center p-4">
+                            <div className="animate-spin h-6 w-6 border-2 border-red-500 rounded-full border-t-transparent"></div>
+                        </div>
+                    ) : localLikes.length === 0 ? (
+                        <p className="text-center text-gray-500 py-4">No likes yet.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {localLikes.map(user => (
+                                <div key={user._id} className="flex items-center gap-3 p-2 rounded-lg transition hover:bg-gray-50">
+                                    <Link to={`/profile/${user._id}`} onClick={onClose}>
+                                        <img src={user.avatar?.url || user.avatar || "/default-avatar.png"} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-gray-100" />
+                                    </Link>
+                                    <div className="flex-1">
+                                        <Link to={`/profile/${user._id}`} onClick={onClose} className="font-bold text-sm text-gray-800 hover:underline">{user.name}</Link>
+                                        <p className="text-xs text-gray-500">@{user.username}</p>
+                                    </div>
+                                    {user._id === currentUserId ? (
+                                        <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full font-medium">(Me)</span>
+                                    ) : (
+                                        <button 
+                                            onClick={() => handleFollowToggle(user)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${user.isFollowing 
+                                                ? "bg-gray-100 text-gray-700 hover:bg-gray-200" 
+                                                : "bg-red-500 text-white hover:bg-red-600"}`}
+                                        >
+                                            {user.isFollowing ? "Unfollow" : "Follow"}
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const CommentItem = ({ 
     comment, 
     onReplyClick, 
@@ -54,9 +125,20 @@ const CommentItem = ({
     currentUserId, 
     isHeader = false, 
     levelIndex = -1,
-    onClick 
+    onClick,
+    onLikeCountClick,
+    onEdit,
+    isEditing,
+    onEditSubmit,
+    onEditCancel
 }) => {
     const isLiked = comment.hasLiked;
+    const isOwner = comment.author._id === currentUserId;
+    const [editText, setEditText] = useState(comment.content);
+
+    useEffect(() => {
+        setEditText(comment.content);
+    }, [comment.content]);
     
     // Determine crown/icon based on header level
     let HeaderIcon = null;
@@ -72,13 +154,17 @@ const CommentItem = ({
         }
     }
 
+    const handleEditSave = () => {
+        onEditSubmit(comment._id, editText);
+    };
+
     return (
         <div 
             onClick={onClick}
-            className={`flex flex-col ${isHeader ? "mb-4 border-b border-gray-100 pb-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition" : "cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition"}`}
+            className={`flex flex-col ${isHeader ? "cursor-pointer hover:bg-gray-50 p-3 rounded-lg border border-gray-200 shadow-sm bg-white" : "cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition"}`}
         >
              {isHeader && (
-                <div className="flex items-center gap-1 mb-2">
+                <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
                     {HeaderIcon}
                     {HeaderTitle}
                 </div>
@@ -95,7 +181,7 @@ const CommentItem = ({
                     </Link>
                 </div>
                 <div className="flex-1">
-                    <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100">
+                    <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 relative group">
                         <div className="flex items-center justify-between mb-1">
                             <Link 
                                 to={`/profile/${comment.author._id}`} 
@@ -104,39 +190,88 @@ const CommentItem = ({
                             >
                                 {comment.author.name}
                             </Link>
-                            <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
+                                {!isHeader && isOwner && !isEditing && (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit(comment._id);
+                                        }}
+                                        className="text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition"
+                                        title="Edit Comment"
+                                    >
+                                        <i className='bx bx-edit-alt'></i>
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <p className="text-gray-700 text-sm">{renderCommentContent(comment.content, comment.mentions)}</p>
+
+                        {isEditing ? (
+                            <div onClick={(e) => e.stopPropagation()} className="mt-2">
+                                <textarea
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                    rows="3"
+                                />
+                                <div className="flex justify-end gap-2 mt-2">
+                                    <button 
+                                        onClick={onEditCancel}
+                                        className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-full transition"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        onClick={handleEditSave}
+                                        className="px-3 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-full transition"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-700 text-sm">{renderCommentContent(comment.content, comment.mentions)}</p>
+                        )}
                     </div>
-                    {/* Comment Actions - ONLY SHOW IF NOT HEADER */}
-                    {!isHeader && (
+
+                    {/* Comment Actions - ONLY SHOW IF NOT HEADER AND NOT EDITING */}
+                    {!isHeader && !isEditing && (
                         <div className="flex items-center gap-4 mt-1 ml-2">
                             <div 
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onLike(comment._id);
                                 }}
-                                className={`flex items-center gap-1 text-xs cursor-pointer transition ${isLiked ? "text-red-500" : "text-gray-500 hover:text-red-500"} ${processingLikes.has(comment._id) ? "opacity-50 pointer-events-none" : ""}`}
+                                className={`flex items-center gap-1 text-sm font-medium cursor-pointer transition ${isLiked ? "text-red-500" : "text-gray-500 hover:text-red-500"} ${processingLikes.has(comment._id) ? "opacity-50 pointer-events-none" : ""}`}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     fill={isLiked ? "currentColor" : "none"}
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
-                                    className="w-4 h-4"
+                                    className="w-5 h-5"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>
-                                <span>{comment.likes?.length || 0} Likes</span>
+                                <span 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onLikeCountClick(comment._id);
+                                    }}
+                                    className="hover:underline"
+                                >
+                                    {comment.likes?.length || 0} Likes
+                                </span>
                             </div>
                             <div 
                                 onClick={(e) => {
                                     e.stopPropagation(); // Prevent double triggering if parent is clicked
                                     onReplyClick(comment);
                                 }}
-                                className="flex items-center gap-1 text-gray-500 text-xs cursor-pointer hover:text-blue-500"
+                                className="flex items-center gap-1 text-gray-500 text-sm font-medium cursor-pointer hover:text-blue-500"
                             >
-                                <i className='bx bx-message-circle-reply text-base'></i>
+                                <i className='bx bx-message-circle-reply text-xl'></i>
                                 <span>{comment.replyCount || 0} Replies</span>
                             </div>
                         </div>
@@ -157,6 +292,12 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
   const [loading, setLoading] = useState(false);
   const [processingCommentLikes, setProcessingCommentLikes] = useState(new Set());
   
+  // Likes Modal State
+  const [likesModal, setLikesModal] = useState({ isOpen: false, likes: [], loading: false });
+
+  // Edit State
+  const [editingCommentId, setEditingCommentId] = useState(null);
+
   // Input State
   const [commentText, setCommentText] = useState("");
   const [showMentions, setShowMentions] = useState(false);
@@ -167,9 +308,11 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
   const commentInputRef = useRef(null);
 
   // Load comments when navigation stack changes
+  const currentParentId = navigationStack.length > 0 ? navigationStack[navigationStack.length - 1]?._id : null;
+  
   useEffect(() => {
     fetchComments();
-  }, [navigationStack, postId]);
+  }, [currentParentId, postId]);
 
   // Debounce user search for mentions
   useEffect(() => {
@@ -223,7 +366,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
   }
 
   const handleCommentLike = async (commentId) => {
-    if (processingCommentLikes.has(commentId)) return;
+    if (processingCommentLikes.has(commentId) || !currentUserId) return;
 
     setProcessingCommentLikes(prev => new Set(prev).add(commentId));
 
@@ -233,15 +376,27 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
             const wasLiked = c.hasLiked;
             const newHasLiked = !wasLiked;
             let newLikes = c.likes || [];
+            
+            // Handle both populated (objects) and unpopulated (IDs) likes arrays
             if (newHasLiked) {
-                newLikes = [...newLikes, { _id: currentUserId }];
+                // Optimistically add current user
+                // Ensure we match the structure expected by the UI (populated object with _id)
+                newLikes = [...newLikes, { _id: currentUserId, name: "You", username: "you" }];
             } else {
-                newLikes = newLikes.filter(like => (like._id || like) !== currentUserId);
+                // Optimistically remove current user
+                newLikes = newLikes.filter(like => {
+                    const likeId = like._id || like;
+                    return likeId !== currentUserId;
+                });
             }
             return { ...c, hasLiked: newHasLiked, likes: newLikes };
         }
         return c;
     });
+
+    // Store previous state for rollback
+    const previousComments = [...comments];
+    const previousStack = [...navigationStack];
 
     setComments(prev => updateLikeInList(prev));
     setNavigationStack(prev => updateLikeInList(prev));
@@ -250,8 +405,9 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
       await mainApi.post(`/api/comment/${commentId}/like`);
     } catch (err) {
       console.error("Failed to like comment", err);
-      // Revert is complex here due to dual state, simplistic revert for now:
-      fetchComments(); 
+      // Manual Rollback on error to avoid refetch/skeleton flash
+      setComments(previousComments);
+      setNavigationStack(previousStack);
     } finally {
       setProcessingCommentLikes(prev => {
         const next = new Set(prev);
@@ -259,6 +415,39 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
         return next;
       });
     }
+  };
+
+  const handleLikeCountClick = async (commentId) => {
+      setLikesModal({ isOpen: true, likes: [], loading: true });
+      try {
+          const data = await getCommentLikes(commentId);
+          setLikesModal({ isOpen: true, likes: data.likes || [], loading: false });
+      } catch (err) {
+          console.error("Failed to fetch likes", err);
+          setLikesModal({ isOpen: false, likes: [], loading: false });
+      }
+  };
+
+  const handleEditClick = (commentId) => {
+      setEditingCommentId(commentId);
+  };
+
+  const handleEditSubmit = async (commentId, newContent) => {
+      try {
+          const updatedCommentRes = await editComment(commentId, newContent);
+          const updatedComment = updatedCommentRes.comment;
+
+          // Update lists
+          const updateList = (list) => list.map(c => c._id === commentId ? { ...c, content: updatedComment.content, mentions: updatedComment.mentions } : c);
+          
+          setComments(prev => updateList(prev));
+          setNavigationStack(prev => updateList(prev));
+          
+          setEditingCommentId(null);
+      } catch (err) {
+          console.error("Failed to edit comment", err);
+          alert("Failed to update comment");
+      }
   };
 
   const handleCommentChange = (e) => {
@@ -317,10 +506,6 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
           } else {
               // Create Reply to the LAST item in stack
               const parentComment = navigationStack[navigationStack.length - 1];
-              
-              // Determine Root ID
-              // If stack has 1 item, that item is Root.
-              // If stack has > 1 item, stack[0] is Root.
               const rootComment = navigationStack[0];
               const rootId = rootComment._id;
               const parentId = parentComment._id;
@@ -341,12 +526,31 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
 
   const handleHeaderClick = (index) => {
         // Navigate back to this specific level
-        // If stack is [A, B, C] and I click A (index 0), I want stack to be [A]
         setNavigationStack(prev => prev.slice(0, index + 1));
+    };
+
+    const getPlaceholderText = () => {
+        if (navigationStack.length === 0) {
+            return "Comment and @ to mention anyone";
+        }
+        // If stack length is 1, we are in Level 1 (child of Root).
+        // The parent is Root.
+        // If stack length is 2, we are in Level 2. The parent is Parent 1.
+        const parentLabel = navigationStack.length === 1 ? "Root Comment" : `Parent ${navigationStack.length - 1}`;
+        return `Reply in ${parentLabel}...`;
     };
 
     return (
     <div className="flex flex-col h-[600px] bg-gray-50 border-t border-gray-200 rounded-xl overflow-hidden relative">
+        {/* Likes Modal */}
+        <LikesModal 
+            isOpen={likesModal.isOpen} 
+            onClose={() => setLikesModal({ ...likesModal, isOpen: false })} 
+            likes={likesModal.likes} 
+            loading={likesModal.loading} 
+            currentUserId={currentUserId}
+        />
+
         {/* Header Title Bar */}
         <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shrink-0 z-20">
             <h3 className="font-bold text-gray-800 text-lg">Comments</h3>
@@ -375,7 +579,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
                         <span>Back</span>
                     </button>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-[2px]">
                         {navigationStack.map((stackComment, idx) => (
                             <CommentItem 
                                 key={stackComment._id}
@@ -387,6 +591,9 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
                                 isHeader={true}
                                 levelIndex={idx}
                                 onClick={() => handleHeaderClick(idx)}
+                                onLikeCountClick={() => {}} // Headers don't need like click
+                                onEdit={() => {}}
+                                isEditing={false}
                             />
                         ))}
                     </div>
@@ -422,6 +629,11 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
                                 processingLikes={processingCommentLikes}
                                 currentUserId={currentUserId}
                                 onClick={() => handleReplyClick(comment)}
+                                onLikeCountClick={handleLikeCountClick}
+                                onEdit={handleEditClick}
+                                isEditing={editingCommentId === comment._id}
+                                onEditSubmit={handleEditSubmit}
+                                onEditCancel={() => setEditingCommentId(null)}
                             />
                         ))
                     ) : (
@@ -441,7 +653,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
                         ref={commentInputRef}
                         value={commentText}
                         onChange={handleCommentChange}
-                        placeholder={navigationStack.length > 0 ? "Write a reply..." : "Write a comment... (use @ to mention)"}
+                        placeholder={getPlaceholderText()}
                         className="w-full p-3 pr-16 border border-gray-300 rounded-full focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-gray-50"
                         rows="1"
                         style={{ minHeight: '46px', maxHeight: '120px' }} 
@@ -449,16 +661,16 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
                     
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
                         {isSubmitting ? (
-                             <div className="animate-spin h-5 w-5 border-2 border-red-500 rounded-full border-t-transparent"></div>
+                            <div className="animate-spin h-5 w-5 border-2 border-red-500 rounded-full border-t-transparent"></div>
                         ) : (
-                             commentText.trim() && (
+                            commentText.trim() && (
                                 <button 
                                     onClick={handleSubmit}
                                     className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition flex items-center justify-center shadow-md"
                                 >
                                     <i className='bx bx-send'></i>
                                 </button>
-                             )
+                            )
                         )}
                     </div>
 

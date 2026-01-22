@@ -1,79 +1,112 @@
 import React from "react";
 
-const PostMedia = ({ media }) => {
+const PostMedia = ({ media, onMediaClick }) => {
   if (!media || media.length === 0) return null;
 
-  const renderMediaItem = (file, className = "") => {
-    const isVideo = file.resource_type === "video";
-    return (
-      <div className={`relative overflow-hidden ${className}`}>
-        {isVideo ? (
-          <video
-            src={file.url}
-            controls
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <img
-            src={file.url}
-            alt="Post content"
-            className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition"
-          />
-        )}
-      </div>
-    );
+  const handleClick = (index, e) => {
+    if (onMediaClick) {
+      e.preventDefault(); // Prevent navigating if inside a Link
+      e.stopPropagation();
+      onMediaClick(index);
+    }
   };
 
-  // Grid Logic
-  if (media.length === 1) {
-    return (
-      <div className="w-full bg-gray-100">
-        {media[0].resource_type === "video" ? (
-             <video src={media[0].url} controls className="w-full max-h-[80vh] mx-auto" />
-        ) : (
-             <img src={media[0].url} alt="content" className="w-full h-auto max-h-[80vh] object-contain bg-black" />
-        )}
-      </div>
-    );
-  }
-
-  if (media.length === 2) {
-    return (
-      <div className="grid grid-cols-2 gap-1 h-96 w-full">
-        {renderMediaItem(media[0], "h-full")}
-        {renderMediaItem(media[1], "h-full")}
-      </div>
-    );
-  }
-
-  if (media.length >= 3) {
-    return (
-      <div className="grid grid-cols-2 gap-1 h-96 w-full">
-        {/* Left: First Item (Full Height) */}
-        <div className="h-full">
-            {renderMediaItem(media[0], "h-full")}
+  return (
+    <div className="w-full overflow-hidden">
+      {media.length === 1 && (
+        <div
+          onClick={(e) => handleClick(0, e)}
+          className={onMediaClick ? "cursor-pointer" : ""}
+        >
+          {media[0].resource_type === "image" ? (
+            <img
+              src={media[0].url}
+              alt="content"
+              className="w-full h-auto object-contain"
+            />
+          ) : (
+            <video src={media[0].url} controls={!!onMediaClick} className="w-full h-auto" />
+          )}
         </div>
-        
-        {/* Right: Split Vertically */}
-        <div className="grid grid-rows-2 gap-1 h-full">
-            {renderMediaItem(media[1], "h-full")}
-            
-            <div className="relative h-full">
-                {renderMediaItem(media[2], "h-full")}
-                
-                {/* Overlay if > 3 */}
-                {media.length > 3 && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-2xl cursor-pointer hover:bg-black/60 transition">
-                        +{media.length - 3} more
-                    </div>
-                )}
+      )}
+      {media.length === 2 && (
+        <div className="grid grid-cols-2 gap-1 h-56 sm:h-64 md:h-96">
+          {media.map((file, idx) => (
+            <div
+              key={idx}
+              onClick={(e) => handleClick(idx, e)}
+              className={`h-full relative overflow-hidden ${onMediaClick ? "cursor-pointer" : ""}`}
+            >
+              {file.resource_type === "image" ? (
+                <img
+                  src={file.url}
+                  alt="content"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <video src={file.url} className="w-full h-full object-cover" />
+              )}
             </div>
+          ))}
         </div>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+      {media.length >= 3 && (
+        <div className="grid grid-cols-2 gap-1 min-h-56 h-auto md:h-96">
+          <div
+            onClick={(e) => handleClick(0, e)}
+            className={`h-full relative overflow-hidden ${onMediaClick ? "cursor-pointer" : ""}`}
+          >
+            {media[0].resource_type === "image" ? (
+              <img
+                src={media[0].url}
+                alt="content"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <video src={media[0].url} className=" h-full object-cover" />
+            )}
+          </div>
+          <div className="flex flex-col gap-1 h-full">
+            <div
+              onClick={(e) => handleClick(1, e)}
+              className={`flex-1 min-h-0 relative w-full overflow-hidden ${onMediaClick ? "cursor-pointer" : ""}`}
+            >
+              {media[1].resource_type === "image" ? (
+                <img
+                  src={media[1].url}
+                  alt="content"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <video src={media[1].url} className="w-full h-full object-cover" />
+              )}
+            </div>
+            <div
+              onClick={(e) => handleClick(2, e)}
+              className={`flex-1 min-h-0 relative w-full overflow-hidden ${onMediaClick ? "cursor-pointer" : ""}`}
+            >
+              {media[2].resource_type === "image" ? (
+                <img
+                  src={media[2].url}
+                  alt="content"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <video src={media[2].url} className="w-full h-full object-cover" />
+              )}
+              {media.length > 3 && (
+                <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                  <span className="text-white text-xl font-bold">
+                    {media.length - 3} more images
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default PostMedia;

@@ -4,12 +4,11 @@ import { NavLink } from "react-router-dom";
 const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const links = [
     { name: "Home", path: "", icon: "bx-home-alt-2" },
-    { name: "My Trips", path: "my-trips", icon: "bx-trip" },
-    { name: "Collaborated Trips", path: "collaborated-trips", icon: "bx-community" },
-    { name: "Bookmarked Posts", path: "bookmarked-posts", icon: "bx-bookmark" },
     { name: "Invited Trips", path: "invited-trips", icon: "bx-cursor-add" },
     { name: "Friends", path: "friends", icon: "bx-group" },
-    { name: "Explore", path: "explore", icon: "bx-star-circle" },
+    { name: "Tagged Posts", path: "tagged-posts", icon: "bx-tag" },
+    { name: "Mentioned Posts", path: "mentioned-posts", icon: "bx-at" },
+    { name: "Mentioned Comments", path: "comments", icon: "bx-message-circle-reply" },
   ];
 
   return (

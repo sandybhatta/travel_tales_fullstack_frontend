@@ -1,27 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import NavComponent from "./NavComponent";
-import { useSelector, useDispatch } from "react-redux";
-import { loadUserFromStorage } from "../slices/userSlice";
-import HomeFeed from "./HomeFeed";
 import SideBar from "./SideBar";
-import TripRelatedData from "./TripRelatedData";
 import { Outlet } from "react-router-dom";
 
 const Home = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const dispatch = useDispatch();
-
-  const userState = useSelector((state) => state.user);
-  const isStateIncomplete =
-    !userState.accessToken || !userState.username || !userState.email;
-
-  useEffect(() => {
-    if (isStateIncomplete) {
-      dispatch(loadUserFromStorage());
-    }
-  }, [userState, dispatch]);
 
   return (
     <div

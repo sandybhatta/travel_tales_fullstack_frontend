@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { loadUserFromStorage } from './slices/userSlice'
 
 import RegisterUser from './AuthenticationComponents/RegisterUser'
 import VerifyEmail from './AuthenticationComponents/VerifyEmail'
@@ -7,20 +9,28 @@ import Login from './AuthenticationComponents/Login'
 import Home from './HomeComponents/Home'
 
 import LandingPage from './LandingPage/LandingPage'
-import MyTrips from './SideBarComponents/MyTrips'
-import Collaborated from './SideBarComponents/Collaborated'
-import BookMarkedPosts from './SideBarComponents/BookMarkedPosts'
 import InvitedTrips from './SideBarComponents/InvitedTrips'
-import AcceptedTrips from './SideBarComponents/AcceptedTrips'
-import Explore from './SideBarComponents/Explore'
 import HomeFeed from './HomeComponents/HomeFeed'
 import Friends from './SideBarComponents/Friends'
+import TaggedPosts from './SideBarComponents/TaggedPosts'
+import MentionedPosts from './SideBarComponents/MentionedPosts'
+import Comments from './SideBarComponents/Comments'
 import ProfilePage from './ProfileSection/ProfilePage'
-import ViewTrip from './SideBarComponents/TripSection/ViewTrip'
+import ViewTrip from './TripDetails/ViewTrip'
 import PostDetailsPage from './PostDetails/PostDetailsPage'
+import SharePostPage from './PostDetails/SharePostPage'
 
 const App = () => {
   const [createModal, setCreateModal] = useState(false)
+  const dispatch = useDispatch();
+  const userState = useSelector((state) => state.user);
+  
+  useEffect(() => {
+    if (!userState.accessToken || !userState.username || !userState.email) {
+      dispatch(loadUserFromStorage());
+    }
+  }, [userState, dispatch]);
+
   return (
     <>
     
@@ -35,17 +45,16 @@ const App = () => {
 
           <Route path="/home" element={<Home />}>
             <Route index element={<HomeFeed createModal={createModal} setCreateModal={setCreateModal}/>} /> 
-            <Route path="my-trips" element={<MyTrips />} />
-            <Route path="collaborated-trips" element={<Collaborated />} />
-            <Route path="bookmarked-posts" element={<BookMarkedPosts />} />
             <Route path="invited-trips" element={<InvitedTrips />} />
-            <Route path="accepted-trips" element={<AcceptedTrips />} />
-            <Route path="explore" element={<Explore />} />
             <Route path="friends" element={<Friends />} />
+            <Route path="tagged-posts" element={<TaggedPosts />} />
+            <Route path="mentioned-posts" element={<MentionedPosts />} />
+            <Route path="comments" element={<Comments />} />
             
           </Route>
           <Route path='/trip/:tripId' element={<ViewTrip/>}/>
           <Route path='/post/:postId' element={<PostDetailsPage/>}/>
+          <Route path='/post/share/:postId' element={<SharePostPage/>}/>
           <Route path='profile/:userId' element={<ProfilePage/>} />
 
 

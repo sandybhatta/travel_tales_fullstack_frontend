@@ -34,3 +34,33 @@ export const replyToComment = async (postId, rootCommentId, parentCommentId, con
     const response = await mainApi.post(`/api/comment/${postId}/${rootCommentId}/${parentCommentId}/reply`, { content, mentions });
     return response.data;
 };
+
+export const editComment = async (commentId, content) => {
+    const response = await mainApi.patch(`/api/comment/${commentId}`, { content });
+    return response.data;
+};
+
+export const getCommentLikes = async (commentId) => {
+    const response = await mainApi.get(`/api/comment/${commentId}/likes`);
+    return response.data;
+};
+
+export const editPost = async (postId, data) => {
+    const response = await mainApi.patch(`/api/posts/${postId}`, data);
+    return response.data;
+};
+
+export const deletePost = async (postId) => {
+    const response = await mainApi.delete(`/api/posts/${postId}`);
+    return response.data;
+};
+
+export const sharePost = async (postId, data) => {
+    const response = await mainApi.post(`/api/posts/${postId}/share`, data);
+    return response.data;
+};
+
+export const searchMentions = async (query) => {
+    const response = await mainApi.get(`/api/user/search-mentions?q=${query}`);
+    return response.data;
+};
