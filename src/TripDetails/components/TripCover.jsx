@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import EditTripModal from './EditTripModal';
+import InviteTripModal from './InviteTripModal';
+import mainApi from '../../Apis/axios';
 
 const TripCover = ({
   trip,
@@ -6,10 +9,62 @@ const TripCover = ({
   setShowEditModal,
   handleLike,
   setShowLikedUsersModal,
-  formatDate
+  formatDate,
+  onTripUpdate
 }) => {
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [isInviteFormOpen, setIsInviteFormOpen] = useState(false);
+
+  // Local state for like
+  const [isLiked, setIsLiked] = useState(trip?.currentUser?.isLiked);
+  const [isLiking, setIsLiking] = useState(false);
+  const [likeCount, setLikeCount] = useState(trip?.totalLikes || 0);
+
+  useEffect(() => {
+    setIsLiked(trip?.currentUser?.isLiked);
+    setLikeCount(trip?.totalLikes || 0);
+  }, [trip]);
+
+  const handleLocalLike = async () => {
+    if (isLiking) return;
+
+    // Optimistic Update
+    const previousLiked = isLiked;
+    const previousCount = likeCount;
+    
+    setIsLiking(true);
+    setIsLiked(!previousLiked);
+    setLikeCount(prev => previousLiked ? prev - 1 : prev + 1);
+
+    try {
+       await mainApi.post(`/api/trips/${trip._id}/like`);
+       if(onTripUpdate) onTripUpdate(); 
+    } catch (error) {
+       console.error("Like failed", error);
+       // Rollback
+       setIsLiked(previousLiked);
+       setLikeCount(previousCount);
+    } finally {
+       setIsLiking(false);
+    }
+  };
+
   return (
     <>
+      {isEditFormOpen && (
+        <EditTripModal 
+            trip={trip} 
+            onClose={() => setIsEditFormOpen(false)} 
+            onUpdate={onTripUpdate} 
+        />
+      )}
+      {isInviteFormOpen && (
+        <InviteTripModal 
+            trip={trip} 
+            onClose={() => setIsInviteFormOpen(false)} 
+            onUpdate={onTripUpdate}
+        />
+      )}
       {trip?.coverPhoto?.url ? (
         <div className="h-[60vh] w-full relative shadow-2xl">
           <img
@@ -18,7 +73,7 @@ const TripCover = ({
             className="w-full h-full object-cover rounded-lg"
           />
 
-          {trip.currentUser.canEditTrip && (
+          {trip.currentUser.userStatus === 'owner' && (
             <div
               className="absolute top-5 right-5 bg-black/40 p-3 cursor-pointer rounded-lg flex items-center justify-center gap-3"
               onClick={(e) => {
@@ -39,14 +94,28 @@ const TripCover = ({
                     }}
                   ></i>
 
-                  {trip.currentUser.canEditTrip && (
-                    <p className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2">
+                  {trip.currentUser.userStatus === 'owner' && (
+                    <p 
+                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditFormOpen(true);
+                        setShowEditModal(false);
+                      }}
+                    >
                       <i className="bx bx-edit text-2xl "></i>
                       <span>Edit Trip</span>
                     </p>
                   )}
                   {trip.currentUser.canInviteFriends && (
-                    <p className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2">
+                    <p 
+                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsInviteFormOpen(true);
+                        setShowEditModal(false);
+                      }}
+                    >
                       <i className="bx bx-user-plus text-2xl "></i>
                       <span>Invite Trip</span>
                     </p>
@@ -77,14 +146,14 @@ const TripCover = ({
                 </span>
               </p>
               {/* like */}
-              <div onClick={handleLike}>
-                {trip.currentUser.isLiked ? (
+              <div onClick={handleLocalLike} className="cursor-pointer transition-transform active:scale-90">
+                {isLiked ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="red"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-7 h-7 cursor-pointer"
+                    className="w-7 h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -102,7 +171,7 @@ const TripCover = ({
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-7 h-7 cursor-pointer"
+                    className="w-7 h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -117,14 +186,15 @@ const TripCover = ({
                 )}
               </div>
 
-              <p className="text-white text-xl font-semibold cursor-pointer hover:bg-black/40"
-              
-              onClick={(e)=>{
-                e.stopPropagation()
-                setShowLikedUsersModal(true)
-              }}>
-                {trip.totalLikes} Likes
-              </p>
+              <button 
+                  className="text-white text-xl font-semibold cursor-pointer hover:bg-black/40 hover:underline bg-transparent border-none"
+                  onClick={(e)=>{
+                    e.stopPropagation()
+                    setShowLikedUsersModal(true)
+                  }}
+              >
+                {likeCount} Likes
+              </button>
 
               {/* comment */}
               <div className=" flex items-center justify-around gap-5">
@@ -156,7 +226,7 @@ const TripCover = ({
         </div>
       ) : (
         <div className="w-full px-5 py-3 bg-white rounded-lg relative ">
-          {trip.currentUser.canEditTrip && (
+          {trip.currentUser.userStatus === 'owner' && (
             <div
               className="absolute top-5 right-5 bg-black/40 p-3 cursor-pointer rounded-lg flex items-center justify-center gap-3"
               onClick={(e) => {
@@ -177,14 +247,28 @@ const TripCover = ({
                     }}
                   ></i>
 
-                  {trip.currentUser.canEditTrip && (
-                    <p className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2">
+                  {trip.currentUser.userStatus === 'owner' && (
+                    <p 
+                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditFormOpen(true);
+                        setShowEditModal(false);
+                      }}
+                    >
                       <i className="bx bx-edit text-2xl "></i>
                       <span>Edit Trip</span>
                     </p>
                   )}
                   {trip.currentUser.canInviteFriends && (
-                    <p className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2">
+                    <p 
+                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsInviteFormOpen(true);
+                        setShowEditModal(false);
+                      }}
+                    >
                       <i className="bx bx-user-plus text-2xl "></i>
                       <span>Invite Trip</span>
                     </p>
@@ -214,14 +298,14 @@ const TripCover = ({
                 </span>
               </p>
               {/* like */}
-              <div onClick={handleLike}>
-                {trip.currentUser.isLiked ? (
+              <div onClick={handleLocalLike} className="cursor-pointer transition-transform active:scale-90">
+                {isLiked ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="red"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-7 h-7 cursor-pointer"
+                    className="w-7 h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -239,7 +323,7 @@ const TripCover = ({
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-7 h-7 cursor-pointer"
+                    className="w-7 h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -254,9 +338,15 @@ const TripCover = ({
                 )}
               </div>
 
-              <p className="text-white text-xl font-semibold">
-                {trip.totalLikes} Likes
-              </p>
+              <button 
+                  className="text-white text-xl font-semibold cursor-pointer hover:bg-black/40 hover:underline bg-transparent border-none"
+                  onClick={(e)=>{
+                    e.stopPropagation()
+                    setShowLikedUsersModal(true)
+                  }}
+              >
+                {likeCount} Likes
+              </button>
 
               {/* comment */}
               <div className=" flex items-center justify-around gap-5">

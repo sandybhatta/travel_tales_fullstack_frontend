@@ -2,28 +2,42 @@ import React from 'react';
 
 const TripDescription = ({ trip, showDescription, setShowDescription }) => {
   return (
-    <div className="w-full px-5 py-5 rounded-lg bg-white flex flex-col items-start jusitfy-center gap-5">
-      <h2 className="text-2xl font-semibold text-black ">
-        About This Trip :
-      </h2>
-      <div className="w-full px-5 py-3  rounded-lg ">
-        {trip.description.length > 0 ? (
-          <p className="text-base text-gray-700 whitespace-pre-wrap">
-            {showDescription
-              ? trip.description
-              : trip.description.slice(0, 150)}{" "}
-            <span
-              className="text-red-500 font-semibold cursor-pointer text-lg"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDescription((prev) => !prev);
-              }}
-            >
-              {showDescription ? "... See Less" : "... See More"}{" "}
-            </span>
-          </p>
+    <div className="w-full px-6 py-6 rounded-xl bg-white shadow-sm flex flex-col items-start justify-center gap-4 transition-all hover:shadow-md border border-gray-100">
+      <div className="flex items-center gap-2 mb-1">
+        <i className='bx bxs-quote-left text-3xl text-red-500 opacity-20'></i>
+        <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+          About This Trip
+        </h2>
+      </div>
+      
+      <div className="w-full pl-4 border-l-4 border-red-50">
+        {trip.description && trip.description.length > 0 ? (
+          <div className="relative">
+            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap font-medium">
+              {showDescription
+                ? trip.description
+                : trip.description.slice(0, 200)}
+              {!showDescription && trip.description.length > 200 && "..."}
+            </p>
+            
+            {trip.description.length > 200 && (
+              <button
+                className="mt-2 text-sm font-bold text-red-500 hover:text-red-600 flex items-center gap-1 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDescription((prev) => !prev);
+                }}
+              >
+                {showDescription ? (
+                  <>See Less <i className='bx bx-chevron-up'></i></>
+                ) : (
+                  <>Read More <i className='bx bx-chevron-down'></i></>
+                )}
+              </button>
+            )}
+          </div>
         ) : (
-          <p>No Description added for this trip.</p>
+          <p className="text-gray-400 italic">No description added for this trip yet.</p>
         )}
       </div>
     </div>

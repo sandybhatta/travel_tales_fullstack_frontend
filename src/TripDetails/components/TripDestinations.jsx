@@ -4,22 +4,28 @@ const TripDestinations = ({ trip }) => {
   if (!trip.destinations || trip.destinations.length === 0) return null;
 
   return (
-    <div className="flex flex-col items-start justify-start gap-5 bg-white rounded-lg px-3 shadow-2xl pb-5 h-fit">
-      <div className="flex items-center justify-start gap-2 px-3 py-2 mb-3">
-        <i className="bx bx-location text-2xl text-red-500"></i>
-        <p className="text-xl text-black">Destinations</p>
+    <div className="flex flex-col items-start justify-start gap-5 bg-white rounded-xl px-5 shadow-sm hover:shadow-md transition-shadow pb-6 h-fit border border-gray-100">
+      <div className="flex items-center justify-start gap-3 px-1 py-2 mb-1">
+        <div className="p-2 bg-red-50 rounded-lg flex items-center justify-center">
+          <i className="bx bx-location text-red-500 text-2xl"></i>
+        </div>
+        <p className="text-xl font-bold text-gray-800">Destinations</p>
       </div>
 
-      <div className="flex flex-col items-center justify-around gap-4 w-full px-3">
+      <div className="flex flex-col items-center justify-around gap-4 w-full">
         {trip.destinations.map((destination) => (
           <div
             key={destination._id}
-            className="flex flex-col items-start justify-center gap-1 shadow-md w-full bg-[#EDF2F4] p-2"
+            className="flex flex-col items-start justify-center gap-1 w-full bg-gray-50 p-4 rounded-lg border border-gray-100 hover:bg-red-50/30 transition-colors"
           >
-            <p className="text-lg text-black">{destination.city}</p>
-            <p className="text-base text-gray-600">
-              {destination.state}, {destination.country}
-            </p>
+            <div className="flex items-center gap-2">
+              <i className='bx bxs-city text-gray-400'></i>
+              <p className="text-lg font-normal text-gray-800">
+                {[destination.city, destination.state, destination.country]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            </div>
           </div>
         ))}
       </div>

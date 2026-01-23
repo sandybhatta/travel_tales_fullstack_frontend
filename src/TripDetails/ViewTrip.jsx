@@ -5,9 +5,10 @@ import mainApi from "../Apis/axios";
 import ViewNoteTrip from "./components/ViewNoteTrip";
 import ViewTodoTrip from "./components/ViewTodoTrip";
 import PostsOfTrip from "./components/PostsOfTrip";
+import ViewTripSkeleton from "./components/ViewTripSkeleton";
 
 // Import modular components
-import TripRemovalModals from "./components/TripRemovalModals";
+import TripLikesModal from "./components/TripLikesModal";
 import TripCover from "./components/TripCover";
 import TripCollaborators from "./components/TripCollaborators";
 import TripDescription from "./components/TripDescription";
@@ -17,7 +18,7 @@ import TripStats from "./components/TripStats";
 
 const ViewTrip = () => {
   const { tripId } = useParams();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [showLikedUsersModal, setShowLikedUsersModal] = useState(false);
@@ -25,21 +26,7 @@ const ViewTrip = () => {
 
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
-  const [activeCollaboratorPage, setActiveCollaboratorPage] =
-    useState("collaborators");
-
-  const [confirmCollaboratorRemoval, setConfirmCollaboratorRemoval] = useState({
-    confirm: false,
-    userId: null,
-  });
-
-  const [confirmInvitedRemoval, setConfirmInvitedRemoval] = useState({
-    confirm: false,
-    userId: null,
-  });
-
-  const [invitedUsers, setInvitedUsers] = useState([]);
+  const [activeModal, setActiveModal] = useState(null); // 'expenses', 'notes', 'todos'
 
   const [trip, setTrip] = useState(null);
 
@@ -73,39 +60,6 @@ const ViewTrip = () => {
     }
   };
 
-  const handleRemoveCollaborator = async (userId) => {
-    setError("");
-    try {
-      const result = await mainApi.delete(
-        `/api/trips/${tripId}/collaborators/${userId}`
-      );
-
-      setTrip((prevTrip) => ({
-        ...prevTrip,
-        acceptedFriends: prevTrip.acceptedFriends.filter(
-          (friend) => friend.user._id !== userId
-        ),
-      }));
-    } catch (error) {
-      setError(error?.response?.data?.message || "Internal Server Error");
-    }
-  };
-
-  const handleRemoveInviteds = async (userId) => {
-    setError("");
-
-    try {
-      const result = await mainApi.delete(
-        `/api/trips/${tripId}/invited/${userId}`
-      );
-      setInvitedUsers((prev) => prev.filter((friend) => friend._id !== userId));
-    } catch (error) {
-      setError(error?.response?.data?.message || "Internal Server Error");
-    }
-  };
-
-
-
   useEffect(()=>{
 
     const fetchLikesOfTheTrip = async()=>{
@@ -137,45 +91,26 @@ const ViewTrip = () => {
 console.log(trip);
 
 
-  useEffect(() => {
-    const tripInfoFetch = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await mainApi.get(`/api/trips/${tripId}`);
-
-        setTrip(response.data.trip);
-      } catch (error) {
-        if (error?.response?.data?.message) {
-          setError(error.response.data.message);
-        } else if (error.code === "ERR_NETWORK") {
-          setError("Network connection is bad");
-        }
-      } finally {
-        setLoading(false);
+  const fetchTripData = async (withLoading = true) => {
+    if (withLoading) setLoading(true);
+    setError("");
+    try {
+      const response = await mainApi.get(`/api/trips/${tripId}`);
+      setTrip(response.data.trip);
+    } catch (error) {
+      if (error?.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.code === "ERR_NETWORK") {
+        setError("Network connection is bad");
       }
-    };
-    tripInfoFetch();
-  }, [tripId]);
-
-  useEffect(() => {
-    const fetchInviteds = async () => {
-      try {
-        setError("");
-        const result = await mainApi.get(`/api/trips/${tripId}/invited`);
-        setInvitedUsers(result.data.invitedFriends);
-      } catch (error) {
-        if (error?.response?.data?.message) {
-          setError(error.response.data.message);
-        } else if (error.code === "ERR_NETWORK") {
-          setError("Network connection is bad");
-        }
-      }
-    };
-    if (activeCollaboratorPage === "inviteds") {
-      fetchInviteds();
+    } finally {
+      if (withLoading) setLoading(false);
     }
-  }, [activeCollaboratorPage]);
+  };
+
+  useEffect(() => {
+    fetchTripData(true);
+  }, [tripId]);
 
   function formatAcceptedDate(dateString) {
     return new Date(dateString).toLocaleString("en-IN", {
@@ -253,42 +188,27 @@ console.log(trip);
 
     return tripsStats;
   }, [trip]);
+  
+  if (loading) return <ViewTripSkeleton />;
 
   return (
     <div
       className="w-full min-h-screen h-fit pb-8 grid grid-cols-[1fr_5fr_1fr] gap-4 bg-[#EDF2F4]"
       onClick={() => {
-        setShowCollaboratorModal(false);
         setShowEditModal(false);
-        setConfirmCollaboratorRemoval({
-          confirm: false,
-          userId: null,
-        });
-        setConfirmInvitedRemoval({
-          confirm: false,
-          userId: null,
-        });
       }}
     >
       <div className="col-start-2 col-end-3 ">
-        {loading && (
-          <p className="font-semibold text-xl text-black">
-            Loading trip details...
-          </p>
-        )}
         {error && (
           <p className="text-red-500 text-3xl font-semibold text-center">
             Error: {error}
           </p>
         )}
 
-        <TripRemovalModals
-            confirmCollaboratorRemoval={confirmCollaboratorRemoval}
-            setConfirmCollaboratorRemoval={setConfirmCollaboratorRemoval}
-            handleRemoveCollaborator={handleRemoveCollaborator}
-            confirmInvitedRemoval={confirmInvitedRemoval}
-            setConfirmInvitedRemoval={setConfirmInvitedRemoval}
-            handleRemoveInviteds={handleRemoveInviteds}
+        <TripLikesModal 
+            isOpen={showLikedUsersModal}
+            onClose={() => setShowLikedUsersModal(false)}
+            likedUsersData={likedUsers}
         />
 
         {trip && (
@@ -301,18 +221,11 @@ console.log(trip);
                 handleLike={handleLike}
                 setShowLikedUsersModal={setShowLikedUsersModal}
                 formatDate={formatDate}
+                onTripUpdate={() => fetchTripData(false)}
             />
 
             <TripCollaborators
                 trip={trip}
-                showCollaboratorModal={showCollaboratorModal}
-                setShowCollaboratorModal={setShowCollaboratorModal}
-                activeCollaboratorPage={activeCollaboratorPage}
-                setActiveCollaboratorPage={setActiveCollaboratorPage}
-                invitedUsers={invitedUsers}
-                setConfirmCollaboratorRemoval={setConfirmCollaboratorRemoval}
-                setConfirmInvitedRemoval={setConfirmInvitedRemoval}
-                formatAcceptedDate={formatAcceptedDate}
             />
 
             <TripDescription
@@ -321,35 +234,119 @@ console.log(trip);
                 setShowDescription={setShowDescription}
             />
 
-            <div
-              className={` w-full grid ${
-                trip.currentUser.canAccessPrivateData
-                  ? "grid-cols-3"
-                  : "grid-cols-2"
-              } gap-5 px-5 py-5 `}
-            >
-              <TripDestinations trip={trip} />
+            {/* Main Content Grid */}
+            <div className="w-full px-5 py-5 flex flex-col gap-8">
+              
+              {/* Top Row: Destinations + Stats */}
+              <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <TripDestinations trip={trip} />
+                <TripStats
+                    trip={trip}
+                    stats={stats}
+                    showTripStats={showTripStats}
+                    setShowTripStats={setShowTripStats}
+                />
+              </div>
 
-              <TripExpenses
-                  trip={trip}
-                  organizedExpenses={organizedExpenses}
-                  formatAcceptedDate={formatAcceptedDate}
-              />
+              {/* Interactive Boxes (Only for Owner/Collaborators) */}
+              {trip.currentUser.canAccessPrivateData && (
+                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Expenses Box */}
+                    <div 
+                        onClick={() => setActiveModal('expenses')} 
+                        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 cursor-pointer transition-all group flex flex-col items-center gap-4"
+                    >
+                        <div className="p-4 bg-red-50 rounded-full group-hover:bg-red-100 transition-colors flex items-center justify-center">
+                            <i className="bx bx-dollar-circle text-4xl text-red-500"></i>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-gray-800">Expenses</h3>
+                            <p className="text-gray-500 text-sm mt-1">Manage trip budget & costs</p>
+                        </div>
+                    </div>
 
-              <TripStats
-                  trip={trip}
-                  stats={stats}
-                  showTripStats={showTripStats}
-                  setShowTripStats={setShowTripStats}
-              />
+                    {/* Notes Box */}
+                    <div 
+                        onClick={() => setActiveModal('notes')} 
+                        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 cursor-pointer transition-all group flex flex-col items-center gap-4"
+                    >
+                        <div className="p-4 bg-yellow-50 rounded-full group-hover:bg-yellow-100 transition-colors flex items-center justify-center">
+                            <i className="bx bx-note text-4xl text-yellow-500"></i>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-gray-800">Notes</h3>
+                            <p className="text-gray-500 text-sm mt-1">Pinned info & memos</p>
+                        </div>
+                    </div>
+
+                    {/* Todo List Box */}
+                    <div 
+                        onClick={() => setActiveModal('todos')} 
+                        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 cursor-pointer transition-all group flex flex-col items-center gap-4"
+                    >
+                        <div className="p-4 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors flex items-center justify-center">
+                            <i className="bx bx-check-square text-4xl text-blue-500"></i>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-gray-800">Todo List</h3>
+                            <p className="text-gray-500 text-sm mt-1">Tasks & assignments</p>
+                        </div>
+                    </div>
+                </div>
+              )}
             </div>
 
-            {/* notes and todo lists */}
-            {trip.currentUser.canAccessPrivateData && (
-              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-10">
-                <ViewNoteTrip trip={trip} setTrip={setTrip}/>
-                <ViewTodoTrip trip={trip} setTrip={setTrip} />
-              </div>
+            {/* Generic Modal for Expenses, Notes, Todos */}
+            {activeModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setActiveModal(null)}>
+                    <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-scaleIn" onClick={e => e.stopPropagation()}>
+                        
+                        {/* Modal Header */}
+                        <div className="p-5 border-b flex justify-between items-center sticky top-0 bg-white z-20">
+                            <div className="flex items-center gap-3">
+                                {activeModal === 'expenses' && <i className="bx bx-dollar-circle text-3xl text-red-500"></i>}
+                                {activeModal === 'notes' && <i className="bx bx-note text-3xl text-yellow-500"></i>}
+                                {activeModal === 'todos' && <i className="bx bx-check-square text-3xl text-blue-500"></i>}
+                                <h3 className="text-2xl font-bold text-gray-800 capitalize">
+                                    {activeModal === 'todos' ? 'Todo List' : activeModal}
+                                </h3>
+                            </div>
+                            <button 
+                                onClick={() => setActiveModal(null)} 
+                                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                            >
+                                <i className='bx bx-x text-3xl text-gray-500'></i>
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="overflow-y-auto p-6 bg-[#EDF2F4] flex-1">
+                            {activeModal === 'expenses' && (
+                                <TripExpenses
+                                    trip={trip}
+                                    organizedExpenses={organizedExpenses}
+                                    formatAcceptedDate={formatAcceptedDate}
+                                    onTripUpdate={() => fetchTripData(false)}
+                                    isModal={true}
+                                />
+                            )}
+                            {activeModal === 'notes' && (
+                                <ViewNoteTrip 
+                                    trip={trip} 
+                                    setTrip={setTrip} 
+                                    isModal={true}
+                                />
+                            )}
+                            {activeModal === 'todos' && (
+                                <ViewTodoTrip 
+                                    trip={trip} 
+                                    setTrip={setTrip} 
+                                    isModal={true}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
 
             <PostsOfTrip trip={trip} setTrip={setTrip} />
