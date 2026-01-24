@@ -7,6 +7,7 @@ import RegisterUser from './AuthenticationComponents/RegisterUser'
 import VerifyEmail from './AuthenticationComponents/VerifyEmail'
 import Login from './AuthenticationComponents/Login'
 import Home from './HomeComponents/Home'
+import SearchResultsPage from './HomeComponents/SearchResultsPage'
 
 import LandingPage from './LandingPage/LandingPage'
 import InvitedTrips from './SideBarComponents/InvitedTrips'
@@ -17,6 +18,7 @@ import MentionedPosts from './SideBarComponents/MentionedPosts'
 import Comments from './SideBarComponents/Comments'
 import ProfilePage from './ProfileSection/ProfilePage'
 import ViewTrip from './TripDetails/ViewTrip'
+import TaggedTripsPage from './TripDetails/TaggedTripsPage'
 import PostDetailsPage from './PostDetails/PostDetailsPage'
 import SharePostPage from './PostDetails/SharePostPage'
 
@@ -50,9 +52,11 @@ const App = () => {
             <Route path="tagged-posts" element={<TaggedPosts />} />
             <Route path="mentioned-posts" element={<MentionedPosts />} />
             <Route path="comments" element={<Comments />} />
+            <Route path="search" element={<SearchResultsPage />} />
             
           </Route>
           <Route path='/trip/:tripId' element={<ViewTrip/>}/>
+          <Route path='/trips/tag/:tagname' element={<TaggedTripsPage/>}/>
           <Route path='/post/:postId' element={<PostDetailsPage/>}/>
           <Route path='/post/share/:postId' element={<SharePostPage/>}/>
           <Route path='profile/:userId' element={<ProfilePage/>} />

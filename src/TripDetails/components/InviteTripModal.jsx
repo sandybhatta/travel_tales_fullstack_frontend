@@ -14,6 +14,7 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
     const [activeTab, setActiveTab] = useState('invited'); // 'invited' | 'collaborators' | 'invite'
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [justInvitedIds, setJustInvitedIds] = useState(new Set()); // Track newly invited users to hide them
 
     // Check if trip is past (end date is before today)
     const isPastTrip = trip?.endDate && new Date(trip.endDate) < new Date(new Date().setHours(0, 0, 0, 0));
@@ -58,8 +59,9 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
             const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                   user.name.toLowerCase().includes(searchTerm.toLowerCase());
             const isCollaborator = collaboratorIds.has(user._id);
+            const isJustInvited = justInvitedIds.has(user._id);
             
-            return matchesSearch && !isCollaborator;
+            return matchesSearch && !isCollaborator && !isJustInvited;
         });
     };
 
@@ -70,16 +72,27 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
     // --- Actions ---
 
     const handleInvite = async (userToInvite) => {
-        // Optimistic Update
-        const originalInvited = [...invitedUsers];
+        // Optimistic Update: Hide user immediately
+        setJustInvitedIds(prev => {
+            const next = new Set(prev);
+            next.add(userToInvite._id);
+            return next;
+        });
+
+        // Add to invited list (optional, but good for consistency if they switch tabs)
         setInvitedUsers(prev => [...prev, userToInvite]);
 
         try {
             await mainApi.post(`/api/trips/${trip._id}/invite`, { invitee: userToInvite._id });
         } catch (error) {
             console.error("Invite failed", error);
-            // Rollback
-            setInvitedUsers(originalInvited);
+            // Rollback: Show user again
+            setJustInvitedIds(prev => {
+                const next = new Set(prev);
+                next.delete(userToInvite._id);
+                return next;
+            });
+            setInvitedUsers(prev => prev.filter(u => u._id !== userToInvite._id));
         }
     };
 
@@ -114,6 +127,20 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
             setCollaborators(originalCollaborators);
         }
     };
+
+    // Shimmer Component
+    const UserShimmer = () => (
+        <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm animate-pulse">
+            <div className="flex items-center gap-3 w-full">
+                <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+                <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                </div>
+            </div>
+            <div className="w-20 h-8 bg-gray-200 rounded-lg"></div>
+        </div>
+    );
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
@@ -169,8 +196,11 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                     
                     {/* Tab Content: Invited Friends */}
                     {activeTab === 'invited' && (
-                        <div className="space-y-4 animate-fadeIn">
-                             {invitedUsers.length > 0 ? (
+                        <div className="space-y-4">
+                            {loading ? (
+                                // Shimmer Loading
+                                Array(5).fill(0).map((_, i) => <UserShimmer key={i} />)
+                            ) : invitedUsers.length > 0 ? (
                                 invitedUsers.map(user => (
                                     <div key={user._id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
                                         <div className="flex items-center gap-3">
@@ -205,8 +235,11 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
 
                     {/* Tab Content: Collaborators */}
                     {activeTab === 'collaborators' && (
-                        <div className="space-y-4 animate-fadeIn">
-                            {collaborators.length > 0 ? (
+                        <div className="space-y-4">
+                            {loading ? (
+                                // Shimmer Loading
+                                Array(5).fill(0).map((_, i) => <UserShimmer key={i} />)
+                            ) : collaborators.length > 0 ? (
                                 collaborators.map((collab, index) => {
                                     const user = collab.user; 
                                     if (!user) return null;
@@ -248,7 +281,7 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
 
                     {/* Tab Content: Invite Friends */}
                     {activeTab === 'invite' && (
-                        <div className="space-y-4 animate-fadeIn">
+                        <div className="space-y-4">
                             {isPastTrip ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-center space-y-4">
                                     <div className="bg-red-50 p-6 rounded-full">

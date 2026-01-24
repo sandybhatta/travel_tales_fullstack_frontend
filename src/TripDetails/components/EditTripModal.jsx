@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mainApi from '../../Apis/axios';
+import { getTripById } from '../../Apis/tripApi';
 
 const ALLOWED_TAGS = [
     "adventure", "beach", "mountains", "history", "food", "wildlife", 
@@ -147,7 +148,7 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
             
             // Serialize complex data
             // Filter out empty destinations before sending
-            const validDestinations = formData.destinations.filter(d => d.city.trim() !== '' && d.country.trim() !== '');
+            const validDestinations = formData.destinations.filter(d => d.city.trim() !== '' || d.country.trim() !== '' || d.state.trim() !== '');
             data.append('tags', JSON.stringify(formData.tags));
             data.append('destinations', JSON.stringify(validDestinations));
 
@@ -155,15 +156,17 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                 data.append('coverPhoto', formData.coverPhoto);
             }
 
-            const response = await mainApi.patch(`/api/trips/${trip._id}`, data, {
+            await mainApi.patch(`/api/trips/${trip._id}`, data, {
                 onUploadProgress: (progressEvent) => {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     setUploadProgress(percentCompleted);
                 }
             });
 
-            if (onUpdate && response.data.trip) {
-                onUpdate(response.data.trip);
+            // Refetch trip to show changes
+            const updatedTripData = await getTripById(trip._id);
+            if (onUpdate && updatedTripData.trip) {
+                onUpdate(updatedTripData.trip);
             }
             onClose();
         } catch (err) {
@@ -179,7 +182,7 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
             {loading && (
                 <div className="fixed top-0 left-0 w-full h-1 z-[110]">
                     <div 
-                        className="h-full bg-red-600 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(220,38,38,0.7)]"
+                        className="h-full bg-[#EF233C] transition-all duration-300 ease-out shadow-[0_0_10px_rgba(239,35,60,0.7)]"
                         style={{ width: `${uploadProgress}%` }}
                     ></div>
                 </div>
@@ -188,24 +191,24 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
             <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
                     <h2 className="text-2xl font-bold text-gray-800">Edit Trip</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-red-500 transition-colors">
+                    <button onClick={onClose} className="text-gray-500 hover:text-[#EF233C] transition-colors">
                         <i className="bx bx-x text-3xl"></i>
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                    {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg">{error}</div>}
+                    {error && <div className="bg-red-100 text-[#EF233C] p-3 rounded-lg border border-red-200">{error}</div>}
 
                     {/* Cover Photo */}
                     <div className="space-y-2">
                         <label className="block font-semibold text-gray-700">Cover Photo</label>
-                        <div className="relative w-full h-64 bg-gray-100 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-red-500 transition-colors group cursor-pointer">
+                        <div className="relative w-full h-64 rounded-2xl overflow-hidden group cursor-pointer shadow-md">
                             {previewUrl ? (
-                                <img src={previewUrl} alt="Cover" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                                <img src={previewUrl} alt="Cover" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                    <i className="bx bx-image-add text-5xl mb-2"></i>
-                                    <span className="text-lg font-medium  ">Upload Cover Photo</span>
+                                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center text-gray-400">
+                                    <i className="bx bx-image-add text-6xl mb-2"></i>
+                                    <span className="text-lg font-medium">Upload Cover Photo</span>
                                 </div>
                             )}
                             <input 
@@ -214,10 +217,9 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                                 accept="image/*"
                                 className="absolute inset-0 opacity-0 cursor-pointer z-20"
                             />
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                <span className="bg-white text-black font-semibold text-lg flex items-center gap-2 px-5 py-3 rounded-lg">
-                                    <i className='bx bx-edit'></i> Change Photo
-                                </span>
+                            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 backdrop-blur-[2px]">
+                                <i className='bx bx-camera text-4xl text-white mb-2'></i>
+                                <span className="text-white font-semibold text-lg">Change Cover Photo</span>
                             </div>
                         </div>
                     </div>
@@ -225,8 +227,8 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                     {/* Title */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <label className="block font-semibold text-gray-700">Title</label>
-                            <span className={`text-sm ${formData.title.length === 100 ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
+                            <label className="block font-bold text-gray-700 text-lg">Title</label>
+                            <span className={`text-sm font-medium ${formData.title.length === 100 ? 'text-[#EF233C]' : 'text-gray-500'}`}>
                                 {formData.title.length} / 100
                             </span>
                         </div>
@@ -236,7 +238,8 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                             value={formData.title}
                             onChange={handleChange}
                             maxLength={100}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all"
+                            placeholder="Enter trip title..."
+                            className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EF233C] focus:border-[#EF233C] outline-none transition-all text-lg font-medium placeholder-gray-400 bg-gray-50 focus:bg-white"
                             required
                         />
                     </div>
@@ -244,8 +247,8 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                     {/* Description */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <label className="block font-semibold text-gray-700">Description</label>
-                            <span className={`text-sm ${formData.description.length === 1000 ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
+                            <label className="block font-bold text-gray-700 text-lg">Description</label>
+                            <span className={`text-sm font-medium ${formData.description.length === 1000 ? 'text-[#EF233C]' : 'text-gray-500'}`}>
                                 {formData.description.length} / 1000
                             </span>
                         </div>
@@ -255,40 +258,43 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                             value={formData.description}
                             onChange={handleChange}
                             maxLength={1000}
-                            rows="1"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none resize-none overflow-hidden transition-all min-h-[100px]"
+                            rows="3"
+                            placeholder="Describe your adventure..."
+                            className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EF233C] focus:border-[#EF233C] outline-none resize-none overflow-hidden transition-all min-h-[120px] bg-gray-50 focus:bg-white"
                         ></textarea>
                     </div>
 
                     {/* Destinations */}
-                    <div className="space-y-4 bg-[#edf2f4] p-4 sm:p-6 rounded-xl">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-300 pb-3 gap-3">
+                    <div className="space-y-6 bg-[#edf2f4] p-6 rounded-2xl shadow-inner">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-300/50 pb-4 gap-4">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-800">Destinations</h3>
-                                <p className="text-sm text-gray-500">Manage your trip stops</p>
+                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <i className='bx bx-map-alt text-[#EF233C]'></i> Destinations
+                                </h3>
+                                <p className="text-sm text-gray-500 mt-1">Where are you going?</p>
                             </div>
                             <button 
                                 type="button" 
                                 onClick={addDestination}
-                                className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors shadow-md w-full sm:w-auto justify-center"
+                                className="flex items-center gap-2 bg-[#EF233C] text-white px-5 py-2.5 rounded-xl hover:bg-[#D90429] transition-all shadow-lg hover:shadow-xl w-full sm:w-auto justify-center font-semibold transform hover:-translate-y-0.5"
                             >
-                                <i className='bx bx-plus text-xl'></i> Add Destination
+                                <i className='bx bx-plus text-xl'></i> Add
                             </button>
                         </div>
                         
                         <div className="space-y-4">
                             {formData.destinations.map((dest, index) => (
-                                <div key={index} className="bg-white p-5 rounded-xl shadow-md border border-gray-100 relative group transition-all hover:shadow-lg">
+                                <div key={index} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 relative group hover:shadow-md transition-all">
                                     <div className="flex justify-between items-center mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="bg-red-500 text-white text-sm font-bold px-3 py-0.5 rounded-full">#{index + 1}</span>
-                                            <h4 className="font-bold text-gray-700">Destination</h4>
-                                        </div>
+                                        <h4 className="font-bold text-gray-700 flex items-center gap-2">
+                                            <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-lg border border-gray-200">#{index + 1}</span>
+                                            Destination
+                                        </h4>
                                         {formData.destinations.length > 1 && (
                                             <button 
                                                 type="button" 
                                                 onClick={() => removeDestination(index)}
-                                                className=" text-red-500 transition-colors p-1 rounded-full hover:bg-red-50"
+                                                className="text-gray-400 hover:text-[#EF233C] transition-colors p-2 rounded-full hover:bg-red-50"
                                                 title="Remove destination"
                                             >
                                                 <i className='bx bx-trash text-xl'></i>
@@ -296,34 +302,34 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                                         )}
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">City</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">City</label>
                                             <input
                                                 type="text"
                                                 placeholder="e.g. Paris"
                                                 value={dest.city}
                                                 onChange={(e) => handleDestinationChange(index, 'city', e.target.value)}
-                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-red-400 outline-none transition-all font-medium"
+                                                className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#EF233C] outline-none transition-all font-medium text-gray-700 placeholder-gray-300"
                                             />
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">State</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">State</label>
                                             <input
                                                 type="text"
                                                 placeholder="Optional"
                                                 value={dest.state}
                                                 onChange={(e) => handleDestinationChange(index, 'state', e.target.value)}
-                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-red-400 outline-none transition-all font-medium"
+                                                className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#EF233C] outline-none transition-all font-medium text-gray-700 placeholder-gray-300"
                                             />
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Country</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Country</label>
                                             <input
                                                 type="text"
                                                 placeholder="e.g. France"
                                                 value={dest.country}
                                                 onChange={(e) => handleDestinationChange(index, 'country', e.target.value)}
-                                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-red-400 outline-none transition-all font-medium"
+                                                className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#EF233C] outline-none transition-all font-medium text-gray-700 placeholder-gray-300"
                                             />
                                         </div>
                                     </div>
@@ -334,16 +340,16 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
 
                     {/* Travel Budget */}
                     <div className="space-y-2">
-                        <label className="block font-semibold text-gray-700">Travel Budget</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+                        <label className="block font-bold text-gray-700 text-lg">Travel Budget</label>
+                        <div className="relative group">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg group-focus-within:text-[#EF233C] transition-colors">$</span>
                             <input
                                 type="number"
                                 name="travelBudget"
                                 value={formData.travelBudget}
                                 onChange={handleChange}
                                 min="0"
-                                className="w-full p-3 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none transition-all"
+                                className="w-full p-4 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EF233C] focus:border-[#EF233C] outline-none transition-all text-lg font-medium bg-gray-50 focus:bg-white"
                             />
                         </div>
                     </div>
@@ -351,56 +357,59 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                     {/* Dates & Visibility */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                            <label className="block font-semibold text-gray-700">Start Date</label>
+                            <label className="block font-bold text-gray-700">Start Date</label>
                             <input
                                 type="date"
                                 name="startDate"
                                 value={formData.startDate}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 outline-none"
+                                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#EF233C] outline-none bg-gray-50 focus:bg-white transition-all"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="block font-semibold text-gray-700">End Date</label>
+                            <label className="block font-bold text-gray-700">End Date</label>
                             <input
                                 type="date"
                                 name="endDate"
                                 value={formData.endDate}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 outline-none"
+                                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#EF233C] outline-none bg-gray-50 focus:bg-white transition-all"
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="block font-semibold text-gray-700">Visibility</label>
-                            <select
-                                name="visibility"
-                                value={formData.visibility}
-                                onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 outline-none"
-                            >
-                                <option value="public">Public</option>
-                                <option value="followers">Followers</option>
-                                <option value="close_friends">Close Friends</option>
-                                <option value="private">Private</option>
-                            </select>
+                            <label className="block font-bold text-gray-700">Visibility</label>
+                            <div className="relative">
+                                <select
+                                    name="visibility"
+                                    value={formData.visibility}
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#EF233C] outline-none bg-gray-50 focus:bg-white transition-all appearance-none"
+                                >
+                                    <option value="public">Public</option>
+                                    <option value="followers">Followers</option>
+                                    <option value="close_friends">Close Friends</option>
+                                    <option value="private">Private</option>
+                                </select>
+                                <i className='bx bx-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xl text-gray-500 pointer-events-none'></i>
+                            </div>
                         </div>
                     </div>
 
                     {/* Tags */}
                     <div className="space-y-2">
-                        <label className="block font-semibold text-gray-700">Tags</label>
-                        <div className="flex flex-wrap gap-2 p-4 border border-gray-300 rounded-lg bg-gray-50 max-h-48 overflow-y-auto">
+                        <label className="block font-bold text-gray-700 text-lg">Tags</label>
+                        <div className="flex flex-wrap gap-2 p-4 border border-gray-200 rounded-xl bg-gray-50 max-h-48 overflow-y-auto custom-scrollbar">
                             {ALLOWED_TAGS.map(tag => (
                                 <button
                                     key={tag}
                                     type="button"
                                     onClick={() => handleTagToggle(tag)}
-                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                                         formData.tags.includes(tag)
-                                            ? 'bg-red-500 text-white shadow-md transform scale-105'
-                                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                                            ? 'bg-[#EF233C] text-white shadow-md transform scale-105'
+                                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 hover:border-gray-300'
                                     }`}
                                 >
                                     #{tag}
@@ -410,19 +419,25 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                     </div>
 
                     {/* Status Toggles & Info */}
-                    <div className="bg-red-50 p-6 rounded-xl border border-blue-100 space-y-4">
-                        <div className="flex items-start gap-3 text-red-800 mb-4">
-                            <i className='bx bx-info-circle text-2xl mt-1'></i>
+                    <div className="bg-red-50 p-6 rounded-2xl border border-red-100 space-y-5">
+                        <div className="flex items-start gap-4 text-[#EF233C]">
+                            <i className='bx bx-info-circle text-2xl mt-0.5 shrink-0'></i>
                             <div className="text-sm">
-                                <p className="font-semibold mb-1">Trip Status Information:</p>
-                                <ul className="list-disc pl-4 space-y-1">
-                                    <li><strong>Archive Trip:</strong> Hides the trip from your main profile but keeps it saved. Good for old trips you don't want to showcase.</li>
-                                    <li><strong>Mark Completed:</strong> Indicates the trip has finished. This moves it to the "Past Trips" section and updates your travel stats.</li>
+                                <p className="font-bold mb-2 text-base">Trip Status Actions:</p>
+                                <ul className="space-y-2 text-gray-700">
+                                    <li className="flex items-start gap-2">
+                                        <span className="font-bold text-[#EF233C]">•</span>
+                                        <span><strong>Mark as Completed:</strong> If enabled, the trip end date will automatically update to today. This moves the trip to your "Past Trips" history. If the trip's end date is already in the past, this is enabled by default and cannot be changed.</span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                        <span className="font-bold text-[#EF233C]">•</span>
+                                        <span><strong>Archive Trip:</strong> Hides this trip from your public profile. It will be moved to the "Archived" tab where only you can see it. You can restore it later.</span>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-8">
+                        <div className="flex flex-wrap gap-8 pt-2 border-t border-red-200/50">
                             <label className="flex items-center gap-3 cursor-pointer group">
                                 <div className="relative">
                                     <input
@@ -432,12 +447,12 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                                         onChange={handleChange}
                                         className="sr-only peer"
                                     />
-                                    <div className="w-14 h-7 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-500"></div>
+                                    <div className="w-14 h-7 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-500 shadow-inner"></div>
                                 </div>
-                                <span className="font-semibold text-gray-700 group-hover:text-orange-600 transition-colors">Archive Trip</span>
+                                <span className="font-bold text-gray-700 group-hover:text-orange-600 transition-colors">Archive Trip</span>
                             </label>
 
-                            <label className={`flex items-center gap-3 cursor-pointer group ${isPastTrip ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            <label className={`flex items-center gap-3 cursor-pointer group ${isPastTrip ? 'opacity-70 cursor-not-allowed' : ''}`}>
                                 <div className="relative">
                                     <input
                                         type="checkbox"
@@ -447,30 +462,30 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                                         onChange={handleChange}
                                         className="sr-only peer"
                                     />
-                                    <div className="w-14 h-7 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+                                    <div className="w-14 h-7 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[#EF233C] shadow-inner"></div>
                                 </div>
-                                <span className="font-semibold text-gray-700 group-hover:text-green-600 transition-colors">
-                                    {isPastTrip ? 'Completed (Past Trip)' : 'Mark Completed'}
+                                <span className="font-bold text-gray-700 group-hover:text-[#EF233C] transition-colors">
+                                    {isPastTrip ? 'Completed (Past Trip)' : 'Mark as Completed'}
                                 </span>
                             </label>
                         </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex justify-end gap-4 pt-6 border-t">
+                    <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-6 py-2.5 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
+                            className="px-6 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-8 py-2.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            className="px-8 py-3 bg-[#EF233C] text-white font-bold rounded-xl hover:bg-[#D90429] transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95"
                         >
-                            {loading && <i className="bx bx-loader-alt animate-spin"></i>}
+                            {loading ? <i className="bx bx-loader-alt animate-spin text-xl"></i> : <i className='bx bx-save text-xl'></i>}
                             Save Changes
                         </button>
                     </div>

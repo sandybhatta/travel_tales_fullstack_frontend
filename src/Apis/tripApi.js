@@ -19,3 +19,23 @@ export const getCollaboratedTrips = async (userId) => {
         throw error;
     }
 };
+
+export const getTripById = async (tripId) => {
+    try {
+        const response = await mainApi.get(`/api/trips/${tripId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching trip:", error);
+        throw error;
+    }
+};
+
+export const getTripsByTag = async (tagname) => {
+    try {
+        const response = await mainApi.get(`/api/trips/tag/${tagname}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching trips by tag:", error);
+        throw error;
+    }
+};

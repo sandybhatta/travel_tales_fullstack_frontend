@@ -68,7 +68,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
   /* ----------------------- filter posts not in trips ----------------------- */
 
   const availablePosts = useMemo(() => {
-    const postsWithNoTrip = myPosts.filter((p) => !p.tripId);
+    const postsWithNoTrip = myPosts.filter((p) => !p.tripId && !p.sharedFrom);
     return postsWithNoTrip.map((p) => ({
       ...p,
       isSelected: false,
@@ -302,6 +302,15 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
   const [likedPostsIds, setLikedPostsIds] = useState([]);
 
+  const [taggedUsersModal, setTaggedUsersModal] = useState({
+    show: false,
+    users: [],
+  });
+
+  const isCollaborator = (userId) => {
+    return trip.collaborators?.some((c) => c._id === userId);
+  };
+
   const handlePostLikeInItinerary = async (postId, day) => {
     if (likedPostsIds.includes(postId)) return;
   
@@ -407,9 +416,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                 <div className="w-[90%] h-1/3 rounded-t-[10px] bg-black/90 border-1 border-white"></div>
               </div>
             )}
-            <Link
-              to={`/post/${p.post._id}`}
-              className="w-full h-80 relative overflow-hidden group rounded-lg block"
+            <div
+              onClick={() => setShowViewItenary(true)}
+              className="w-full h-80 relative overflow-hidden group rounded-lg block cursor-pointer"
             >
               {/* Media / Caption */}
               {p.post.media?.length ? (
@@ -509,9 +518,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
                     }`}
-                    onClick={() =>
-                      handlePostHighlight(p.post._id, "unHighlight")
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePostHighlight(p.post._id, "unHighlight");
+                    }}
                   >
                     <svg
                       className="w-full h-full"
@@ -532,7 +542,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
                     }`}
-                    onClick={() => handlePostHighlight(p.post._id, "highlight")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePostHighlight(p.post._id, "highlight");
+                    }}
                   >
                     <svg
                       className="w-full h-full "
@@ -562,7 +575,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                 {canRemovePostFromTrip(p.post) && (
                   <i
                     className="bx bx-trash p-2 bg-white rounded-full text-red-500 text-xl  cursor-pointer"
-                    onClick={() => handlePostRemove(p.post._id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePostRemove(p.post._id);
+                    }}
                   />
                 )}
               </div>
@@ -573,7 +589,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   Day {p.dayNumber}
                 </div>
               )}
-            </Link>
+            </div>
 
             {/* highlighted by  */}
 
@@ -591,15 +607,23 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   />
                 </svg>
 
-                <img
-                  src={p.highlightedBy.avatar?.url || p.highlightedBy.avatar}
-                  alt="image"
-                  className="h-8 w-8 rounded-full object-cover"
-                />
+                <Link
+                  to={`/profile/${p.highlightedBy._id}`}
+                  className="flex items-center gap-2"
+                >
+                  <img
+                    src={p.highlightedBy.avatar?.url || p.highlightedBy.avatar}
+                    alt="image"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                </Link>
                 <p className="text-black text-sm">
-                  <span className="font-semibold">
+                  <Link
+                    to={`/profile/${p.highlightedBy._id}`}
+                    className="font-semibold hover:underline"
+                  >
                     @{p.highlightedBy.username}{" "}
-                  </span>
+                  </Link>
                   highlighted this
                 </p>
               </div>
@@ -1126,7 +1150,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
               </div>
 
               {/* cancel */}
-              <i className="bx bx-x text-3xl text-gray-500" />
+              <i className="bx bx-x text-3xl text-gray-500" 
+              onClick={() => setShowViewItenary(false)}
+              />
             </div>
 
             {/* posts */}
@@ -1204,7 +1230,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                             {/* author */}
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center gap-3">
-                                <div className="h-11 w-11 rounded-full overflow-hidden">
+                                <Link
+                                  to={`/profile/${p.author._id}`}
+                                  className="h-11 w-11 rounded-full overflow-hidden"
+                                >
                                   <img
                                     src={
                                       p.author.avatar?.url || p.author.avatar
@@ -1212,11 +1241,14 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     alt=""
                                     className="h-full w-full object-cover"
                                   />
-                                </div>
+                                </Link>
 
                                 <div className="flex flex-col">
                                   <div className=" flex items-center justify-start ">
-                                    <p className="text-sm font-semibold flex items-center justify-start ">
+                                    <Link
+                                      to={`/profile/${p.author._id}`}
+                                      className="text-sm font-semibold flex items-center justify-start hover:underline"
+                                    >
                                       <span>{p.author.name}</span>
                                       {trip.user._id === p.author._id && (
                                         <svg
@@ -1227,28 +1259,55 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                           strokeWidth="3"
                                           strokeLinecap="round"
                                           strokeLinejoin="round"
-                                          className="lucide lucide-crown-icon lucide-crown h-6 w-6"
+                                          className="lucide lucide-crown-icon lucide-crown h-6 w-6 ml-1"
                                         >
                                           <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
                                           <path d="M5 21h14" />
                                         </svg>
                                       )}
-                                    </p>
+                                      {isCollaborator(p.author._id) && (
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          viewBox="0 0 24 24"
+                                          fill="white"
+                                          stroke="#C0C0C0"
+                                          strokeWidth="3"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          className="lucide lucide-crown-icon lucide-crown h-6 w-6 ml-1"
+                                        >
+                                          <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+                                          <path d="M5 21h14" />
+                                        </svg>
+                                      )}
+                                    </Link>
                                     {p.taggedUsers?.length > 0 && (
                                       <div className="flex items-center gap-2 ml-4">
                                         <span className="text-sm text-gray-600">
                                           With
                                         </span>
-                                        <img
-                                          src={
-                                            p.taggedUsers[0].avatar?.url ||
-                                            p.taggedUsers[0].avatar
-                                          }
-                                          alt=""
-                                          className="h-7 w-7 rounded-full"
-                                        />
+                                        <Link
+                                          to={`/profile/${p.taggedUsers[0]._id}`}
+                                        >
+                                          <img
+                                            src={
+                                              p.taggedUsers[0].avatar?.url ||
+                                              p.taggedUsers[0].avatar
+                                            }
+                                            alt=""
+                                            className="h-7 w-7 rounded-full object-cover"
+                                          />
+                                        </Link>
                                         {p.taggedUsers.length > 1 && (
-                                          <span className="text-sm text-gray-600">
+                                          <span
+                                            className="text-sm text-gray-600 cursor-pointer hover:underline"
+                                            onClick={() =>
+                                              setTaggedUsersModal({
+                                                show: true,
+                                                users: p.taggedUsers,
+                                              })
+                                            }
+                                          >
                                             & {p.taggedUsers.length - 1} others
                                           </span>
                                         )}
@@ -1256,9 +1315,12 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     )}
                                   </div>
                                   <div className=" flex items-center justify-start gap-3">
-                                    <p className="text-sm text-gray-500">
+                                    <Link
+                                      to={`/profile/${p.author._id}`}
+                                      className="text-sm text-gray-500 hover:underline"
+                                    >
                                       @{p.author.username}
-                                    </p>
+                                    </Link>
                                     <span className="text-xl text-gray-600">
                                       {" "}
                                       |{" "}
@@ -1295,17 +1357,18 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                               <p className="text-base flex flex-wrap gap-1">
                                 {p.caption.split(/\s+/).map((word, i) => {
                                   if (word.startsWith("@")) {
-                                    const isMentioned = isUsernameMatch(
-                                      word,
-                                      p.mentions
+                                    const username = word.slice(1);
+                                    const mentionedUser = p.mentions?.find(
+                                      (u) => u.username === username
                                     );
-                                    return isMentioned ? (
-                                      <span
+                                    return mentionedUser ? (
+                                      <Link
                                         key={i}
-                                        className="text-red-500 text-lg leckerli"
+                                        to={`/profile/${mentionedUser._id}`}
+                                        className="text-red-500 text-lg leckerli hover:underline"
                                       >
                                         {word}
-                                      </span>
+                                      </Link>
                                     ) : (
                                       <span key={i}>{word}</span>
                                     );
@@ -1332,7 +1395,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                             )}
                             {/* images and videos */}
                             {p.media?.length > 0 && (
-                              <>
+                              <Link
+                                to={`/post/${p._id}`}
+                                className="w-full block"
+                              >
                                 {p.media.length === 1 ? (
                                   // Single Image
                                   <div className="relative rounded-lg overflow-hidden cursor-pointer">
@@ -1357,7 +1423,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     </div>
                                     <div
                                       className={`grid ${
-                                        p.media.length === 2 ? "grid-cols-2" : "grid-cols-3"
+                                        p.media.length === 2
+                                          ? "grid-cols-2"
+                                          : "grid-cols-3"
                                       } gap-2`}
                                     >
                                       {p.media
@@ -1366,9 +1434,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                           <div
                                             key={file._id}
                                             className="relative aspect-square rounded-lg overflow-hidden cursor-pointer "
-                                            onClick={() =>
-                                              handleImageClick(p.media)
-                                            }
+                                            onClick={(e) => {
+                                              // Optional: prevent default if you want to handle specific image click differently
+                                              // but user asked to link to post, so usually just letting it bubble to Link is fine
+                                            }}
                                           >
                                             {file.resource_type === "image" ? (
                                               <img
@@ -1396,12 +1465,14 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     </div>
                                   </div>
                                 )}
-                              </>
+                              </Link>
                             )}
 
-                            <div className={` w-full border-t-2  ${
-                                          dayThemes[i % dayThemes.length].border
-                                        } `}/>
+                            <div
+                              className={` w-full border-t-2  ${
+                                dayThemes[i % dayThemes.length].border
+                              } `}
+                            />
 
                             {/*Likes and Comments  */}
 
@@ -1482,6 +1553,60 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Tagged Users Modal */}
+      {taggedUsersModal.show && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex justify-center items-center px-4"
+          onClick={() => setTaggedUsersModal({ show: false, users: [] })}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-xl font-semibold text-gray-800">
+                Tagged Users
+              </h3>
+              <button
+                onClick={() => setTaggedUsersModal({ show: false, users: [] })}
+                className="text-gray-500 hover:text-gray-700 transition"
+              >
+                <i className="bx bx-x text-3xl" />
+              </button>
+            </div>
+            <div className="flex flex-col max-h-[60vh] overflow-y-auto p-4 gap-4">
+              {taggedUsersModal.users.map((user) => (
+                <div key={user._id} className="flex items-center gap-3">
+                  <Link
+                    to={`/profile/${user._id}`}
+                    className="h-12 w-12 rounded-full overflow-hidden shrink-0"
+                  >
+                    <img
+                      src={user.avatar?.url || user.avatar}
+                      alt={user.username}
+                      className="h-full w-full object-cover"
+                    />
+                  </Link>
+                  <div className="flex flex-col">
+                    <Link
+                      to={`/profile/${user._id}`}
+                      className="font-semibold text-gray-900 hover:underline"
+                    >
+                      {user.name}
+                    </Link>
+                    <Link
+                      to={`/profile/${user._id}`}
+                      className="text-sm text-gray-500 hover:underline"
+                    >
+                      @{user.username}
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

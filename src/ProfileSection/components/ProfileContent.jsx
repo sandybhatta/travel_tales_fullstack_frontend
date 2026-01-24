@@ -10,6 +10,11 @@ const ProfileContent = ({
   items,
   loading,
   error,
+  ownProfile,
+  onDeletePost,
+  onArchiveTrip,
+  onRestoreTrip,
+  isArchivedTab
 }) => {
   // Skeleton loader for content
   if (loading) {
@@ -48,7 +53,7 @@ const ProfileContent = ({
   }
 
   // Render Trips (Different layout)
-  if (activeTab === "trips" || activeTab === "collaboratedTrips") {
+  if (activeTab === "trips" || activeTab === "collaboratedTrips" || activeTab === "archivedTrips") {
     return (
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {items.map((trip) => {
@@ -75,15 +80,41 @@ const ProfileContent = ({
                 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
                 
+                {ownProfile && (activeTab === "trips" || activeTab === "archivedTrips") && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (isArchivedTab) {
+                         onRestoreTrip(trip._id);
+                      } else {
+                         onArchiveTrip(trip._id);
+                      }
+                    }}
+                    className="absolute top-2 right-2 z-10 p-2 bg-black/50 text-white rounded-full hover:bg-white/20 transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100"
+                    title={isArchivedTab ? "Restore Trip" : "Archive Trip"}
+                  >
+                    <i className={`bx ${isArchivedTab ? "bx-undo" : "bx-trash-x"} text-xl`} />
+                  </button>
+                )}
+
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <h3 className="text-lg font-bold text-white truncate drop-shadow-sm">
                     {trip.title || "Untitled Trip"}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-medium text-white/90 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
-                      {new Date(trip.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                  <div className="flex items-center gap-2 mt-1 text-white/90">
+                    <i className="bx bx-calendar-week text-sm" />
+                    <span className="text-xs font-medium">
+                      {trip.startDate && trip.endDate
+                        ? `${new Date(trip.startDate).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })} - ${new Date(trip.endDate).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}`
+                        : "Date not set"}
                     </span>
-                    {trip.visibility === "private" && <i className="bx bx-lock-alt text-white/80 text-xs" />}
                   </div>
                 </div>
               </div>
@@ -113,34 +144,49 @@ const ProfileContent = ({
             className="group relative w-full aspect-square bg-gray-100 overflow-hidden cursor-pointer block"
           >
             {isPostTab ? (
-              mediaSource ? (
-                <>
-                  <img
-                    src={mediaSource}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-4 text-white">
-                    <div className="flex items-center gap-1 font-bold">
-                      <i className="bx bx-heart text-xl" />
-                      <span>{item.likes?.length || 0}</span>
+              <>
+                {mediaSource ? (
+                  <>
+                    <img
+                      src={mediaSource}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-4 text-white">
+                      <div className="flex items-center gap-1 font-bold">
+                        <i className="bx bx-heart text-xl" />
+                        <span>{item.likes?.length || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1 font-bold">
+                        <i className="bx bx-message-circle-reply text-xl" />
+                        <span>{item.comments?.length || 0}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 font-bold">
-                      <i className="bx bx-message-circle-reply text-xl" />
-                      <span>{item.comments?.length || 0}</span>
-                    </div>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900 px-4">
+                    <p
+                      className="text-xs sm:text-sm text-white text-center font-medium leading-relaxed line-clamp-4"
+                    >
+                      {item.caption || "No caption"}
+                    </p>
                   </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 px-4">
-                  <p
-                    className="text-xs sm:text-sm text-white text-center font-medium leading-relaxed line-clamp-4"
-                  >
-                    {item.caption || "No caption"}
-                  </p>
-                </div>
-              )
+                )}
+                {ownProfile && (activeTab === "posts" || activeTab === "sharedPosts") && (
+                   <button
+                     onClick={(e) => {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       onDeletePost(item._id);
+                     }}
+                     className="absolute top-2 right-2 z-10 p-1.5 bg-black/50 text-white rounded-full hover:bg-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                     title="Delete Post"
+                   >
+                     <i className="bx bx-trash text-lg" />
+                   </button>
+                 )}
+              </>
             ) : mediaSource ? (
               <img
                 src={mediaSource}

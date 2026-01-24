@@ -13,6 +13,7 @@ const ProfileTabs = ({ activeTab, onTabClick, ownProfile }) => {
 
   if (ownProfile) {
     tabs.push({ key: "bookmarks", label: "Bookmarked", icon: "bx-bookmark" });
+    tabs.push({ key: "archivedTrips", label: "Archived", icon: "bx-archive" });
   }
 
   return (

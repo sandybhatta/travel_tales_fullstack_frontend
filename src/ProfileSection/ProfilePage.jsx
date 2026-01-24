@@ -40,9 +40,15 @@ const ProfilePage = () => {
     collaboratedTrips: [],
     sharedPosts: [],
     bookmarks: [],
+    archivedTrips: [],
   });
   const [contentLoading, setContentLoading] = useState(false);
   const [contentError, setContentError] = useState("");
+  const [archivedTripsLoading, setArchivedTripsLoading] = useState(false);
+  
+  // Throttle states
+  const [isArchivingAll, setIsArchivingAll] = useState(false);
+  const [isRestoringAll, setIsRestoringAll] = useState(false);
 
   // Modal States
   const [listModalType, setListModalType] = useState(null);
@@ -54,6 +60,9 @@ const ProfilePage = () => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
+  const [deleteConfirmationData, setDeleteConfirmationData] = useState(null); // { postId: string }
+
+  const [tripSubTab, setTripSubTab] = useState("visible"); // 'visible' | 'archived'
 
   useEffect(() => {
     setOwnProfile(loggedInId?.toString() === userId?.toString());
@@ -61,12 +70,14 @@ const ProfilePage = () => {
 
   useEffect(() => {
     setActiveTab("posts");
+    setTripSubTab("visible");
     setContentData({
       posts: [],
       trips: [],
       collaboratedTrips: [],
       sharedPosts: [],
       bookmarks: [],
+      archivedTrips: [],
     });
   }, [userId]);
 
@@ -177,6 +188,18 @@ const ProfilePage = () => {
           const res = await mainApi.get("/api/user/bookmarks");
           newData = { bookmarks: Array.isArray(res.data) ? res.data : [] };
         }
+      } else if (tabKey === "archivedTrips") {
+        if (!ownProfile) {
+          newData = { archivedTrips: [] };
+        } else {
+           setArchivedTripsLoading(true);
+           try {
+             const res = await mainApi.get("/api/trips/archived-trips");
+             newData = { archivedTrips: res.data?.archivedTrips || [] };
+           } finally {
+             setArchivedTripsLoading(false);
+           }
+        }
       }
 
       setContentData((prev) => ({ ...prev, ...newData }));
@@ -196,6 +219,13 @@ const ProfilePage = () => {
   const handleTabClick = (tabKey) => {
     setActiveTab(tabKey);
     fetchContent(tabKey);
+  };
+
+  const handleTripSubTabChange = (subTab) => {
+    setTripSubTab(subTab);
+    if (subTab === "archived") {
+      fetchContent("archivedTrips");
+    }
   };
 
   // List Modal Handlers
@@ -287,6 +317,149 @@ const ProfilePage = () => {
     }));
   };
 
+  const requestDeletePost = (postId) => {
+    setDeleteConfirmationData({ postId });
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmationData(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmationData) return;
+    const { postId } = deleteConfirmationData;
+    
+    // Optimistic Update
+    const previousContent = { ...contentData };
+    
+    setContentData((prev) => ({
+      ...prev,
+      posts: prev.posts.filter((p) => p._id !== postId),
+      sharedPosts: prev.sharedPosts.filter((p) => p._id !== postId),
+    }));
+
+    setDeleteConfirmationData(null); // Close modal immediately
+
+    try {
+      await mainApi.delete(`/api/posts/${postId}`);
+    } catch (err) {
+      // Rollback
+      setContentData(previousContent);
+      console.error("Failed to delete post:", err);
+      alert("Failed to delete post");
+    }
+  };
+
+  const handleArchiveTrip = async (tripId) => {
+    // Optimistic Update: Move from trips to archivedTrips
+    const tripToArchive = contentData.trips.find(t => t._id === tripId);
+    if (!tripToArchive) return;
+
+    const previousTrips = [...contentData.trips];
+    const previousArchived = [...contentData.archivedTrips];
+
+    setContentData(prev => ({
+        ...prev,
+        trips: prev.trips.filter(t => t._id !== tripId),
+        archivedTrips: [tripToArchive, ...prev.archivedTrips]
+    }));
+
+    try {
+        await mainApi.delete(`/api/trips/${tripId}/archive`);
+    } catch (error) {
+        console.error("Archive failed", error);
+        setContentData(prev => ({
+            ...prev,
+            trips: previousTrips,
+            archivedTrips: previousArchived
+        }));
+    }
+  };
+
+  const handleRestoreTrip = async (tripId) => {
+      // Optimistic Update: Move from archivedTrips to trips
+      const tripToRestore = contentData.archivedTrips.find(t => t._id === tripId);
+      if (!tripToRestore) return;
+
+      const previousTrips = [...contentData.trips];
+      const previousArchived = [...contentData.archivedTrips];
+
+      setContentData(prev => ({
+          ...prev,
+          archivedTrips: prev.archivedTrips.filter(t => t._id !== tripId),
+          trips: [tripToRestore, ...prev.trips]
+      }));
+
+      try {
+          await mainApi.patch(`/api/trips/${tripId}/restore`);
+      } catch (error) {
+          console.error("Restore failed", error);
+          setContentData(prev => ({
+              ...prev,
+              trips: previousTrips,
+              archivedTrips: previousArchived
+          }));
+      }
+  };
+
+  const handleArchiveAllTrips = async () => {
+      if (isArchivingAll || contentData.trips.length === 0) return;
+      setIsArchivingAll(true);
+      
+      const previousTrips = [...contentData.trips];
+      const previousArchived = [...contentData.archivedTrips];
+
+      // Optimistic Update
+      setContentData(prev => ({
+          ...prev,
+          trips: [],
+          archivedTrips: [...previousTrips, ...prev.archivedTrips]
+      }));
+
+      try {
+          await mainApi.delete("/api/trips/archive-all");
+      } catch (error) {
+          console.error("Archive all failed", error);
+          // Rollback
+          setContentData(prev => ({
+              ...prev,
+              trips: previousTrips,
+              archivedTrips: previousArchived
+          }));
+      } finally {
+          setIsArchivingAll(false);
+      }
+  };
+
+  const handleRestoreAllTrips = async () => {
+      if (isRestoringAll || contentData.archivedTrips.length === 0) return;
+      setIsRestoringAll(true);
+
+      const previousTrips = [...contentData.trips];
+      const previousArchived = [...contentData.archivedTrips];
+
+      // Optimistic Update
+      setContentData(prev => ({
+          ...prev,
+          archivedTrips: [],
+          trips: [...previousArchived, ...prev.trips]
+      }));
+
+      try {
+          await mainApi.patch("/api/trips/restore-all");
+      } catch (error) {
+          console.error("Restore all failed", error);
+          // Rollback
+          setContentData(prev => ({
+              ...prev,
+              trips: previousTrips,
+              archivedTrips: previousArchived
+          }));
+      } finally {
+          setIsRestoringAll(false);
+      }
+  };
+
   if (loading) return <ProfileSkeleton />;
   if (errorMsg) return <div className="p-6 text-red-500 font-semibold">{errorMsg}</div>;
 
@@ -337,11 +510,73 @@ const ProfilePage = () => {
                   onTabClick={handleTabClick}
                   ownProfile={ownProfile}
                 />
+                
+                {ownProfile && activeTab === "trips" && (
+                  <div className="flex flex-col sm:flex-row justify-between items-center px-4 mt-4 mb-2 border-b border-gray-200">
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => handleTripSubTabChange("visible")}
+                        className={`pb-2 text-sm font-medium transition-colors ${
+                          tripSubTab === "visible"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
+                      >
+                        Visible Trips
+                      </button>
+                      <button
+                        onClick={() => handleTripSubTabChange("archived")}
+                        className={`pb-2 text-sm font-medium transition-colors ${
+                          tripSubTab === "archived"
+                            ? "text-blue-600 border-b-2 border-blue-600"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
+                      >
+                        Archived Trips
+                      </button>
+                    </div>
+
+                    {tripSubTab === "visible" && contentData.trips.length > 0 && (
+                       <button
+                         onClick={handleArchiveAllTrips}
+                         disabled={isArchivingAll}
+                         className="flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50 mt-2 sm:mt-0"
+                       >
+                         <i className="bx bx-archive-in text-lg"></i>
+                         {isArchivingAll ? "Archiving..." : "Archive All"}
+                       </button>
+                    )}
+
+                    {tripSubTab === "archived" && contentData.archivedTrips.length > 0 && (
+                       <button
+                         onClick={handleRestoreAllTrips}
+                         disabled={isRestoringAll}
+                         className="flex items-center gap-2 text-sm font-medium text-green-600 hover:text-green-700 disabled:opacity-50 mt-2 sm:mt-0"
+                       >
+                         <i className="bx bx-undo text-lg"></i>
+                         {isRestoringAll ? "Restoring..." : "Restore All"}
+                       </button>
+                    )}
+                  </div>
+                )}
+
                 <ProfileContent
                   activeTab={activeTab}
-                  items={contentData[activeTab] || []}
-                  loading={contentLoading}
+                  items={
+                    activeTab === "trips"
+                      ? (tripSubTab === "visible" ? contentData.trips : contentData.archivedTrips)
+                      : (contentData[activeTab] || [])
+                  }
+                  loading={
+                    contentLoading || 
+                    (activeTab === "trips" && tripSubTab === "archived" && archivedTripsLoading)
+                  }
                   error={contentError}
+                  ownProfile={ownProfile}
+                  onDeletePost={requestDeletePost}
+                  onArchiveTrip={handleArchiveTrip}
+                  onRestoreTrip={handleRestoreTrip}
+                  isArchivedTab={activeTab === "trips" && tripSubTab === "archived"}
                 />
               </div>
             </>
@@ -351,6 +586,38 @@ const ProfilePage = () => {
 
       {/* Modals */}
       <Suspense fallback={null}>
+        {deleteConfirmationData && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform transition-all scale-100">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                  <i className="bx bx-trash text-2xl text-red-600" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Delete Post?
+                </h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  Are you sure you want to delete this post? This action cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={cancelDelete}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {listModalType && (
           <UserListModal
             type={listModalType}

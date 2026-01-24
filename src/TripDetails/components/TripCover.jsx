@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import EditTripModal from './EditTripModal';
 import InviteTripModal from './InviteTripModal';
 import mainApi from '../../Apis/axios';
@@ -12,8 +14,12 @@ const TripCover = ({
   formatDate,
   onTripUpdate
 }) => {
+  const navigate = useNavigate();
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isInviteFormOpen, setIsInviteFormOpen] = useState(false);
+
+  // Redux state for current user
+  const { user: currentUser } = useSelector((state) => state.user);
 
   // Local state for like
   const [isLiked, setIsLiked] = useState(trip?.currentUser?.isLiked);
@@ -24,6 +30,34 @@ const TripCover = ({
     setIsLiked(trip?.currentUser?.isLiked);
     setLikeCount(trip?.totalLikes || 0);
   }, [trip]);
+
+  // Determine permissions based on Redux state and trip data
+  const isOwner = currentUser?._id && (
+      (trip?.user?._id === currentUser._id) || 
+      (trip?.user === currentUser._id)
+  );
+
+  // Check if user is a collaborator
+  // Collaborators can be an array of objects (populated) or IDs
+  const isCollaborator = trip?.collaborators?.some(c => 
+      (c._id === currentUser?._id) || (c === currentUser?._id)
+  );
+
+  const canInvite = isOwner || isCollaborator;
+  
+  // Show the menu if user is owner or collaborator
+  const showMenu = isOwner || isCollaborator;
+
+  const handleDeleteTrip = async () => {
+    // Immediate navigation back
+    navigate(-1);
+    
+    try {
+      await mainApi.delete(`/api/trips/${trip._id}/archive`);
+    } catch (error) {
+      console.error("Failed to archive trip", error);
+    }
+  };
 
   const handleLocalLike = async () => {
     if (isLiking) return;
@@ -73,7 +107,7 @@ const TripCover = ({
             className="w-full h-full object-cover rounded-lg"
           />
 
-          {trip.currentUser.userStatus === 'owner' && (
+          {showMenu && (
             <div
               className="absolute top-5 right-5 bg-black/40 p-3 cursor-pointer rounded-lg flex items-center justify-center gap-3"
               onClick={(e) => {
@@ -94,9 +128,9 @@ const TripCover = ({
                     }}
                   ></i>
 
-                  {trip.currentUser.userStatus === 'owner' && (
+                  {isOwner && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsEditFormOpen(true);
@@ -107,9 +141,9 @@ const TripCover = ({
                       <span>Edit Trip</span>
                     </p>
                   )}
-                  {trip.currentUser.canInviteFriends && (
+                  {canInvite && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsInviteFormOpen(true);
@@ -120,8 +154,14 @@ const TripCover = ({
                       <span>Invite Trip</span>
                     </p>
                   )}
-                  {trip.currentUser.canDeleteTrip && (
-                    <p className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2">
+                  {isOwner && (
+                    <p 
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTrip();
+                      }}
+                    >
                       <i className="bx bx-trash text-2xl "></i>
                       <span>Delete Trip</span>
                     </p>
@@ -150,7 +190,7 @@ const TripCover = ({
                 {isLiked ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    fill="red"
+                    fill="#EF233C"
                     viewBox="0 0 24 24"
                     stroke="white"
                     className="w-7 h-7"
@@ -211,12 +251,13 @@ const TripCover = ({
                 <div className="flex items-center gap-2 flex-wrap justify-around w-full">
                   {trip.tags.map((tag, index) => {
                     return (
-                      <span
+                      <Link
+                        to={`/trips/tag/${tag}`}
                         key={index}
-                        className="px-3 py-1 bg-red-500 text-white rounded-lg  text-sm"
+                        className="px-3 py-1 bg-[#EF233C] text-white rounded-lg  text-sm font-semibold hover:bg-[#D90429] transition-colors"
                       >
                         #{tag}
-                      </span>
+                      </Link>
                     );
                   })}
                 </div>
@@ -226,7 +267,7 @@ const TripCover = ({
         </div>
       ) : (
         <div className="w-full px-5 py-3 bg-white rounded-lg relative ">
-          {trip.currentUser.userStatus === 'owner' && (
+          {showMenu && (
             <div
               className="absolute top-5 right-5 bg-black/40 p-3 cursor-pointer rounded-lg flex items-center justify-center gap-3"
               onClick={(e) => {
@@ -247,9 +288,9 @@ const TripCover = ({
                     }}
                   ></i>
 
-                  {trip.currentUser.userStatus === 'owner' && (
+                  {isOwner && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsEditFormOpen(true);
@@ -260,9 +301,9 @@ const TripCover = ({
                       <span>Edit Trip</span>
                     </p>
                   )}
-                  {trip.currentUser.canInviteFriends && (
+                  {canInvite && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsInviteFormOpen(true);
@@ -273,8 +314,14 @@ const TripCover = ({
                       <span>Invite Trip</span>
                     </p>
                   )}
-                  {trip.currentUser.canDeleteTrip && (
-                    <p className="mr-5 text-white font-semibold  hover:bg-red-500 px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2">
+                  {isOwner && (
+                    <p 
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTrip();
+                      }}
+                    >
                       <i className="bx bx-trash text-2xl "></i>
                       <span>Delete Trip</span>
                     </p>
@@ -302,7 +349,7 @@ const TripCover = ({
                 {isLiked ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    fill="red"
+                    fill="#EF233C"
                     viewBox="0 0 24 24"
                     stroke="white"
                     className="w-7 h-7"
@@ -365,7 +412,7 @@ const TripCover = ({
                     return (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-red-500 text-white rounded-lg  text-sm font-semibold"
+                        className="px-3 py-1 bg-[#EF233C] text-white rounded-lg  text-sm font-semibold"
                       >
                         #{tag}
                       </span>
