@@ -192,9 +192,31 @@ const AccountSettings = ({
   dispatch,
 }) => {
   const [username, setUsername] = useState(userData?.user?.username || "");
+  const [name, setName] = useState(userData?.user?.name || "");
   const [email, setEmail] = useState(userData?.user?.email || "");
 
   const { canChange, daysRemaining } = userData?.usernameChangeStatus || { canChange: true, daysRemaining: 0 };
+
+  const handleUpdateName = async () => {
+    if (!name.trim()) return setError("Name cannot be empty");
+    setLoading(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      const res = await mainApi.patch("/api/user/update-profile", {
+        name,
+      });
+      setUserData((prev) => ({
+        ...prev,
+        user: { ...prev.user, name: res.data.user.name || name },
+      }));
+      setSuccessMsg("Name updated successfully");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to update name");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpdateUsername = async () => {
     if (!canChange) return setError(`You can change your username in ${daysRemaining} days.`);
@@ -281,6 +303,27 @@ const AccountSettings = ({
       <div>
         <h3 className="text-xl font-bold text-gray-900 mb-6">Profile Information</h3>
         <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 shadow-sm">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Name
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                placeholder="Enter name"
+              />
+              <button
+                onClick={handleUpdateName}
+                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 shadow-sm">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Username

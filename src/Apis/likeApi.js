@@ -33,6 +33,17 @@ export const getPostLikes = async (postId) => {
   }
 };
 
+// Get Trip Likes
+export const getTripLikes = async (tripId) => {
+  try {
+    const response = await mainApi.get(`/api/trips/${tripId}/likes`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching trip likes:", error);
+    throw error;
+  }
+};
+
 // Follow User
 export const followUser = async (userId) => {
   try {

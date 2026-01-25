@@ -20,16 +20,16 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   ];
 
   return (
-    <div className="w-full h-full bg-[#2b2d42] flex flex-col items-center relative shadow-xl transition-all duration-300">
+    <div className="w-full h-full bg-[#2b2d42] flex flex-row justify-around items-center lg:flex-col lg:justify-start lg:items-center relative lg:shadow-xl transition-all duration-300">
       
       {/* Toggle Button */}
       <i
-        className="bx bx-sidebar text-[#EDF2F4] px-2 py-3 text-3xl absolute right-2 top-2 cursor-pointer hover:text-[#EF233C] transition-colors"
+        className="hidden lg:block bx bx-sidebar text-[#EDF2F4] px-2 py-3 text-3xl absolute right-2 top-2 cursor-pointer hover:text-[#EF233C] transition-colors"
         onClick={() => setIsSidebarOpen((prev) => !prev)}
       />
 
       {/* User Info (Mini Profile) */}
-      <div className={`mt-16 mb-4 flex flex-col items-center transition-all duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
+      <div className={`hidden lg:flex mt-16 mb-4 flex-col items-center transition-all duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
         <img 
           src={avatar} 
           alt="User" 
@@ -39,7 +39,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
       </div>
 
       {/* Links */}
-      <div className={`w-full ${isSidebarOpen ? "mt-2" : "mt-20"} flex flex-col items-center gap-2`}>
+      <div className={`w-full flex flex-row justify-evenly items-center lg:flex-col lg:gap-2 ${isSidebarOpen ? "lg:mt-2" : "lg:mt-20"}`}>
         {links.map((link) => (
           <NavLink
             key={link.name}
@@ -47,21 +47,29 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
             end={link.path === "/home"}
             className={({ isActive }) =>
               `
-              w-[90%] py-3 px-3 rounded-xl
-              flex items-center
-              ${isSidebarOpen ? "justify-start gap-4" : "justify-center"}
-              text-[#EDF2F4] transition-all duration-300
+              transition-all duration-300 rounded-xl
+              flex items-center justify-center
+              
+              /* Mobile Styles */
+              p-2
+              
+              /* Desktop Styles */
+              lg:w-[90%] lg:py-3 lg:px-3
+              ${isSidebarOpen ? "lg:justify-start lg:gap-4" : "lg:justify-center"}
+              
+              text-[#EDF2F4]
               ${isActive ? "bg-[#EF233C] shadow-md scale-105" : "hover:bg-[#8D99AE]/20 hover:scale-105"}
               `
             }
           >
             <i className={`bx ${link.icon} text-2xl min-w-[24px]`} />
 
-            {/* Text (only when open) */}
+            {/* Text (only when open and on desktop) */}
             <span
               className={`
                 whitespace-nowrap font-medium text-sm tracking-wide transition-all duration-300
-                ${isSidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"}
+                hidden lg:block
+                ${isSidebarOpen ? "lg:opacity-100 lg:w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"}
               `}
             >
               {link.name}

@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 const MyFollowers = () => {
   const [followers, setFollowers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const reduxState = useSelector((state) => state.user);
   const storageState = JSON.parse(localStorage.getItem("userInfo") || "{}");
 
@@ -14,10 +15,11 @@ const MyFollowers = () => {
     const fetchFollowers = async () => {
       try {
         const response = await mainApi.get(`/api/user/${userId}/followers`);
-        console.log(response.data);
         setFollowers(response.data.followers || []);
       } catch (error) {
         console.error("Error fetching followers:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -51,45 +53,66 @@ const MyFollowers = () => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center text-white">
-      <h2 className="text-2xl font-bold mt-5 mb-3">My Followers</h2>
-      <p>{followers.length} followers</p>
+    <div className="w-full flex flex-col text-white">
+      <div className="flex justify-between items-baseline mb-6 border-b border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-red-500">My Followers</h2>
+        <span className="text-gray-400 text-sm bg-gray-800 px-3 py-1 rounded-full">{followers.length} followers</span>
+      </div>
 
-      {followers.map((user, index) => {
-        const logo = user.avatar?.url || user.avatar;
+      {loading ? (
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+            {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-gray-800 h-24 rounded-xl"></div>
+            ))}
+         </div>
+      ) : followers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <p className="text-xl">You don't have any followers yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {followers.map((user, index) => {
+            const logo = user.avatar?.url || user.avatar;
+            // logic: if user.followBack is true, it means WE follow THEM. 
+            // So we show 'Unfollow' (Gray).
+            // If false, we show 'Follow Back' (Red).
 
-        return (
-          <div
-            key={user._id}
-            className="w-[70%] h-[100px] border flex items-center justify-between bg-[#2B2D42] rounded-lg mb-4 px-4"
-          >
-            <Link to={`/profile/${user._id}`} className="flex items-center gap-4">
-              <img
-                src={logo}
-                alt={user.username}
-                className="w-[60px] h-[60px] rounded-full object-cover"
-              />
-              <div>
-                <p className="text-lg font-semibold">@{user.username}</p>
-                <p className="text-md">{user.name}</p>
+            return (
+              <div
+                key={user._id}
+                className="bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700 hover:border-gray-600 transition-all duration-300 flex items-center justify-between"
+              >
+                <Link to={`/profile/${user._id}`} className="flex items-center gap-4 flex-1 min-w-0">
+                  <img
+                    src={logo || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+                    alt={user.username}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-gray-600 hover:border-red-500 transition-colors shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold text-white truncate hover:text-red-500 transition-colors">@{user.username}</p>
+                    <p className="text-sm text-gray-400 truncate">{user.name}</p>
+                  </div>
+                </Link>
+
+                <button
+                  className={`ml-3 px-4 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors shadow-md ${
+                    user.followBack 
+                      ? "bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 hover:border-gray-500" // Unfollow style
+                      : "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20" // Follow Back style
+                  }`}
+                  onClick={() =>
+                    user.followBack
+                      ? handleUnfollow(user._id, index)
+                      : handleFollow(user._id, index)
+                  }
+                >
+                  {user.followBack ? "Unfollow" : "Follow Back"}
+                </button>
               </div>
-            </Link>
-
-            <button
-              className={`px-4 py-2 mr-2 block rounded-lg ${
-                user.followBack ? "bg-red-400" : "bg-green-400"
-              } border border-white cursor-pointer`}
-              onClick={() =>
-                user.followBack
-                  ? handleUnfollow(user._id, index)
-                  : handleFollow(user._id, index)
-              }
-            >
-              {user.followBack ? "Unfollow" : "Follow Back"}
-            </button>
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

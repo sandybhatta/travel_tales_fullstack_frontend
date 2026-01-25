@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { getPostLikes } from "../Apis/likeApi.js";
+import { getPostLikes, getTripLikes } from "../Apis/likeApi.js";
 import { followUser, unfollowUser } from "../Apis/likeApi.js";
 import { Link } from "react-router-dom";
-
+import { useSelector } from "react-redux";
 const LikesModal = ({ isOpen, onClose, postId, type = "post" }) => {
   const [likes, setLikes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [followingStates, setFollowingStates] = useState({});
   const [loadingStates, setLoadingStates] = useState({});
+
+  const { _id: currentUserId } = useSelector((state) => state.user);
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -17,13 +19,24 @@ const LikesModal = ({ isOpen, onClose, postId, type = "post" }) => {
   }, [isOpen, postId]);
 
   const fetchLikes = async () => {
-    if (type !== "post") return; // Only posts have this endpoint currently
-    
     setLoading(true);
     setError("");
     try {
-      const response = await getPostLikes(postId);
-      const likesData = response.likesInfo || [];
+      let likesData = [];
+      
+      if (type === "post") {
+        const response = await getPostLikes(postId);
+        likesData = response.likesInfo || [];
+      } else if (type === "trip") {
+        const response = await getTripLikes(postId);
+        // Normalize trip likes data to match post likes structure
+        // Post likes have isFollowedByMe, Trip likes might have isFollowing or similar
+        likesData = (response.likes || []).map(like => ({
+            ...like,
+            isFollowedByMe: like.isFollowing !== undefined ? like.isFollowing : like.isFollowedByMe
+        }));
+      }
+
       setLikes(likesData);
       
       // Initialize following states
@@ -129,23 +142,27 @@ const LikesModal = ({ isOpen, onClose, postId, type = "post" }) => {
                     </Link>
                     
                     {like._id && (
-                      <button
-                        onClick={() => handleFollowToggle(like._id, isFollowing)}
-                        disabled={isLoading}
-                        className={`px-4 py-2 rounded-lg font-medium transition disabled:opacity-50 ${
-                          isFollowing
-                            ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                            : "bg-red-500 text-white hover:bg-red-600"
-                        }`}
-                      >
-                        {isLoading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                        ) : isFollowing ? (
-                          "Unfollow"
-                        ) : (
-                          "Follow"
-                        )}
-                      </button>
+                      like._id === currentUserId ? (
+                        <span className="text-gray-500 font-medium px-4">(Me)</span>
+                      ) : (
+                        <button
+                          onClick={() => handleFollowToggle(like._id, isFollowing)}
+                          disabled={isLoading}
+                          className={`px-4 py-2 rounded-lg font-medium transition disabled:opacity-50 ${
+                            isFollowing
+                              ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                              : "bg-red-500 text-white hover:bg-red-600"
+                          }`}
+                        >
+                          {isLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                          ) : isFollowing ? (
+                            "Unfollow"
+                          ) : (
+                            "Follow"
+                          )}
+                        </button>
+                      )
                     )}
                   </div>
                 );

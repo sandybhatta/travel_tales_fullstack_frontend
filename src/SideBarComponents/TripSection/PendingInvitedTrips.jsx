@@ -6,214 +6,243 @@ const PendingInvitedTrips = ({
   setInvitedTrips,
   formatDate,
   setError,
+  loading
 }) => {
   const [acceptingTripIds, setAcceptingTripIds] = useState([]);
+  const [decliningTripIds, setDecliningTripIds] = useState([]);
   const [successForTrip, setSuccessForTrip] = useState({}); 
 
+  if (loading) {
+      return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-gray-800 rounded-xl overflow-hidden h-[500px] animate-pulse">
+                      <div className="h-48 bg-gray-700"></div>
+                      <div className="p-5 space-y-4">
+                          <div className="h-14 bg-gray-700 rounded-lg"></div>
+                          <div className="h-6 bg-gray-700 rounded w-3/4"></div>
+                          <div className="h-6 bg-gray-700 rounded w-1/2"></div>
+                          <div className="h-20 bg-gray-700 rounded"></div>
+                          <div className="flex gap-4 pt-4">
+                              <div className="h-10 flex-1 bg-gray-700 rounded-lg"></div>
+                              <div className="h-10 flex-1 bg-gray-700 rounded-lg"></div>
+                          </div>
+                      </div>
+                  </div>
+              ))}
+          </div>
+      );
+  }
+
   if (invitedTrips.length === 0) {
-    return <div>No invited trips found.</div>;
+    return (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+            <i className='bx bx-envelope-open text-6xl mb-4 text-gray-600'></i>
+            <p className="text-xl">No pending invitations.</p>
+        </div>
+    );
   }
 
   const handleAcceptTrip = async (tripId) => {
+    if (acceptingTripIds.includes(tripId) || decliningTripIds.includes(tripId)) return;
+    
     setError("");
-
-    // mark this trip as accepting
     setAcceptingTripIds((prev) => [...prev, tripId]);
 
     try {
       const response = await mainApi.post(`/api/trips/${tripId}/accept`);
 
-      // store success message only for this card
       setSuccessForTrip((prev) => ({
         ...prev,
         [tripId]: response.data.message,
       }));
 
-      // remove trip after 3 seconds
       setTimeout(() => {
         setInvitedTrips((prev) => prev.filter((trip) => trip.id !== tripId));
-      }, 3000);
+      }, 2000);
     } catch (error) {
       if (error?.response?.data?.message) {
         setError(error.response.data.message);
       } else if (error.code === "ERR_NETWORK") {
-        setError("Your network is Slow");
+        setError("Network connection is unstable");
       }
     } finally {
-      // clear loading & success after 3 seconds
       setTimeout(() => {
         setAcceptingTripIds((prev) => prev.filter((id) => id !== tripId));
-
         setSuccessForTrip((prev) => {
           const newState = { ...prev };
           delete newState[tripId];
           return newState;
         });
-      }, 3000);
+      }, 2000);
     }
   };
 
-  const handleDecline = async (tripId) =>{
-    setError("")
+  const handleDecline = async (tripId) => {
+    if (acceptingTripIds.includes(tripId) || decliningTripIds.includes(tripId)) return;
+
+    setError("");
+    setDecliningTripIds((prev) => [...prev, tripId]);
+
     try {
-      await mainApi.delete(`/api/user${tripId}/reject-invitation`)
+      // Corrected URL: /api/user/:tripId/reject-invitation (assuming standard route structure)
+      // Based on userRoutes.js: router.delete("/:tripId/reject-invitation", ...) mounted on /api/user probably?
+      // Wait, the user route file showed: router.delete("/:tripId/reject-invitation", protect, rejectInvitation)
+      // And InvitedTrips calls /api/user/invited-trips
+      // So the prefix is likely /api/user
+      await mainApi.delete(`/api/user/${tripId}/reject-invitation`)
+      
       setInvitedTrips((prev) => prev.filter((trip) => trip.id !== tripId));
 
     } catch (error) {
       if (error?.response?.data?.message) {
         setError(error.response.data.message);
       } else if (error.code === "ERR_NETWORK") {
-        setError("Your network is Slow");
+        setError("Network connection is unstable");
       }
+    } finally {
+        setDecliningTripIds((prev) => prev.filter((id) => id !== tripId));
     }
-   
-
   }
 
   return (
-    <div className="grid grid-cols-3 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {invitedTrips.map((trip) => {
         const isAccepting = acceptingTripIds.includes(trip.id);
+        const isDeclining = decliningTripIds.includes(trip.id);
         const successMessage = successForTrip[trip.id];
 
         return (
           <div
             key={trip.id}
-            className="flex flex-col items-center gap-0 rounded-lg overflow-hidden bg-white relative"
+            className="flex flex-col rounded-xl overflow-hidden bg-gray-800 border border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-300 relative group"
           >
-            {/* If success message exists, show it */}
+            {/* If success message exists, show it overlay */}
             {successMessage ? (
-              <div className="w-full h-full flex items-center justify-center bg-red-500 text-white p-10">
-                <p className="text-3xl font-semibold">{successMessage}</p>
-              </div>
-            ) : (
-              <>
-                {/* Cover Photo */}
-                {trip.photoUrl ? (
-                  <div className="w-full h-48 relative bg-white/20 overflow-hidden">
-                    <img
-                      src={trip.photoUrl}
-                      alt="trip cover"
-                      className="h-full w-full object-cover"
-                    />
-                    <p className="w-full truncate text-white text-2xl absolute bottom-2 left-2">
-                      {trip.title}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="w-full h-48 relative bg-white/20">
-                    <p className="w-[80%] truncate text-white text-2xl absolute bottom-2 left-2">
-                      {trip.title}
-                    </p>
-                  </div>
-                )}
-
-                {/* Info Box */}
-                <div className="w-full flex flex-col items-center gap-5 justify-around py-5 px-5">
-                  {/* Owner */}
-                  <div className="w-full px-3 py-2 flex items-center justify-between gap-2 bg-[#EDF2F4] rounded-lg">
-                    <div className="h-15 rounded-full">
-                      <img
-                        src={trip.owner.avatar?.url || trip.owner.avatar}
-                        className="h-full object-cover"
-                      />
-                    </div>
-
-                    <div className="w-[80%] flex items-center justify-between gap-2">
-                      <div className="flex flex-col">
-                        <p className="text-black text-base">
-                          {trip.owner.name}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          @{trip.owner.username}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <i className="bx bx-siren-alt text-2xl text-red-500" />
-                        <p className="text-gray-500 text-xs">Invited You</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dates */}
-                  <div className="w-full flex items-center gap-2">
-                    <i className="bx bx-calendar-week text-xl text-red-500" />
-                    <p className="text-black text-base">
-                      {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                    </p>
-                  </div>
-
-                  {/* Duration */}
-                  <div className="w-full flex items-center gap-2">
-                    <i className="bx bx-clock-4 text-xl text-gray-500" />
-                    <p className="text-gray-500 text-base">
-                      {trip.duration} Days
-                    </p>
-                  </div>
-
-                  {/* Destinations */}
-                  <div className="w-full flex items-center gap-2">
-                    <i className="bx bx-location text-xl text-red-500" />
-                    <p className="text-gray-500 text-base">Destinations:</p>
-                  </div>
-
-                  <div className="w-full flex flex-col gap-2">
-                    {trip.destinations.map((dest) => (
-                      <div
-                        key={dest._id}
-                        className="w-full flex items-center gap-2"
-                      >
-                        <i className="bx bx-chevron-right text-gray-400 text-xl" />
-                        <p className="text-sm text-black">
-                          {dest.city}, {dest.state}, {dest.country}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="w-full h-[1px] bg-[#8D99AE]" />
-
-                  {/* Tags */}
-                  <div className="w-full flex items-center gap-2 flex-wrap">
-                    {trip.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 rounded-lg text-black hover:bg-red-500 hover:text-white text-sm"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="w-full h-[1px] bg-[#8D99AE]" />
-
-                  {/* Actions */}
-                  <div className="w-full flex items-center gap-5 justify-around flex-wrap">
-                    <div
-                      className={`text-white px-4 py-3 rounded-lg shadow-xl flex items-center justify-center gap-3 bg-red-400 hover:bg-red-600 hover:shadow-2xl ${
-                        isAccepting ? "cursor-not-allowed" : "cursor-pointer"
-                      }`}
-                      onClick={() =>
-                        !isAccepting ? handleAcceptTrip(trip.id) : null
-                      }
-                    >
-                      <i className="bx bx-check text-2xl" />
-                      <p className="text-base font-semibold">
-                        {isAccepting ? "Accepting..." : "Accept"}
-                      </p>
-                    </div>
-
-                    <div className="text-black px-4 py-3 cursor-pointer rounded-lg shadow-xl flex items-center justify-center gap-3 bg-[#8D99AE]/40 hover:bg-[#8D99AE] hover:shadow-2xl"
-                    onClick={()=>handleDecline(trip.id)}
-                    >
-                      <i className="bx bx-x text-2xl" />
-                      <p className="text-base font-semibold">Decline</p>
-                    </div>
-                  </div>
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-green-500/90 text-white p-6 text-center backdrop-blur-sm">
+                <div className="bg-white/20 p-4 rounded-full mb-4">
+                    <i className='bx bx-check text-4xl'></i>
                 </div>
-              </>
-            )}
+                <p className="text-xl font-bold">{successMessage}</p>
+              </div>
+            ) : null}
+
+            {/* Cover Photo */}
+            <div className="h-48 relative overflow-hidden bg-gray-700">
+                {trip.photoUrl ? (
+                  <img
+                    src={trip.photoUrl}
+                    alt="trip cover"
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-600">
+                        <i className='bx bx-image text-4xl text-gray-500'></i>
+                   </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent"></div>
+                <h3 className="absolute bottom-3 left-4 right-4 text-xl font-bold text-white truncate">
+                  {trip.title}
+                </h3>
+            </div>
+
+            {/* Info Box */}
+            <div className="p-5 flex flex-col gap-4">
+              {/* Owner */}
+              <div className="flex items-center gap-3 bg-gray-700/50 p-3 rounded-lg border border-gray-700">
+                <img
+                    src={trip.owner.avatar?.url || trip.owner.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
+                    className="w-10 h-10 rounded-full object-cover border border-gray-600"
+                    alt={trip.owner.username}
+                />
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{trip.owner.name}</p>
+                    <p className="text-xs text-gray-400 truncate">@{trip.owner.username}</p>
+                </div>
+                <div className="flex flex-col items-end">
+                     <span className="text-[10px] text-red-400 font-medium bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">Invited You</span>
+                </div>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <i className="bx bx-calendar text-red-500" />
+                    <span>{formatDate(trip.startDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <i className="bx bx-time text-gray-400" />
+                    <span>{trip.duration} Days</span>
+                  </div>
+              </div>
+
+              {/* Destinations */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-gray-300 text-sm font-medium">
+                    <i className="bx bx-map text-red-500" />
+                    <span>Destinations</span>
+                </div>
+                <div className="pl-6 flex flex-col gap-1 max-h-20 overflow-y-auto custom-scrollbar">
+                    {trip.destinations.map((dest) => (
+                      <p key={dest._id} className="text-xs text-gray-400 truncate flex items-center gap-1">
+                         <span className="w-1 h-1 bg-gray-500 rounded-full"></span>
+                         {dest.city}, {dest.country}
+                      </p>
+                    ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-700" />
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2">
+                {trip.tags.length > 0 ? trip.tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 rounded text-xs bg-gray-700 text-gray-300 border border-gray-600"
+                  >
+                    #{tag}
+                  </span>
+                )) : <span className="text-xs text-gray-500 italic">No tags</span>}
+              </div>
+
+              {/* Actions */}
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  className={`py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all font-medium ${
+                    isAccepting 
+                        ? "bg-red-500/50 cursor-wait text-white" 
+                        : "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 active:scale-95"
+                  }`}
+                  disabled={isAccepting || isDeclining}
+                  onClick={() => handleAcceptTrip(trip.id)}
+                >
+                  {isAccepting ? (
+                      <i className='bx bx-loader-alt animate-spin text-xl'></i>
+                  ) : (
+                      <i className="bx bx-check text-xl" />
+                  )}
+                  {isAccepting ? "Accepting..." : "Accept"}
+                </button>
+
+                <button 
+                    className={`py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all font-medium border ${
+                        isDeclining
+                            ? "bg-gray-700 text-gray-400 cursor-wait border-gray-600"
+                            : "bg-transparent text-gray-300 border-gray-600 hover:bg-gray-800 hover:text-white active:scale-95"
+                    }`}
+                    disabled={isAccepting || isDeclining}
+                    onClick={()=>handleDecline(trip.id)}
+                >
+                   {isDeclining ? (
+                       <i className='bx bx-loader-alt animate-spin text-xl'></i>
+                   ) : (
+                       <i className="bx bx-x text-xl" />
+                   )}
+                   Decline
+                </button>
+              </div>
+            </div>
           </div>
         );
       })}
