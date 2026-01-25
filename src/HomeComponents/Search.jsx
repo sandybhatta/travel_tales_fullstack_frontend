@@ -445,7 +445,7 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
                                 />
                               </div>
                             </div>
-                            <div className="flex flex-col overflow-hidden min-w-0 w-[180px]">
+                            <div className="flex flex-col overflow-hidden flex-1 min-w-0">
                               <span className="text-[#EDF2F4] font-medium text-sm truncate group-hover:text-[#EF233C] transition-colors">
                                 {trip.title}
                               </span>

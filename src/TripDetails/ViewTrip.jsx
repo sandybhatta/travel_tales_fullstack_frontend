@@ -193,12 +193,12 @@ console.log(trip);
 
   return (
     <div
-      className="w-full min-h-screen h-fit pb-8 grid grid-cols-[1fr_5fr_1fr] gap-4 bg-[#EDF2F4]"
+      className="w-full min-h-screen h-fit pb-8 flex flex-col lg:grid lg:grid-cols-[1fr_5fr_1fr] gap-4 bg-[#EDF2F4]"
       onClick={() => {
         setShowEditModal(false);
       }}
     >
-      <div className="col-start-2 col-end-3 ">
+      <div className="w-full px-4 lg:px-0 lg:col-start-2 lg:col-end-3 ">
         {error && (
           <p className="text-red-500 text-3xl font-semibold text-center">
             Error: {error}

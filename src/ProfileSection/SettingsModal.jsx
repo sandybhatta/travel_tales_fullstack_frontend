@@ -55,7 +55,7 @@ const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate("/auth");
+    navigate("/login");
   };
 
   return (
@@ -194,8 +194,44 @@ const AccountSettings = ({
   const [username, setUsername] = useState(userData?.user?.username || "");
   const [name, setName] = useState(userData?.user?.name || "");
   const [email, setEmail] = useState(userData?.user?.email || "");
+  const [passwords, setPasswords] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [deactivatePassword, setDeactivatePassword] = useState("");
 
   const { canChange, daysRemaining } = userData?.usernameChangeStatus || { canChange: true, daysRemaining: 0 };
+
+  const handleUpdatePassword = async () => {
+    const { oldPassword, newPassword, confirmPassword } = passwords;
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return setError("All password fields are required");
+    }
+    if (newPassword !== confirmPassword) {
+      return setError("New passwords do not match");
+    }
+    if (newPassword.length < 6) {
+      return setError("Password must be at least 6 characters");
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      const res = await mainApi.post("/api/auth/change-password", {
+        oldPassword,
+        newPassword,
+      });
+      setSuccessMsg(res.data.message || "Password changed successfully");
+      setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to change password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpdateName = async () => {
     if (!name.trim()) return setError("Name cannot be empty");
@@ -259,19 +295,13 @@ const AccountSettings = ({
   };
 
   const handleDeactivate = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to deactivate your account? You can reactivate it by logging in anytime."
-      )
-    )
-      return;
     setLoading(true);
     try {
-      await mainApi.put("/api/user/settings/account", {
-        action: "deactivate",
+      await mainApi.post("/api/auth/deactivate-user", {
+        deactivationReason: "User preference",
       });
       dispatch(logout());
-      navigate("/auth");
+      navigate("/");
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to deactivate account");
       setLoading(false);
@@ -279,19 +309,14 @@ const AccountSettings = ({
   };
 
   const handleDelete = async () => {
-    const pwd = prompt(
-      "Please enter your password to confirm permanent deletion:"
-    );
-    if (!pwd) return;
-
+    if (!deactivatePassword) return setError("Password required to delete account");
     setLoading(true);
     try {
-      await mainApi.put("/api/user/settings/account", {
-        action: "delete",
-        password: pwd,
+      await mainApi.delete("/api/user/delete", {
+        data: { password: deactivatePassword },
       });
       dispatch(logout());
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to delete account");
       setLoading(false);
@@ -380,11 +405,73 @@ const AccountSettings = ({
               </button>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 shadow-sm">
+            <label className="block text-sm font-semibold text-gray-700 mb-4">
+              Change Password
+            </label>
+            <div className="space-y-3">
+              <input
+                type="password"
+                value={passwords.oldPassword}
+                onChange={(e) =>
+                  setPasswords({ ...passwords, oldPassword: e.target.value })
+                }
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                placeholder="Current Password"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="password"
+                  value={passwords.newPassword}
+                  onChange={(e) =>
+                    setPasswords({ ...passwords, newPassword: e.target.value })
+                  }
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  placeholder="New Password"
+                />
+                <input
+                  type="password"
+                  value={passwords.confirmPassword}
+                  onChange={(e) =>
+                    setPasswords({
+                      ...passwords,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Confirm New Password"
+                />
+              </div>
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={handleUpdatePassword}
+                  className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm"
+                >
+                  Change Password
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="pt-8 border-t border-gray-100">
         <h3 className="text-xl font-bold text-red-600 mb-6">Danger Zone</h3>
+        
+        <div className="mb-6 max-w-md">
+           <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Confirm Password for Account Deletion
+            </label>
+            <input
+                type="password"
+                value={deactivatePassword}
+                onChange={(e) => setDeactivatePassword(e.target.value)}
+                className="w-full bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                placeholder="Enter your password to confirm deletion"
+            />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-5 bg-red-50/50 rounded-2xl border border-red-100 hover:border-red-200 transition-colors">
             <div className="flex items-start justify-between gap-4 mb-4">

@@ -5,6 +5,7 @@ import { loadUserFromStorage } from './slices/userSlice'
 
 import RegisterUser from './AuthenticationComponents/RegisterUser'
 import VerifyEmail from './AuthenticationComponents/VerifyEmail'
+import VerifyEmailChange from './AuthenticationComponents/VerifyEmailChange'
 import Login from './AuthenticationComponents/Login'
 import Home from './HomeComponents/Home'
 import SearchResultsPage from './HomeComponents/SearchResultsPage'
@@ -42,6 +43,7 @@ const App = () => {
           
           <Route path='/register-user' element={<RegisterUser/>}/>
           <Route path="/verify-email" element={<VerifyEmail/>}/>
+          <Route path="/verify-email-change" element={<VerifyEmailChange/>}/>
           <Route path="/login" element={<Login/>}/>
 
 

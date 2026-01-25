@@ -12,6 +12,7 @@ const OtpVerification = ({ userId, onBack  }) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0); 
+  const [isVerifying, setIsVerifying] = useState(false);
   const navigate = useNavigate();
 
   // countdown timer effect
@@ -24,6 +25,8 @@ const OtpVerification = ({ userId, onBack  }) => {
   }, [cooldown]);
 
   const handleVerify = async () => {
+    if (isVerifying) return;
+    setIsVerifying(true);
     try {
       const res = await axios.post(`${API_BASE}/otp-login`, { userId, otp }, { withCredentials: true });
       setMessage(" OTP verified! Login complete.");
@@ -37,6 +40,8 @@ const OtpVerification = ({ userId, onBack  }) => {
     } catch (err) {
       setError(err.response?.data?.message || "OTP verification failed");
       setMessage("");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -79,9 +84,12 @@ const OtpVerification = ({ userId, onBack  }) => {
 
         <button
           onClick={handleVerify}
-          className="bg-green-500 text-white py-2 w-full rounded-lg mb-3 hover:bg-green-600 transition"
+          disabled={isVerifying}
+          className={`bg-green-500 text-white py-2 w-full rounded-lg mb-3 hover:bg-green-600 transition ${
+            isVerifying ? "opacity-70 cursor-not-allowed" : ""
+          }`}
         >
-          Verify OTP
+          {isVerifying ? "Verifying..." : "Verify OTP"}
         </button>
 
         {/* Resend button with timer */}

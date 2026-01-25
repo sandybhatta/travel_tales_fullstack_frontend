@@ -13,9 +13,12 @@ const Login = () => {
   const [userId, setUserId] = useState(null);
   const [reactivateData, setReactivateData] = useState(null);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (isLoading) return;
     setError("");
+    setIsLoading(true);
     const email = emailRef.current.value;
     const password = passwordRef.current.value;
 
@@ -33,6 +36,8 @@ const Login = () => {
       } else {
         setError(msg);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,9 +70,12 @@ const Login = () => {
 
         <button
           onClick={handleLogin}
-          className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-semibold"
+          disabled={isLoading}
+          className={`w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-semibold ${
+            isLoading ? "opacity-70 cursor-not-allowed" : ""
+          }`}
         >
-          Login
+          {isLoading ? "Logging in..." : "Login"}
         </button>
 
         <div className="text-center mt-4">

@@ -128,28 +128,28 @@ const FinalPostWithImg = ({caption, setCaption, files,visibilityStatus,setVisibi
                     <span className='absolute bottom-5 right-2 text-sm text-[#4a4c4d] mt-10'>{caption.length}/1000 characters</span>
                 </div>
         {/* photo video section */}
-        <div className='w-full h-[55%]   flex  flex-wrap justify-between items-center gap-3 px-10 py-4'>
+        <div className='w-full h-auto md:h-[55%] flex flex-col md:flex-row flex-wrap justify-between items-center gap-3 px-0 md:px-10 py-4 shrink-0'>
                         {/* main photo */}
-                        <div className='w-1/2 h-full'>
+                        <div className='w-full md:w-1/2 h-[300px] md:h-full'>
                             {
                                 files[0].type==="image"?
                                 <img
                                 src={files[0].url}
                                 alt='image'
-                                className='object-cover w-full h-full'
+                                className='object-cover w-full h-full rounded-lg'
                                 />:<video
                                 src={files[0].url}
                                 alt='video'
-                                className='object-cover w-full h-full'
+                                className='object-cover w-full h-full rounded-lg'
                                 />
                             }
                         </div>
 
 
                             {
-                              files.length>1 && <div className='w-[40%] h-full flex flex-col flex-wrap  justify-around items-center gap-2 '>
+                              files.length>1 && <div className='w-full md:w-[40%] h-[200px] md:h-full flex flex-row md:flex-col flex-wrap justify-around items-center gap-2 '>
 
-                              <div className={`${files.length===1 ?"display:none": files.length===2?"w-full h-full" : "w-full h-[45%]"}`}>
+                              <div className={`${files.length===1 ?"display:none": files.length===2?"w-full h-full" : "w-1/2 md:w-full h-full md:h-[45%]"}`}>
                               {
                                   files[1].type==="image"?
                                   <img

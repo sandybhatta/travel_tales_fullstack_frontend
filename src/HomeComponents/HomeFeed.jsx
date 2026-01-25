@@ -607,7 +607,7 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-gray-50/50">
+    <div className="w-full min-h-screen flex flex-col items-center bg-gray-50/50 overflow-x-hidden">
       <div className="w-full max-w-[640px] px-4 py-6 space-y-6">
         
         {/* Create Post Widget */}
