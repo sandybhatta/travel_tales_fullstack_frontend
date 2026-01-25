@@ -33,8 +33,7 @@ const OtpVerification = ({ userId, onBack  }) => {
       setError("");
       dispatch(setAccessToken(res.data.accessToken))
       dispatch(setUserInformation(res.data.user))
-     
-      navigate("/")
+      navigate("/home")
 
       
     } catch (err) {

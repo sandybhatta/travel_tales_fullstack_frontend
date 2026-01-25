@@ -24,12 +24,12 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
       
       {/* Toggle Button */}
       <i
-        className="hidden lg:block bx bx-sidebar text-[#EDF2F4] px-2 py-3 text-3xl absolute right-2 top-2 cursor-pointer hover:text-[#EF233C] transition-colors"
+        className="hidden lg:block bx bx-sidebar text-[#EDF2F4] px-2 py-3  text-[0px] lg:text-3xl absolute right-2 top-2 cursor-pointer hover:text-[#EF233C] transition-colors"
         onClick={() => setIsSidebarOpen((prev) => !prev)}
       />
 
       {/* User Info (Mini Profile) */}
-      <div className={`hidden lg:flex mt-16 mb-4 flex-col items-center transition-all duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
+      <div className={`hidden  lg:flex mt-16 mb-4 flex-col items-center transition-all duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
         <img 
           src={avatar} 
           alt="User" 
