@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { getPostComments, getReplies, createComment, replyToComment, editComment, getCommentLikes } from "../Apis/postApi";
+import { getPostComments, getReplies, createComment, replyToComment, editComment, deleteComment, getCommentLikes } from "../Apis/postApi";
 import { searchMentionableUsers, followUser, unfollowUser } from "../Apis/userApi";
 import mainApi from "../Apis/axios";
 
@@ -130,7 +130,8 @@ const CommentItem = ({
     onEdit,
     isEditing,
     onEditSubmit,
-    onEditCancel
+    onEditCancel,
+    onDelete
 }) => {
     const isLiked = comment.hasLiked;
     const isOwner = comment.author._id === currentUserId;
@@ -193,16 +194,28 @@ const CommentItem = ({
                             <div className="flex items-center gap-2">
                                 <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
                                 {!isHeader && isOwner && !isEditing && (
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onEdit(comment._id);
-                                        }}
-                                        className="text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition"
-                                        title="Edit Comment"
-                                    >
-                                        <i className='bx bx-edit-alt'></i>
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEdit(comment._id);
+                                            }}
+                                            className="text-gray-400 hover:text-blue-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition"
+                                            title="Edit Comment"
+                                        >
+                                            <i className='bx bx-edit-alt'></i>
+                                        </button>
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDelete(comment._id);
+                                            }}
+                                            className="text-gray-400 hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition"
+                                            title="Delete Comment"
+                                        >
+                                            <i className='bx bx-trash'></i>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -282,6 +295,45 @@ const CommentItem = ({
     );
 };
 
+const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4 animate-fadeIn">
+            <div 
+                className="bg-white w-full max-w-xs rounded-2xl shadow-2xl overflow-hidden transform transition-all animate-scaleIn"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="p-6 text-center">
+                    <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i className='bx bx-trash text-3xl text-red-500'></i>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Comment</h3>
+                    <p className="text-sm text-gray-500 mb-6">
+                        Are you sure you want to delete this comment? This cannot be undone.
+                    </p>
+
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={onClose}
+                            className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={onConfirm}
+                            className="flex-1 py-2.5 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-sm shadow-red-200 transition-colors"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) => {
   const { _id: currentUserId } = useSelector((state) => state.user);
   
@@ -294,6 +346,9 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
   
   // Likes Modal State
   const [likesModal, setLikesModal] = useState({ isOpen: false, likes: [], loading: false });
+
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, commentId: null });
 
   // Edit State
   const [editingCommentId, setEditingCommentId] = useState(null);
@@ -450,6 +505,34 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
       }
   };
 
+  const handleDeleteClick = (commentId) => {
+      setDeleteModal({ isOpen: true, commentId });
+  };
+
+  const confirmDelete = async () => {
+      const { commentId } = deleteModal;
+      if (!commentId) return;
+
+      // Close modal immediately
+      setDeleteModal({ isOpen: false, commentId: null });
+
+      try {
+          // Optimistically remove from local state
+          const removeList = (list) => list.filter(c => c._id !== commentId);
+          setComments(prev => removeList(prev));
+          setNavigationStack(prev => removeList(prev));
+
+          await deleteComment(commentId);
+          
+          // Re-fetch comments to sync with server (ensures no deleted comments are shown)
+          await fetchComments();
+      } catch (err) {
+          console.error("Failed to delete comment", err);
+          // Revert on error (optional, but good practice)
+          await fetchComments();
+      }
+  };
+
   const handleCommentChange = (e) => {
     const value = e.target.value;
     setCommentText(value);
@@ -542,6 +625,13 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
 
     return (
     <div className="flex flex-col h-[600px] bg-gray-50 border-t border-gray-200 rounded-xl overflow-hidden relative">
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationModal 
+            isOpen={deleteModal.isOpen} 
+            onClose={() => setDeleteModal({ isOpen: false, commentId: null })} 
+            onConfirm={confirmDelete}
+        />
+
         {/* Likes Modal */}
         <LikesModal 
             isOpen={likesModal.isOpen} 
@@ -634,6 +724,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
                                 isEditing={editingCommentId === comment._id}
                                 onEditSubmit={handleEditSubmit}
                                 onEditCancel={() => setEditingCommentId(null)}
+                                onDelete={handleDeleteClick}
                             />
                         ))
                     ) : (
@@ -646,7 +737,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
         </div>
 
         {/* Sticky Bottom Input Area */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-30">
+        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 md:p-4 z-30">
              {canComment ? (
                 <div className="relative">
                     <textarea

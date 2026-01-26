@@ -239,7 +239,7 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-2">
             {/* Loading State */}
             {loading && (
               <div className="flex justify-center py-8">
@@ -364,8 +364,8 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
                             <div className="flex items-center gap-3">
                               <img
                                 src={
-                                  user.avatar ||
                                   user.avatar?.url ||
+                                  user.avatar ||
                                   "https://via.placeholder.com/40"
                                 }
                                 alt={user.username}

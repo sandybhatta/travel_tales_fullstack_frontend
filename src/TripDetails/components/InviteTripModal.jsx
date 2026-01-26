@@ -143,35 +143,35 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
     );
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-            <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 md:p-4" onClick={onClose}>
+            <div className="bg-white w-[95%] md:w-full max-w-2xl h-[90vh] md:h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                 
                 {/* Header with Tabs */}
                 <div className="bg-white sticky top-0 z-10 border-b">
-                    <div className="p-4 flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                            <i className='bx bx-group text-2xl text-red-500'></i>
+                    <div className="p-3 md:p-4 flex justify-between items-center">
+                        <h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <i className='bx bx-group text-xl md:text-2xl text-red-500'></i>
                             Manage People
                         </h2>
                         <button onClick={onClose} className="text-gray-500 hover:text-red-500 transition-colors">
-                            <i className="bx bx-x text-3xl"></i>
+                            <i className="bx bx-x text-2xl md:text-3xl"></i>
                         </button>
                     </div>
                     
-                    <div className="flex px-4 gap-6 overflow-x-auto hide-scrollbar">
+                    <div className="flex px-2 md:px-4 gap-2 md:gap-6 overflow-x-auto hide-scrollbar justify-between md:justify-start">
                         <button 
                             onClick={() => setActiveTab('invited')}
-                            className={`pb-3 font-semibold text-sm whitespace-nowrap transition-all border-b-2 ${
+                            className={`pb-2 md:pb-3 font-semibold text-[10px] md:text-sm whitespace-nowrap transition-all border-b-2 ${
                                 activeTab === 'invited' 
                                     ? 'text-red-500 border-red-500' 
                                     : 'text-gray-500 border-transparent hover:text-gray-700'
                             }`}
                         >
-                            Invited Friends ({invitedUsers.length})
+                            Invited ({invitedUsers.length})
                         </button>
                         <button 
                             onClick={() => setActiveTab('collaborators')}
-                            className={`pb-3 font-semibold text-sm whitespace-nowrap transition-all border-b-2 ${
+                            className={`pb-2 md:pb-3 font-semibold text-[10px] md:text-sm whitespace-nowrap transition-all border-b-2 ${
                                 activeTab === 'collaborators' 
                                     ? 'text-red-500 border-red-500' 
                                     : 'text-gray-500 border-transparent hover:text-gray-700'
@@ -181,7 +181,7 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                         </button>
                         <button 
                             onClick={() => setActiveTab('invite')}
-                            className={`pb-3 font-semibold text-sm whitespace-nowrap transition-all border-b-2 ${
+                            className={`pb-2 md:pb-3 font-semibold text-[10px] md:text-sm whitespace-nowrap transition-all border-b-2 ${
                                 activeTab === 'invite' 
                                     ? 'text-red-500 border-red-500' 
                                     : 'text-gray-500 border-transparent hover:text-gray-700'
@@ -192,34 +192,36 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                     </div>
                 </div>
 
-                <div className="overflow-y-auto p-5 flex-1 bg-gray-50/50">
+                <div className="overflow-y-auto p-3 md:p-5 flex-1 bg-gray-50/50">
                     
                     {/* Tab Content: Invited Friends */}
                     {activeTab === 'invited' && (
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                             {loading ? (
                                 // Shimmer Loading
                                 Array(5).fill(0).map((_, i) => <UserShimmer key={i} />)
                             ) : invitedUsers.length > 0 ? (
                                 invitedUsers.map(user => (
-                                    <div key={user._id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                                        <div className="flex items-center gap-3">
+                                    <div key={user._id} className="flex items-center justify-between p-2 md:p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                        <div className="flex items-center gap-2 md:gap-3">
                                             <img 
                                                 src={user.avatar?.url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
                                                 alt={user.username}
-                                                className="w-10 h-10 rounded-full object-cover opacity-75 grayscale-[30%]"
+                                                className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover opacity-75 grayscale-[30%]"
                                             />
                                             <div>
-                                                <p className="font-semibold text-gray-700 text-sm">{user.username}</p>
-                                                <p className="text-xs text-gray-400">Pending Acceptance...</p>
+                                                <p className="font-semibold text-gray-700 text-xs md:text-sm">{user.username}</p>
+                                                <p className="text-[10px] md:text-xs text-gray-400">Pending Acceptance...</p>
                                             </div>
                                         </div>
                                         {isOwner && (
                                             <button 
                                                 onClick={() => handleRemoveInvite(user._id)} 
-                                                className="px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium transition-all"
+                                                className="p-1.5 md:px-3 md:py-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center"
+                                                title="Remove Invite"
                                             >
-                                                Remove
+                                                <i className='bx bx-trash text-xl md:text-lg'></i>
+                                                <span className="hidden md:inline ml-1 font-medium text-sm">Remove</span>
                                             </button>
                                         )}
                                     </div>
@@ -235,7 +237,7 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
 
                     {/* Tab Content: Collaborators */}
                     {activeTab === 'collaborators' && (
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                             {loading ? (
                                 // Shimmer Loading
                                 Array(5).fill(0).map((_, i) => <UserShimmer key={i} />)
@@ -245,16 +247,16 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                                     if (!user) return null;
 
                                     return (
-                                        <div key={user._id || index} className="flex items-center justify-between p-3 bg-white rounded-xl border border-green-100 shadow-sm">
-                                            <div className="flex items-center gap-3">
+                                        <div key={user._id || index} className="flex items-center justify-between p-2 md:p-3 bg-white rounded-xl border border-green-100 shadow-sm">
+                                            <div className="flex items-center gap-2 md:gap-3">
                                                 <img 
                                                     src={user.avatar?.url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
                                                     alt={user.username}
-                                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-green-100"
+                                                    className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover ring-2 ring-green-100"
                                                 />
                                                 <div>
-                                                    <p className="font-semibold text-gray-800 text-sm">{user.username}</p>
-                                                    <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                                    <p className="font-semibold text-gray-800 text-xs md:text-sm">{user.username}</p>
+                                                    <p className="text-[10px] md:text-xs text-green-600 font-medium flex items-center gap-1">
                                                         <i className='bx bx-check-circle'></i> Accepted
                                                     </p>
                                                 </div>
@@ -262,9 +264,11 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                                             {isOwner && (
                                                 <button 
                                                     onClick={() => handleRemoveCollaborator(collab)}
-                                                    className="px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium transition-all"
+                                                    className="p-1.5 md:px-3 md:py-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center"
+                                                    title="Remove Collaborator"
                                                 >
-                                                    Remove
+                                                    <i className='bx bx-trash text-xl md:text-lg'></i>
+                                                    <span className="hidden md:inline ml-1 font-medium text-sm">Remove</span>
                                                 </button>
                                             )}
                                         </div>
@@ -281,7 +285,7 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
 
                     {/* Tab Content: Invite Friends */}
                     {activeTab === 'invite' && (
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                             {isPastTrip ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-gray-500 text-center space-y-4">
                                     <div className="bg-red-50 p-6 rounded-full">
@@ -298,14 +302,14 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                             ) : (
                                 <>
                                     {/* Search */}
-                                    <div className="relative mb-4">
-                                        <i className='bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl'></i>
+                                    <div className="relative mb-3 md:mb-4">
+                                        <i className='bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg md:text-xl'></i>
                                         <input 
                                             type="text" 
                                             placeholder="Search your followings..." 
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 outline-none transition-all shadow-sm"
+                                            className="w-full pl-9 md:pl-10 pr-4 py-2 md:py-3 text-sm md:text-base bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 outline-none transition-all shadow-sm"
                                         />
                                     </div>
 
@@ -314,30 +318,30 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                                             getFilteredFollowing().map(user => {
                                                 const alreadyInvited = isUserInvited(user._id);
                                                 return (
-                                                    <div key={user._id} className="flex items-center justify-between p-3 bg-white hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 shadow-sm">
-                                                        <div className="flex items-center gap-3">
+                                                    <div key={user._id} className="flex items-center justify-between p-2 md:p-3 bg-white hover:bg-gray-50 rounded-xl transition-colors border border-gray-100 shadow-sm">
+                                                        <div className="flex items-center gap-2 md:gap-3">
                                                             <img 
                                                                 src={user.avatar?.url || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
                                                                 alt={user.username}
-                                                                className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                                                className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-gray-200"
                                                             />
                                                             <div>
-                                                                <p className="font-semibold text-gray-800 text-sm">{user.username}</p>
-                                                                <p className="text-xs text-gray-500">{user.name}</p>
+                                                                <p className="font-semibold text-gray-800 text-xs md:text-sm">{user.username}</p>
+                                                                <p className="text-[10px] md:text-xs text-gray-500">{user.name}</p>
                                                             </div>
                                                         </div>
                                                         
                                                         {alreadyInvited ? (
                                                             <button 
                                                                 disabled
-                                                                className="px-4 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm font-semibold cursor-not-allowed flex items-center gap-1"
+                                                                className="px-3 py-1 md:px-4 md:py-1.5 bg-gray-100 text-gray-400 rounded-lg text-xs md:text-sm font-semibold cursor-not-allowed flex items-center gap-1"
                                                             >
                                                                 <i className='bx bx-time'></i> Invited
                                                             </button>
                                                         ) : (
                                                             <button 
                                                                 onClick={() => handleInvite(user)}
-                                                                className="px-4 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-500 hover:text-white transition-all flex items-center gap-1 shadow-sm hover:shadow"
+                                                                className="px-3 py-1 md:px-4 md:py-1.5 bg-red-50 text-red-600 rounded-lg text-xs md:text-sm font-semibold hover:bg-red-500 hover:text-white transition-all flex items-center gap-1 shadow-sm hover:shadow"
                                                             >
                                                                 <i className='bx bx-plus'></i> Add
                                                             </button>

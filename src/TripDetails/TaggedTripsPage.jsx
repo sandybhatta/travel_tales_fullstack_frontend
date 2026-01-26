@@ -29,10 +29,10 @@ const TaggedTripsPage = () => {
   }, [tagname]);
 
   return (
-    <div className="w-full min-h-screen p-4 md:p-8 animate-fadeIn bg-[#EDF2F4]">
+    <div className="w-full min-h-screen p-3 md:p-8 animate-fadeIn bg-[#EDF2F4]">
       {/* Header */}
       <div className="mb-8 border-b border-[#D8E2DC] pb-4">
-        <h2 className="text-2xl font-bold text-[#2B2D42] flex items-center gap-2">
+        <h2 className="text-xl md:text-2xl font-bold text-[#2B2D42] flex items-center gap-2">
           Trips tagged with <span className="text-[#EF233C]">#{tagname}</span>
         </h2>
       </div>

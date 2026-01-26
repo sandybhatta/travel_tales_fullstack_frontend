@@ -2,23 +2,23 @@ import React from 'react';
 
 const TripStats = ({ trip, stats, showTripStats, setShowTripStats }) => {
   return (
-    <div className="w-full bg-white shadow-sm hover:shadow-md transition-all rounded-xl px-5 py-4 flex flex-col items-center gap-5 border border-gray-100">
+    <div className="w-full bg-white shadow-sm hover:shadow-md transition-all rounded-xl px-3 py-3 md:px-5 md:py-4 flex flex-col items-center gap-3 md:gap-5 border border-gray-100">
       <div className="w-full flex items-center justify-start gap-3">
         <div className="p-2 bg-red-50 rounded-lg flex items-center justify-center">
-          <i className="bx bx-chart-line text-red-500 text-2xl"></i>
+          <i className="bx bx-chart-line text-red-500 text-xl md:text-2xl"></i>
         </div>
-        <h2 className="text-xl font-bold text-gray-800"> Trip Stats </h2>
+        <h2 className="text-lg md:text-xl font-bold text-gray-800"> Trip Stats </h2>
       </div>
 
-      <div className="w-full flex flex-col items-center justify-start gap-3 relative">
+      <div className="w-full flex flex-col items-center justify-start gap-2 md:gap-3 relative">
         {/* common stats */}
         
         {/* duration */}
         <div className=" flex items-center justify-between w-full p-2 border-b border-gray-50">
-          <p className="text-base text-gray-500 font-medium">
+          <p className="text-sm md:text-base text-gray-500 font-medium">
             Duration
           </p>
-          <p className="text-base text-gray-800 font-bold">
+          <p className="text-sm md:text-base text-gray-800 font-bold">
             {stats.duration} days
           </p>
         </div>
@@ -26,37 +26,37 @@ const TripStats = ({ trip, stats, showTripStats, setShowTripStats }) => {
 
         {/* trip status */}
         <div className=" flex items-center justify-between w-full p-2 border-b border-gray-50">
-          <p className="text-base text-gray-500 font-medium">
+          <p className="text-sm md:text-base text-gray-500 font-medium">
             Status
           </p>
-          <p className="text-base text-gray-800 font-bold capitalize">
+          <p className="text-sm md:text-base text-gray-800 font-bold capitalize">
             {stats.tripStatus}
           </p>
         </div>
 
         <div className=" flex items-center justify-between w-full p-2 border-b border-gray-50">
-          <p className="text-base text-gray-500 font-medium">
+          <p className="text-sm md:text-base text-gray-500 font-medium">
             Posts
           </p>
-          <p className="text-base text-gray-800 font-bold">
+          <p className="text-sm md:text-base text-gray-800 font-bold">
             {stats.totalPosts || trip.posts.length}
           </p>
         </div>
         
         <div className=" flex items-center justify-between w-full p-2 border-b border-gray-50">
-          <p className="text-base text-gray-500 font-medium">
+          <p className="text-sm md:text-base text-gray-500 font-medium">
             Destinations
           </p>
-          <p className="text-base text-gray-800 font-bold">
+          <p className="text-sm md:text-base text-gray-800 font-bold">
             {trip.destinations.length}
           </p>
         </div>
 
         <div className=" flex items-center justify-between w-full p-2">
-          <p className="text-base text-gray-500 font-medium">
+          <p className="text-sm md:text-base text-gray-500 font-medium">
             Type
           </p>
-          <p className="text-base text-gray-800 font-bold">
+          <p className="text-sm md:text-base text-gray-800 font-bold">
             {stats.isCollaborative ? "Collaborative" : "Solo"}
           </p>
         </div>
@@ -68,8 +68,8 @@ const TripStats = ({ trip, stats, showTripStats, setShowTripStats }) => {
           setShowTripStats(prev=>!prev)
         }}
         >
-          <span className="font-semibold">Advanced Stats</span>
-          <i className= {`bx bx-chevron-${showTripStats ?"up":"down"} text-xl`}></i>
+          <span className="font-semibold text-sm md:text-base">Advanced Stats</span>
+          <i className= {`bx bx-chevron-${showTripStats ?"up":"down"} text-lg md:text-xl`}></i>
          </button>
          }
 
@@ -77,35 +77,35 @@ const TripStats = ({ trip, stats, showTripStats, setShowTripStats }) => {
         {trip.currentUser.canAccessPrivateData && showTripStats && (
           <div className="w-full flex flex-col gap-1 bg-gray-50 rounded-lg p-2 mt-2 animate-fadeIn">
              <div className=" flex items-center justify-between w-full p-2 border-b border-gray-200">
-              <p className="text-base text-gray-500">
+              <p className="text-sm md:text-base text-gray-500">
                 Highlighted Posts
               </p>
-              <p className="text-base text-gray-800 font-bold">
+              <p className="text-sm md:text-base text-gray-800 font-bold">
                 {stats.highlightedPostCount}
               </p>
             </div>
 
             <div className=" flex items-center justify-between w-full p-2 border-b border-gray-200">
-              <p className="text-base text-gray-500">
+              <p className="text-sm md:text-base text-gray-500">
                 Travel Budget
               </p>
-              <p className="text-base text-gray-800 font-bold">
+              <p className="text-sm md:text-base text-gray-800 font-bold">
                 ${stats.travelBudget || 0}
               </p>
             </div>
             <div className=" flex items-center justify-between w-full p-2 border-b border-gray-200">
-              <p className="text-base text-gray-500">
+              <p className="text-sm md:text-base text-gray-500">
                 Total Expense
               </p>
-              <p className="text-base text-gray-800 font-bold">
+              <p className="text-sm md:text-base text-gray-800 font-bold">
                 ${stats.totalExpense}
               </p>
             </div>
             <div className=" flex items-center justify-between w-full p-2 border-b border-gray-200">
-               <p className="text-base text-gray-500">
+               <p className="text-sm md:text-base text-gray-500">
                  Highest Spender
                </p>
-               <p className="text-base text-gray-800 font-bold">
+               <p className="text-sm md:text-base text-gray-800 font-bold">
                  {(() => {
                     if (!trip.expenses || trip.expenses.length === 0) return "N/A";
                     
@@ -129,10 +129,10 @@ const TripStats = ({ trip, stats, showTripStats, setShowTripStats }) => {
                </p>
              </div>
              <div className=" flex items-center justify-between w-full p-2 border-b border-gray-200">
-               <p className="text-base text-gray-500">
+               <p className="text-sm md:text-base text-gray-500">
                  Lowest Spender
                </p>
-               <p className="text-base text-gray-800 font-bold">
+               <p className="text-sm md:text-base text-gray-800 font-bold">
                  {(() => {
                     if (!trip.expenses || trip.expenses.length === 0) return "N/A";
                     
@@ -153,18 +153,18 @@ const TripStats = ({ trip, stats, showTripStats, setShowTripStats }) => {
                </p>
              </div>
              <div className=" flex items-center justify-between w-full p-2 border-b border-gray-200">
-               <p className="text-base text-gray-500">
+               <p className="text-sm md:text-base text-gray-500">
                  Pinned Notes
                </p>
-               <p className="text-base text-gray-800 font-bold">
+               <p className="text-sm md:text-base text-gray-800 font-bold">
                  {stats.totalPinnedNotes} / {trip.notes?.length || 0}
                </p>
              </div>
              <div className=" flex items-center justify-between w-full p-2">
-               <p className="text-base text-gray-500">
+               <p className="text-sm md:text-base text-gray-500">
                  Todos Completed
                </p>
-               <p className="text-base text-gray-800 font-bold">
+               <p className="text-sm md:text-base text-gray-800 font-bold">
                  {stats.completedTasks} / {stats.totalTasks}
                </p>
              </div>

@@ -10,7 +10,7 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
     <nav className="w-full h-[80px] fixed bg-[#2b2d42] flex items-center justify-between px-4 md:px-8 shadow-lg z-30 backdrop-blur-sm bg-opacity-95">
     
       {/* Logo */}
-      <div className="h-full flex items-center w-[120px] md:w-[200px]">
+      <div className={`h-full items-center w-[120px] md:w-[200px] ${isSearchOpen ? 'hidden md:flex' : 'flex'}`}>
         <Link to="/home" className="flex items-center h-full group">
           <img
             src={Logo}
@@ -25,9 +25,8 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
         <Search isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} />
       </div>
 
-      {/* Placeholder for balance (optional, or can be used for notifications later) */}
+      {/* Placeholder for balance (optional) */}
       <div className="w-[200px] hidden lg:flex justify-end">
-         {/* Potential Notification Bell or other icons could go here */}
       </div>
 
     </nav>

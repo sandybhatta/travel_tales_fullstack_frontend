@@ -51,7 +51,7 @@ const TripInfoCard = ({ trip }) => {
 
           {/* Title & Dates */}
           <div className="absolute bottom-0 left-0 p-4 text-white w-full">
-            <h3 className="text-xl font-bold mb-1 truncate">{trip.title}</h3>
+            <h3 className="text-lg md:text-xl font-bold mb-1 truncate">{trip.title}</h3>
             <div className="flex items-center gap-2 text-sm text-gray-200">
               <i className="bx bx-calendar"></i>
               <span>

@@ -366,7 +366,7 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
                     return (
                     <div
                         key={todo._id}
-                        className={`w-full group rounded-2xl p-4 border transition-all duration-300 relative cursor-pointer ${
+                        className={`w-full group rounded-2xl p-3 md:p-4 border transition-all duration-300 relative cursor-pointer ${
                         todo.done
                             ? "bg-red-50 border-red-200"
                             : "bg-white border-gray-100 hover:border-red-100 hover:shadow-md"
@@ -376,42 +376,42 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
                         if (!isProcessing) handleToggleTodo(todo._id);
                         }}
                     >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3 md:gap-4">
                             {/* Checkbox */}
                             <div className="mt-1 flex-shrink-0">
-                                <i className={`bx ${todo.done ? 'bxs-checkbox-checked text-red-500' : 'bx-checkbox text-gray-400 group-hover:text-red-400'} text-3xl transition-colors`}></i>
+                                <i className={`bx ${todo.done ? 'bxs-checkbox-checked text-red-500' : 'bx-checkbox text-gray-400 group-hover:text-red-400'} text-2xl md:text-3xl transition-colors`}></i>
                             </div>
 
                             {/* Content */}
-                            <div className="flex flex-col gap-2 w-full">
+                            <div className="flex flex-col gap-1 md:gap-2 w-full">
                                 {/* Task */}
-                                <p className={`text-base font-medium leading-snug ${todo.done ? 'text-gray-500 line-through decoration-red-300' : 'text-gray-800'}`}>
+                                <p className={`text-xs md:text-base font-medium leading-snug ${todo.done ? 'text-gray-500 line-through decoration-red-300' : 'text-gray-800'}`}>
                                     {todo.task}
                                 </p>
 
                                 {/* Meta Info Row */}
-                                <div className="flex flex-wrap items-center gap-4 mt-2">
+                                <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 md:mt-2">
                                     {/* Assigned To */}
-                                    <div className="flex items-center gap-2 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
-                                        <span className="text-xs text-gray-500 font-semibold">Assigned to:</span>
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 md:gap-2 bg-gray-50 px-1.5 py-1 md:px-2 md:py-1.5 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] md:text-xs text-gray-500 font-semibold">Assigned:</span>
+                                        <div className="flex items-center gap-1 md:gap-2">
                                             <Link to={`/profile/${todo.assignedTo?._id}`} onClick={e => e.stopPropagation()}>
                                                 <img 
                                                     src={todo.assignedTo?.avatar?.url || todo.assignedTo?.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
                                                     alt={todo.assignedTo?.username}
-                                                    className="w-8 h-8 rounded-full object-cover shadow-sm border border-white"
+                                                    className="w-5 h-5 md:w-8 md:h-8 rounded-full object-cover shadow-sm border border-white"
                                                 />
                                             </Link>
-                                            <Link to={`/profile/${todo.assignedTo?._id}`} onClick={e => e.stopPropagation()} className="text-xs font-bold text-gray-700 hover:text-red-500">
+                                            <Link to={`/profile/${todo.assignedTo?._id}`} onClick={e => e.stopPropagation()} className="text-[10px] md:text-xs font-bold text-gray-700 hover:text-red-500">
                                                 @{todo.assignedTo?.username}
                                             </Link>
                                         </div>
                                     </div>
 
                                     {/* Due Date */}
-                                    <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
-                                        <i className="bx bx-time-five text-sm"></i>
-                                        <span className="text-xs font-medium">
+                                    <div className="flex items-center gap-1 md:gap-1.5 text-gray-500 bg-gray-50 px-1.5 py-1 md:px-2 md:py-1.5 rounded-lg border border-gray-100">
+                                        <i className="bx bx-time-five text-xs md:text-sm"></i>
+                                        <span className="text-[10px] md:text-xs font-medium">
                                             {formatDate(todo.dueDate)} • {formatTime(todo.dueDate)}
                                         </span>
                                     </div>

@@ -140,16 +140,16 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false 
   if (!trip.currentUser.canAccessPrivateData) return null;
 
   return (
-    <div className={`flex flex-col items-center justify-start h-fit gap-5 w-full bg-white pb-6 px-5 transition-all ${isModal ? "" : "rounded-xl shadow-sm hover:shadow-md border border-gray-100"}`}>
+    <div className={`flex flex-col items-center justify-start h-fit gap-5 w-full bg-white pb-6 px-3 md:px-5 transition-all ${isModal ? "" : "rounded-xl shadow-sm hover:shadow-md border border-gray-100"}`}>
       
       {/* Header */}
       <div className={`flex items-center ${isModal ? "justify-end" : "justify-between"} w-full py-2 border-b border-gray-100 mb-2`}>
         {!isModal && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <div className="p-2 bg-red-50 rounded-lg">
-              <i className="bx bx-dollar-circle text-2xl text-red-500"></i>
+              <i className="bx bx-dollar-circle text-xl md:text-2xl text-red-500"></i>
             </div>
-            <p className="text-xl font-bold text-gray-800">Expenses</p>
+            <p className="text-base md:text-xl font-bold text-gray-800">Expenses</p>
           </div>
         )}
         
@@ -158,7 +158,7 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false 
           className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-colors ${showAddForm ? 'bg-gray-100 text-gray-600' : 'bg-red-500 text-white hover:bg-red-600'}`}
         >
           <i className={`bx ${showAddForm ? 'bx-x' : 'bx-plus'} text-xl`}></i>
-          <span className="font-semibold">{showAddForm ? 'Close' : 'Add'}</span>
+          <span className="font-semibold text-xs md:text-sm">{showAddForm ? 'Close' : 'Add'}</span>
         </button>
       </div>
 
@@ -283,16 +283,16 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false 
                     />
                   </div>
                   <div className="flex flex-col">
-                    <p className="text-gray-800 font-bold text-sm">
+                    <p className="text-gray-800 font-bold text-xs md:text-sm">
                       {organizedExpenses[userId].user.name}
                     </p>
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-gray-500 text-[10px] md:text-xs">
                       @{organizedExpenses[userId].user.username}
                     </p>
                   </div>
                   <div className="ml-auto bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
                     <p className="text-xs font-bold text-gray-600">
-                      Total: <span className="text-red-500 text-sm">${organizedExpenses[userId].totalAmount}</span>
+                      Total: <span className="text-red-500 text-xs md:text-sm">${organizedExpenses[userId].totalAmount}</span>
                     </p>
                   </div>
                 </div>
@@ -302,18 +302,18 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false 
                   {organizedExpenses[userId].expenses.map((expense) => (
                     <div
                       key={expense._id}
-                      className="w-full flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow"
+                      className="w-full flex items-center justify-between bg-white px-3 py-2 md:px-4 md:py-3 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow"
                     >
                       <div className="flex flex-col">
-                        <p className="text-sm font-semibold text-gray-800">
+                        <p className="text-xs md:text-sm font-semibold text-gray-800">
                           {expense.title}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-[10px] md:text-xs text-gray-400">
                           {formatAcceptedDate(expense.createdAt)}
                         </p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <p className="text-sm text-red-500 font-bold">
+                      <div className="flex items-center gap-2 md:gap-4">
+                        <p className="text-xs md:text-sm text-red-500 font-bold">
                           ${expense.amount}
                         </p>
                         {/* Delete Button Logic */}

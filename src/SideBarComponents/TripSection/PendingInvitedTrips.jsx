@@ -141,18 +141,18 @@ const PendingInvitedTrips = ({
                    </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent"></div>
-                <h3 className="absolute bottom-3 left-4 right-4 text-xl font-bold text-white truncate">
+                <h3 className="absolute bottom-3 left-4 right-4 text-lg md:text-xl font-bold text-white truncate">
                   {trip.title}
                 </h3>
             </div>
 
             {/* Info Box */}
-            <div className="p-5 flex flex-col gap-4">
+            <div className="p-3 md:p-5 flex flex-col gap-3 md:gap-4">
               {/* Owner */}
-              <div className="flex items-center gap-3 bg-gray-700/50 p-3 rounded-lg border border-gray-700">
+              <div className="flex items-center gap-2 md:gap-3 bg-gray-700/50 p-2 md:p-3 rounded-lg border border-gray-700">
                 <img
                     src={trip.owner.avatar?.url || trip.owner.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
-                    className="w-10 h-10 rounded-full object-cover border border-gray-600"
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-gray-600"
                     alt={trip.owner.username}
                 />
                 <div className="flex-1 min-w-0">

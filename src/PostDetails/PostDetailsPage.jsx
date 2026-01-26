@@ -28,17 +28,6 @@ const PostDetailsPage = () => {
   // Media Modal State
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(null);
 
-  // Fetch followings once
-  useEffect(() => {
-    if (currentUserId) {
-      getUserFollowings(currentUserId)
-        .then(() => {
-          // setFollowingList... logic was here but seemingly unused in render?
-        })
-        .catch((err) => console.error("Failed to load followings", err));
-    }
-  }, [currentUserId]);
-
   useEffect(() => {
     fetchPostDetails();
   }, [postId]);
@@ -329,19 +318,19 @@ const PostDetailsPage = () => {
 
         {/* Followed By Bubble */}
         {followedLikes && followedLikes.length > 0 && (
-          <div className="px-6 py-2 flex items-center gap-3">
+          <div className="px-4 py-2 md:px-6 flex items-center gap-3">
             <div className="flex -space-x-3">
               {followedLikes.map((u) => (
                 <img
                   key={u._id}
                   src={u.avatar?.url || u.avatar}
                   alt={u.username}
-                  className="w-8 h-8 rounded-full border-2 border-white"
+                  className="w-7 h-7 md:w-8 md:h-8 rounded-full border-2 border-white"
                   title={`Liked by ${u.name}`}
                 />
               ))}
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-xs md:text-sm text-gray-600">
               Liked by{" "}
               <span className="font-semibold">{followedLikes[0].name}</span>
               {followedLikes.length > 1 && <span> and others you follow</span>}

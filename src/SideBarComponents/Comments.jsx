@@ -9,7 +9,7 @@ const Comments = () => {
   useEffect(() => {
     const fetchMentionedComments = async () => {
       try {
-        const response = await mainApi.get('/api/comments/mentioned-comments')
+        const response = await mainApi.get('/api/comment/mentioned-comments')
         setComments(response.data.comments || [])
       } catch (error) {
         console.error("Error fetching mentioned comments:", error)

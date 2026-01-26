@@ -8,10 +8,10 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const [createLoading, setCreateLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const [hasMore, setHasMore] = useState(true);
-  const [followings, setFollowings] = useState([]);
-  const [skip, setSkip] = useState(0);
-  const { _id, location } = useSelector((state) => state.user);
+  const { _id, location, avatar: reduxAvatar, following: reduxFollowing } = useSelector((state) => state.user);
+  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  const userAvatar = userInfo?.avatar;
+  const avatar = reduxAvatar || userAvatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   const [files, setFiles] = useState([]);
   const [fileError, setFileError] = useState("");
@@ -21,9 +21,6 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const [taggedUsers, setTaggedUsers] = useState([]);
   const [tagQuery, setTagQuery] = useState("");
   const debouncedQuery = useDebounce(tagQuery);
-
-  const [tagUsersLoading, setTagUsersLoading] = useState(false);
-  const [tagUsersError, setTagUsersError] = useState("");
 
   // visibility related states
   const [visibilityOpen, setVisibilityOpen] = useState(false);
@@ -73,29 +70,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
   const fileRef = useRef(null);
-  const lastUserRef = useRef(null);
   const captionRef = useRef(null);
-
-
-
-  const fetchFollowings = async () => {
-    if (!hasMore || tagUsersLoading) return;
-
-    setTagUsersLoading(true);
-    setTagUsersError("");
-
-    try {
-      const res = await mainApi.get(`/api/user/${_id}/following?skip=${skip}`);
-
-      setFollowings((prev) => [...prev, ...res.data.followingList]);
-      setHasMore(res.data.hasMore);
-      setSkip((prev) => prev + 10);
-    } catch (err) {
-      setTagUsersError(err?.response?.data?.message || "Failed to load users");
-    } finally {
-      setTagUsersLoading(false);
-    }
-  };
 
   const formatDate = (date) => {
     return new Date(date).toLocaleString("en-US", {
@@ -105,54 +80,16 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     });
   };
 
-  // initial fetch of followings
-  useEffect(() => {
-    if (!tagOpen) {
-      return
-    }
-
-    setFollowings([]);
-    setSkip(0);
-    setHasMore(true);
-    setTagUsersError("");
-    fetchFollowings();
-  }, [tagOpen]);
-
-  useEffect(() => {
-    if (!tagOpen) return;
-    if (!hasMore) return;
-    if (!lastUserRef.current) return;
-
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          fetchFollowings();
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    observerRef.current.observe(lastUserRef.current);
-
-    return () => {
-      observerRef.current.disconnect();
-      fetchFollowingsController.abort();
-    };
-  }, [followings, tagOpen, hasMore]);
-
   const filteredUsers = useMemo(() => {
-    if (!debouncedQuery.trim()) return followings;
+    if (!reduxFollowing) return [];
+    if (!debouncedQuery.trim()) return reduxFollowing;
 
-    return followings.filter(
+    return reduxFollowing.filter(
       (u) =>
         u.username.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
         u.name.toLowerCase().includes(debouncedQuery.toLowerCase())
     );
-  }, [debouncedQuery, followings]);
+  }, [debouncedQuery, reduxFollowing]);
 
   const canTagUser = (user) => {
     if (user._id === _id) return false;
@@ -270,13 +207,6 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   const openTagDropdown = () => {
     setTagOpen(true);
-
-    if (followings.length === 0) {
-      setSkip(0);
-      setHasMore(true);
-      setError("");
-      fetchFollowings();
-    }
   };
   useEffect(() => {
     return () => {
@@ -285,8 +215,10 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
   }, []);
 
   useEffect(() => {
-    captionRef.current.style.height = "auto";
-    captionRef.current.style.height = captionRef.current.scrollHeight + "px";
+    if (captionRef.current) {
+        captionRef.current.style.height = "auto";
+        captionRef.current.style.height = captionRef.current.scrollHeight + "px";
+    }
   }, [caption]);
 
   const renderStyledCaption = (text) => {
@@ -332,16 +264,14 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     formData.append("caption", caption);
 
     if (taggedUsers.length > 0) {
-      taggedUsers.forEach((user) => {
-        formData.append("taggedUsers[]", user._id);
-      });
+      formData.append("taggedUsers", JSON.stringify(taggedUsers.map((u) => u._id)));
     }
 
     if (selectedTrip) {
       formData.append("tripId", selectedTrip._id);
       formData.append("visibility", selectedTrip.visibility);
       formData.append("dayNumber", dayNumber);
-  formData.append("isHighlighted", isHighlighted);
+      formData.append("isHighlighted", isHighlighted);
     } else {
       formData.append("visibility", visibilityStatus);
     }
@@ -349,9 +279,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     formData.append("location", JSON.stringify(locationArea));
 
     if (mentionedUsers && mentionedUsers.length > 0) {
-      mentionedUsers.forEach((user) => {
-        formData.append("mentions[]", user._id);
-      });
+      formData.append("mentions", JSON.stringify(mentionedUsers.map((u) => u._id)));
     }
 
     if (files && files.length > 0) {
@@ -412,6 +340,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   const handleTripSelect = (trip) => {
     setSelectedTrip(trip);
+    setShowTripModal(false);
   };
 
   useEffect(() => {
@@ -472,426 +401,293 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     <div>
       {!showTripModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm
-             min-h-screen overflow-y-auto
-             flex justify-center py-10 px-4"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md min-h-screen overflow-y-auto flex justify-center items-start py-4 sm:py-10 px-4 animate-fadeIn"
           onClick={() => {
             setCreationTab("");
             setCreateModal(false);
           }}
         >
           <div
-            className="w-full max-w-2xl bg-[#edf2f4] rounded-2xl shadow-2xl
-             p-6 flex flex-col gap-6 h-fit z-50"
+            className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-0 flex flex-col h-fit z-50 overflow-hidden animate-scaleIn mb-20 sm:mb-0"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center justify-start gap-3">
-                <i className="bx bx-image-plus text-4xl text-red-500"></i>
-                <h2 className="text-2xl font-semibold text-red-500 leckerli">
-                  Create Post
-                </h2>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xl">
+                  <i className="bx bx-edit"></i>
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">Create Post</h2>
               </div>
-              <div
-                className="flex items-center justify-center cursor-pointer "
+              <button
                 onClick={() => {
                   setCreationTab("");
+                  setCreateModal(false);
                 }}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
               >
-                <i className="bx bx-x text-3xl text-black" />
-              </div>
+                <i className="bx bx-x text-2xl" />
+              </button>
             </div>
 
-            {/* Caption */}
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-800">Caption</h3>
-                <span className="text-sm text-gray-500">
-                  {caption.length}/1000
-                </span>
-              </div>
-
-              <div className="relative w-full shadow-2xl">
-                {/* Styled preview */}
-                <div
-                  className="absolute inset-0 px-4 py-3 bg-white rounded-2xl
-             pointer-events-none text-gray-700
-             whitespace-pre-wrap break-words overflow-hidden text-sm font-normal leading-[22px]"
-                >
-                  {renderStyledCaption(caption)}
-                </div>
-
-                {/* Actual textarea */}
-                <textarea
-                  value={caption}
-                  onChange={handleCaption}
-                  ref={captionRef}
-                  className="relative w-full min-h-[120px] px-4 py-3 bg-transparent
-               text-transparent caret-black resize-none outline-none rounded-2xl text-sm font-normal leading-[22px] box-border"
-                  placeholder="Write something..."
+            <div className="p-4 sm:p-6 flex flex-col gap-6">
+              {/* Caption Area */}
+              <div className="flex gap-4">
+                <img
+                  src={avatar}
+                  className="w-12 h-12 rounded-full object-cover border border-gray-100 shadow-sm flex-shrink-0 hidden sm:block"
+                  alt=""
                 />
-              </div>
-              {/* Mention Dropdown */}
-              {mentionOpen && (
-                <div className="relative">
-                  <div className="absolute z-50 w-full bg-white rounded-xl shadow-xl border max-h-60 overflow-y-auto">
-                    {mentionLoading && (
-                      <p className="p-3 text-sm text-gray-500">Searching...</p>
-                    )}
+                <div className="flex-1 relative">
+                  {/* Custom Textarea Wrapper */}
+                  <div className="relative min-h-[120px] shadow-sm rounded-2xl border border-gray-100 bg-gray-50/30 p-2">
+                    <div className="absolute inset-0 px-4 py-3 pointer-events-none text-gray-800 whitespace-pre-wrap break-words text-base leading-relaxed z-0">
+                      {renderStyledCaption(caption)}
+                    </div>
+                    <textarea
+                      value={caption}
+                      onChange={handleCaption}
+                      ref={captionRef}
+                      className="relative w-full min-h-[120px] bg-transparent text-transparent caret-gray-800 resize-none outline-none text-base leading-relaxed z-10 placeholder-gray-400 px-2 py-1"
+                      placeholder="What's on your mind? Use @ to mention or # for tags."
+                    />
+                    <div className="absolute bottom-2 right-4 text-xs text-gray-400">
+                      {caption.length}/1000
+                    </div>
+                  </div>
 
-                    {mentionError && (
-                      <p className="p-3 text-sm text-red-500">{mentionError}</p>
-                    )}
-
-                    {!mentionLoading &&
-                      !mentionError &&
-                      usersToMention.map((user) => (
-                        <div
-                          key={user._id}
-                          className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-red-50"
-                          onClick={() => handleMentionSelect(user)}
-                        >
-                          <img
-                            src={user.avatar?.url || user.avatar}
-                            className="h-8 w-8 rounded-full object-cover"
-                          />
-                          <div>
-                            <p className="text-sm font-medium">
-                              @{user.username}
-                            </p>
-                            <p className="text-xs text-gray-500">{user.name}</p>
-                          </div>
-                        </div>
-                      ))}
-
-                    {!mentionLoading &&
-                      !mentionError &&
-                      usersToMention.length === 0 && (
-                        <p className="p-3 text-sm text-gray-400">
-                          No users found
+                  {/* Mentions Dropdown */}
+                  {mentionOpen && (
+                    <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-20 animate-fadeIn">
+                      {mentionLoading && (
+                        <p className="p-3 text-sm text-gray-500">
+                          Searching...
                         </p>
                       )}
-                  </div>
+
+                      {mentionError && (
+                        <p className="p-3 text-sm text-red-500">
+                          {mentionError}
+                        </p>
+                      )}
+
+                      {!mentionLoading &&
+                        !mentionError &&
+                        usersToMention.map((user) => (
+                          <div
+                            key={user._id}
+                            className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-red-50"
+                            onClick={() => handleMentionSelect(user)}
+                          >
+                            <img
+                              src={user.avatar?.url || user.avatar}
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                            <div>
+                              <p className="text-sm font-medium">
+                                @{user.username}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {user.name}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+
+                      {!mentionLoading &&
+                        !mentionError &&
+                        usersToMention.length === 0 && (
+                          <p className="p-3 text-sm text-gray-400">
+                            No users found
+                          </p>
+                        )}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Media Upload */}
-            <div className="flex flex-col gap-3">
-              <h3 className="text-lg font-medium text-gray-800">
-                Photos & Videos
-              </h3>
-
-              <div
-                className="border-4 border-dashed border-gray-300 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-red-400 hover:bg-red-50/30 transition bg-white"
-                onClick={() => fileRef.current.click()}
-              >
-                <i className="bx bx-cloud-upload text-6xl text-gray-400"></i>
-                <p className="text-lg font-medium text-gray-700">
-                  Click to upload photos & videos
-                </p>
-                <p className="text-sm text-gray-500">
-                  Max 20 files | Total size ≤ 10MB
-                </p>
-
+              {/* Media Upload Area */}
+              <div className="space-y-3">
+                {files.length === 0 ? (
+                  <div
+                    className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-red-400 hover:bg-red-50/10 transition-all group"
+                    onClick={() => fileRef.current.click()}
+                  >
+                    <div className="w-16 h-16 rounded-full bg-gray-50 text-gray-400 group-hover:text-red-500 group-hover:bg-red-50 flex items-center justify-center text-3xl transition-colors">
+                      <i className="bx bx-images"></i>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-medium text-gray-700">
+                        Add Photos/Videos
+                      </p>
+                      <p className="text-sm text-gray-400">or drag and drop</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Max 20 files | Total size ≤ 10MB
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    <div
+                      className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-red-400 hover:bg-red-50/10 transition-all text-gray-400 hover:text-red-500"
+                      onClick={() => fileRef.current.click()}
+                    >
+                      <i className="bx bx-plus text-3xl"></i>
+                    </div>
+                    {files.map((file, ind) => (
+                      <div
+                        key={ind}
+                        className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                      >
+                        {file.type === "image" ? (
+                          <img
+                            src={file.url}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={file.url}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <button
+                          className="absolute top-1 right-1 bg-black/50 hover:bg-red-500 text-white rounded-full p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(ind);
+                          }}
+                        >
+                          <i className="bx bx-x text-lg"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <input
                   type="file"
                   multiple
-                  accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4"
                   className="hidden"
                   onChange={(e) => handleFiles(e.target.files)}
                   ref={fileRef}
+                  accept="image/jpeg,image/jpg,image/png,image/webp,video/mp4"
                 />
+                {fileError && (
+                  <p className="text-red-500 text-sm px-2">{fileError}</p>
+                )}
               </div>
 
-              {fileError && (
-                <p className="text-red-500 text-sm font-medium">{fileError}</p>
-              )}
-
-              {/* Media Preview */}
-              {files.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {files.map((file, ind) => (
-                    <div
-                      key={ind}
-                      className="relative group rounded-xl overflow-hidden shadow-md"
-                    >
-                      {file.type === "image" ? (
-                        <img
-                          src={file.url}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <video
-                          src={file.url}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-
-                      <button
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition duration-200 ease-in flex items-center justify-center cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(ind);
-                        }}
-                      >
-                        <i className="bx bx-x text-xl"></i>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* visibility */}
-
-            <div className="flex flex-col gap-3">
-              <div className="w-full flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-800">
-                  Post Visibility
-                </h3>
-
-                {/* info button */}
-                <div className="flex items-center justify-center p-3 group w-fit h-fit cursor-pointer relative">
-                  <i className="bx bx-info-circle text-3xl text-red-500"></i>
-
+              {/* Settings Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Visibility */}
+                <div className="p-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors bg-gray-50/50 relative">
                   <div
-                    className="absolute z-50 opacity-0 group-hover:opacity-100 
-                  scale-0 group-hover:scale-100
-                  transition-all duration-200 ease-out
-                  bottom-0 left-0 -translate-x-full translate-y-full
-                  mt-3 w-[260px] bg-white rounded-xl shadow-2xl 
-                  p-4 flex flex-col gap-3 text-sm text-gray-700"
-                  >
-                    {/* Arrow */}
-                    <div
-                      className="absolute -top-2 left-1/2 -translate-x-1/2 
-                    w-4 h-4 bg-red-500 rotate-45 shadow-md "
-                    ></div>
-
-                    <p className="leading-relaxed mt-3 ">
-                      <span className="text-3xl text-red-500">•</span> Selecting
-                      a <span className="font-medium text-red-500">Trip</span>{" "}
-                      will automatically change your post visibility to the
-                      <span className="font-medium"> Trip’s visibility</span>.
-                    </p>
-
-                    <p className="leading-relaxed ">
-                      <span className="text-3xl text-red-500">•</span> To change
-                      post visibility, either
-                      <span className="font-medium"> detach the trip</span> or
-                      update the{" "}
-                      <span className="font-medium">Trip visibility</span>.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Selected visibility */}
-                <div
-                  className={`${
-                    selectedTrip ? "cursor-not-allowed" : "cursor-pointer"
-                  } flex items-center justify-between px-4 py-3  hover:bg-gray-50 transition`}
-                  onClick={() => {
-                    if (!selectedTrip) {
-                      setVisibilityOpen((prev) => !prev);
+                    className={`flex items-center justify-between cursor-pointer ${selectedTrip ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() =>
+                      !selectedTrip && setVisibilityOpen(!visibilityOpen)
                     }
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <i
-                      className={`bx text-2xl text-red-500 bx-${
-                        visibilityStatus === "public"
-                          ? "globe"
-                          : visibilityStatus === "followers"
-                          ? "group"
-                          : visibilityStatus === "close_friends"
-                          ? "user-check"
-                          : "lock"
-                      }`}
-                    ></i>
-
-                    <p className="text-gray-800 font-medium">
-                      {visibilityStatus === "public"
-                        ? "Public"
-                        : visibilityStatus === "followers"
-                        ? "Followers"
-                        : visibilityStatus === "close_friends"
-                        ? "Close Friends"
-                        : "Private"}
-                    </p>
+                  >
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <i
+                        className={`bx bx-${
+                          visibilityStatus === "public"
+                            ? "globe"
+                            : visibilityStatus === "lock"
+                            ? "lock"
+                            : visibilityStatus === "close_friends" ? "user-check" : "group"
+                        } text-xl`}
+                      ></i>
+                      <span className="font-medium capitalize">
+                        {visibilityStatus.replace("_", " ")}
+                      </span>
+                    </div>
+                    {!selectedTrip && (
+                        <i className="bx bx-chevron-down text-gray-400"></i>
+                    )}
                   </div>
-
-                  <i
-                    className={`bx bx-chevron-${
-                      visibilityOpen ? "up" : "down"
-                    } text-2xl text-gray-500`}
-                  ></i>
-                </div>
-
-                {/* Dropdown */}
-                {visibilityOpen && (
-                  <div className="border-t border-gray-200 divide-y">
-                    {["public", "followers", "close_friends", "private"].map(
-                      (visibility, i) => {
-                        const status =
-                          visibility === "public"
-                            ? "Public"
-                            : visibility === "followers"
-                            ? "Followers"
-                            : visibility === "close_friends"
-                            ? "Close Friends"
-                            : "Private";
-
-                        return (
+                  {/* Dropdown */}
+                  {visibilityOpen && (
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 z-20 overflow-hidden">
+                      {["public", "followers", "close_friends", "private"].map(
+                        (v) => (
                           <div
-                            key={i}
-                            className={`flex items-center gap-4 px-4 py-3 cursor-pointer transition
-                  ${
-                    visibilityStatus === visibility
-                      ? "bg-red-50 text-red-600"
-                      : "hover:bg-gray-50 text-gray-700"
-                  }`}
+                            key={v}
+                            className="px-4 py-2 hover:bg-red-50 cursor-pointer text-sm capitalize flex items-center gap-2"
                             onClick={() => {
-                              setVisibilityStatus(visibility);
+                              setVisibilityStatus(v);
                               setVisibilityOpen(false);
                             }}
                           >
-                            <i
-                              className={`bx text-2xl bx-${
-                                visibility === "public"
-                                  ? "globe"
-                                  : visibility === "followers"
-                                  ? "group"
-                                  : visibility === "close_friends"
-                                  ? "user-check"
-                                  : "lock"
-                              }`}
-                            ></i>
-
-                            <p className="font-medium">{status}</p>
+                             <i className={`bx bx-${v === 'public' ? 'globe' : v === 'private' ? 'lock' : v === 'close_friends' ? 'user-check' : 'group'}`}></i>
+                            {v.replace("_", " ")}
                           </div>
-                        );
-                      }
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Location */}
-
-            <div className="flex flex-col gap-3">
-              <h3 className="text-lg font-medium text-gray-800">
-                Post Location
-              </h3>
-
-              <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Selected visibility */}
-                <div
-                  className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
-                  onClick={() => {
-                    setLocationOpen((prev) => !prev);
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span>{locationArea?.city || "no city selected"}</span>,
-                    <span>{locationArea?.state || "no state selected"}</span>,
-                    <span>
-                      {locationArea?.country || "no country selected"}
-                    </span>
-                  </div>
-
-                  <i
-                    className={`bx bx-chevron-${
-                      locationOpen ? "up" : "down"
-                    } text-2xl text-gray-500`}
-                  ></i>
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Dropdown */}
-                {locationOpen && (
-                  <div className="w-full flex flex-col items-start justify-center gap-3 px-3 py-3 bg-[#edf2f4]">
-                    <div className="flex flex-col items-start justify-center gap-1.5">
-                      <h3 className="text-lg font-medium text-gray-800">
-                        City
-                      </h3>
+                {/* Location */}
+                <div className="p-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors bg-gray-50/50 relative">
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => setLocationOpen(!locationOpen)}
+                  >
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <i className="bx bx-map text-xl"></i>
+                      <span className="font-medium truncate max-w-[150px]">
+                        {locationArea?.city || "Add Location"}
+                      </span>
+                    </div>
+                    <i className="bx bx-chevron-down text-gray-400"></i>
+                  </div>
+                  {/* Dropdown */}
+                  {locationOpen && (
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 z-20 p-3 space-y-2">
                       <input
-                        type="text"
-                        className="px-2 py-0.5 rounded-lg outline-none border-none bg-white shadow-2xl"
+                        className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-red-400"
+                        placeholder="City"
                         value={locationArea.city}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setLocationArea((prev) => ({
                             ...prev,
                             city: e.target.value,
-                          }));
-                        }}
+                          }))
+                        }
                       />
-                    </div>
-                    <div className="flex flex-col items-start justify-center gap-1.5">
-                      <h3 className="text-lg font-medium text-gray-800">
-                        State
-                      </h3>
                       <input
-                        type="text"
-                        className="px-2 py-0.5 rounded-lg outline-none border-none bg-white shadow-2xl"
+                        className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-red-400"
+                        placeholder="State"
                         value={locationArea.state}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setLocationArea((prev) => ({
                             ...prev,
                             state: e.target.value,
-                          }));
-                        }}
+                          }))
+                        }
                       />
-                    </div>
-                    <div className="flex flex-col items-start justify-center gap-1.5">
-                      <h3 className="text-lg font-medium text-gray-800">
-                        Country
-                      </h3>
                       <input
-                        type="text"
-                        className="px-2 py-0.5 rounded-lg outline-none border-none bg-white shadow-2xl"
+                        className="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm outline-none focus:border-red-400"
+                        placeholder="Country"
                         value={locationArea.country}
-                        onChange={(e) => {
+                        onChange={(e) =>
                           setLocationArea((prev) => ({
                             ...prev,
                             country: e.target.value,
-                          }));
-                        }}
+                          }))
+                        }
                       />
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ---------------- TAG PEOPLE ---------------- */}
-            <div className="flex flex-col gap-3 tag-wrapper">
-              <h3 className="text-lg font-medium text-gray-800">Tag people</h3>
-
-              <div className="bg-white rounded-xl  shadow-sm">
-                {/* Input */}
-                <div className="flex items-center gap-2 px-4 py-3">
-                  <i className="bx bx-user-plus text-2xl text-red-500" />
-                  <input
-                    type="text"
-                    value={tagQuery}
-                    placeholder="Search people you follow..."
-                    className="flex-1 outline-none"
-                    onFocus={openTagDropdown}
-                    onChange={(e) => setTagQuery(e.target.value)}
-                  />
+                  )}
                 </div>
 
-                {/* Tagged Chips */}
-                {taggedUsers.length > 0 && (
-                  <div className="flex flex-wrap gap-2 px-4 pb-3">
+                {/* Tag People */}
+                <div className="p-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors bg-gray-50/50 col-span-1 sm:col-span-2 relative">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <i className="bx bx-purchase-tag text-xl text-gray-500 mr-1"></i>
                     {taggedUsers.map((u) => (
-                      <div
+                      <span
                         key={u._id}
-                        className="flex items-center gap-2 bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm"
+                        className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-sm flex items-center gap-1"
                       >
                         @{u.username}
                         <i
@@ -901,301 +697,184 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                               prev.filter((x) => x._id !== u._id)
                             )
                           }
-                        />
-                      </div>
+                        ></i>
+                      </span>
                     ))}
+                    <input
+                      type="text"
+                      placeholder={
+                        taggedUsers.length === 0 ? "Tag people..." : ""
+                      }
+                      className="bg-transparent outline-none text-sm flex-1 min-w-[100px]"
+                      value={tagQuery}
+                      onFocus={openTagDropdown}
+                      onChange={(e) => setTagQuery(e.target.value)}
+                    />
                   </div>
-                )}
-
-                {/* Dropdown */}
-                {tagOpen && (
-                  <div className="border-t max-h-64 overflow-y-auto">
-                    {/* Header */}
-                    <div className="flex justify-between items-center px-4 py-2 bg-gray-50 ">
-                      <span className="text-sm font-medium">Select users</span>
-                      <button
-                        onClick={() => {
-                          setTagOpen(false);
-                          setTagQuery("");
-                          setTagUsersError("");
-                        }}
-                      >
-                        <i className="bx bx-x text-2xl text-gray-500" />
-                      </button>
-                    </div>
-
-                    {/* Loading Shimmer */}
-                    {tagUsersLoading && (
-                      <div className="p-4 space-y-3 animate-pulse">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="flex gap-3">
-                            <div className="h-10 w-10 rounded-full bg-gray-200" />
-                            <div className="flex-1 space-y-2">
-                              <div className="h-3 bg-gray-200 w-1/3 rounded" />
-                              <div className="h-2 bg-gray-200 w-1/4 rounded" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Error */}
-                    {tagUsersError && (
-                      <div className="p-4 text-center">
-                        <p className="text-sm text-red-500">{tagUsersError}</p>
-                        <button
-                          className="text-sm underline mt-2"
-                          onClick={() => setTagOpen(false)}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    )}
-
-                    {/* User List */}
-                    {!tagUsersLoading &&
-                      !tagUsersError &&
-                      filteredUsers.map((user, i) => (
+                   {/* Tag Dropdown */}
+                   {tagOpen && (
+                  <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-48 overflow-y-auto z-30">
+                     <div className="flex justify-between items-center px-4 py-2 bg-gray-50 sticky top-0">
+                      <span className="text-xs font-medium uppercase text-gray-500">Select users</span>
+                      <i className="bx bx-x text-xl cursor-pointer" onClick={() => setTagOpen(false)}></i>
+                     </div>
+                     {filteredUsers.map((user, i) => (
                         <div
                           key={user._id}
-                          ref={
-                            i === filteredUsers.length - 1 ? lastUserRef : null
-                          }
-                          className={`flex items-center gap-4 px-4 py-3 cursor-pointer
-                        ${
-                          canTagUser(user)
-                            ? "hover:bg-red-50"
-                            : "opacity-40 cursor-not-allowed"
-                        }`}
-                          onClick={() => {
-                            if (canTagUser(user)) {
-                              setTaggedUsers((prev) => [...prev, user]);
-                            }
-                          }}
+                          className={`flex items-center gap-3 px-4 py-2 cursor-pointer ${canTagUser(user) ? "hover:bg-red-50" : "opacity-50"}`}
+                          onClick={() => canTagUser(user) && setTaggedUsers(prev => [...prev, user])}
                         >
-                          <img
-                            src={user.avatar?.url || user.avatar}
-                            className="h-10 w-10 rounded-full object-cover"
-                          />
-                          <div>
-                            <p className="font-medium">@{user.username}</p>
-                            <p className="text-xs text-gray-500">{user.name}</p>
-                            {user._id === _id && (
-                              <p className="text-xs text-red-500">
-                                You can’t tag yourself
-                              </p>
-                            )}
-                          </div>
+                           <img src={user.avatar?.url || user.avatar} className="w-8 h-8 rounded-full object-cover"/>
+                           <div>
+                              <p className="text-sm font-medium">@{user.username}</p>
+                           </div>
                         </div>
-                      ))}
-
-                    {!hasMore && !tagUsersLoading && (
-                      <p className="text-center text-sm py-3 text-gray-400">
-                        — No more users —
-                      </p>
-                    )}
+                     ))}
                   </div>
-                )}
+                   )}
+                </div>
               </div>
-            </div>
 
-            {/* adding trip */}
-
-            <div className=" flex flex-col items-center justify-center gap-5  shadow-md hover:shadow-2xl    ">
+              {/* Trip Selector Banner */}
               <div
-                className="w-full flex items-center justify-start gap-3 bg-white hover:bg-red-500 transition hover:text-white cursor-pointer group px-4 py-3 rounded-xl"
-                onClick={() => {
-                  setShowTripModal(true);
-                }}
+                className={`rounded-xl p-4 cursor-pointer transition-all border-2 ${
+                  selectedTrip
+                    ? "bg-red-50 border-red-200"
+                    : "bg-gray-50 border-dashed border-gray-300 hover:border-red-300"
+                }`}
+                onClick={() => setShowTripModal(true)}
               >
-                <i className="bx bx-camping text-2xl text-red-500 group-hover:text-white"></i>
-                <p className="text-base ">Add post in a Trip</p>
-              </div>
-
-              {selectedTrip && (
-                <div className="w-full ">
+                <div className="flex items-center gap-3">
                   <div
-                    className={` bg-white rounded-2xl shadow-md 
-                   hover:shadow-2xl transition cursor-pointer group relative`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${
+                      selectedTrip
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-200 text-gray-500"
+                    }`}
                   >
-                    {/* to detach the trip */}
-                    <div
-                      className="absolute right-2 top-2 bg-red-500 p-3 rounded-full cursor-pointer flex items-center justify-center "
-                      onClick={() => {
+                    <i className="bx bx-trip"></i>
+                  </div>
+                  <div className="flex-1">
+                    <h4
+                      className={`font-semibold ${
+                        selectedTrip ? "text-red-700" : "text-gray-600"
+                      }`}
+                    >
+                      {selectedTrip ? selectedTrip.title : "Add to a Trip"}
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      {selectedTrip
+                        ? `Day ${dayNumber} • ${selectedTrip.visibility}`
+                        : "Link this post to one of your trips"}
+                    </p>
+                  </div>
+                  {selectedTrip && (
+                    <button
+                      className="p-2 hover:bg-red-200 rounded-full text-red-600 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedTrip(null);
                       }}
                     >
-                      <i className="bx bx-x text-3xl text-white" />
+                      <i className="bx bx-x text-xl"></i>
+                    </button>
+                  )}
+                </div>
+                {selectedTrip && (
+                  <div className="mt-3 pt-3 border-t border-red-100 flex items-center justify-between pl-1">
+                    {/* Day Selector */}
+                    <div className="relative">
+                       <div 
+                         className="flex items-center gap-2 text-sm text-red-700 font-medium cursor-pointer px-2 py-1 hover:bg-red-100 rounded-lg"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setDayDropdownOpen(!dayDropdownOpen);
+                           e.preventDefault();
+                         }}
+                       >
+                          <i className="bx bx-calendar"></i>
+                          Day {dayNumber}
+                          <i className="bx bx-chevron-down"></i>
+                       </div>
+                       {dayDropdownOpen && (
+                          <div className="absolute top-full left-0 mt-1 bg-white shadow-xl rounded-xl max-h-40 overflow-y-auto border border-red-100 z-10 min-w-[100px]">
+                             {Array.from({ length: daysInATrip }, (_, i) => i + 1).map(day => (
+                                <div 
+                                  key={day} 
+                                  className="px-4 py-2 hover:bg-red-50 text-sm cursor-pointer"
+                                  onClick={(e) => {
+                                     e.stopPropagation();
+                                     setDayNumber(day);
+                                     setDayDropdownOpen(false);
+                                 }}
+                                >Day {day}</div>
+                             ))}
+                          </div>
+                       )}
                     </div>
 
-                    {/* Cover Image */}
-                    <div className="h-44 w-full bg-gray-100 overflow-hidden">
-                      {selectedTrip?.coverPhoto?.url ? (
-                        <img
-                          src={selectedTrip.coverPhoto.url}
-                          alt={selectedTrip.title}
-                          className="h-full w-full object-cover "
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-black/40" />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-4 flex flex-col gap-2">
-                      <h4 className="text-lg font-semibold text-gray-800 line-clamp-1">
-                        {selectedTrip.title}
-                      </h4>
-
-                      <p className="text-sm text-gray-500 line-clamp-2">
-                        {selectedTrip.description || "No description provided"}
-                      </p>
-
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs px-3 py-1 rounded-full bg-red-100 text-red-600">
-                          {selectedTrip.visibility}
-                        </span>
-
-                        <span className="text-xs text-gray-600">
-                          {selectedTrip.posts.length || 0} posts
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Day selector */}
-<div className="mt-4 bg-white rounded-xl shadow-sm p-4 flex flex-col gap-2 relative">
-  <h4 className="text-sm font-medium text-gray-700">
-    Assign post to trip day
-  </h4>
-
-  {/* Selected value */}
-  <div
-    onClick={() => setDayDropdownOpen((prev) => !prev)}
-    className="bg-[#edf2f4] px-4 py-2 rounded-lg
-    flex items-center justify-between gap-4
-    cursor-pointer shadow-inner text-sm font-medium"
-  >
-    <span>Day {dayNumber}</span>
-    <i
-      className={`bx bx-chevron-${
-        dayDropdownOpen ? "up" : "down"
-      } text-xl text-gray-600 transition`}
-    />
-  </div>
-
-  {/* Dropdown */}
-  {dayDropdownOpen && (
-    <div
-      className="absolute top-full mb-2 left-4
-      bg-white rounded-xl shadow-2xl
-      w-40 min-h-20 max-h-50  overflow-y-auto z-50"
-    >
-      {Array.from({ length: daysInATrip }, (_, i) => i + 1).map(
-        (day) => (
-          <div
-            key={day}
-            onClick={() => {
-              setDayNumber(day);
-              setDayDropdownOpen(false);
-            }}
-            className={`px-4 py-2 text-sm cursor-pointer
-            ${
-              day === dayNumber
-                ? "bg-red-100 text-red-600 font-medium"
-                : "hover:bg-red-50"
-            }`}
-          >
-            Day {day}
-          </div>
-        )
-      )}
-    </div>
-  )}
-</div>
-
-
-                    {/* Highlight post toggle */}
-                    <div className="mt-3 bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-800">
-                          Highlight this post
-                        </h4>
-                        <p className="text-xs text-gray-500">
-                          Highlighted posts appear at the top of the trip
-                          timeline
-                        </p>
-                      </div>
-
-                      {/* Custom checkbox */}
-                      <div
-                        onClick={() => setIsHighlighted((prev) => !prev)}
-                        className={`w-14 h-8 rounded-full cursor-pointer
-    transition-all duration-300 flex items-center px-1
-    ${isHighlighted ? "bg-red-500" : "bg-gray-300"}`}
-                      >
-                        <div
-                          className={`h-6 w-6 bg-white rounded-full shadow-md
-      transition-all duration-300
-      ${isHighlighted ? "translate-x-6" : "translate-x-0"}`}
-                        />
-                      </div>
+                    {/* Highlight Toggle */}
+                    <div 
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={(e) => {
+                         e.stopPropagation();
+                         setIsHighlighted(!isHighlighted);
+                      }}
+                    >
+                       <span className="text-sm text-red-700 font-medium">Highlight</span>
+                       <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isHighlighted ? 'bg-red-500' : 'bg-gray-300'}`}>
+                          <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${isHighlighted ? 'translate-x-4' : ''}`}></div>
+                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            <div className="w-full flex items-center justify-end gap-5">
-              <div
-                className="bg-gray-300 text-black px-3 py-1.5 rounded-md  text-center cursor-pointer text-2xl font-medium shadow-md hover:shadow-2xl"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCreationTab("");
-                  setCreateModal(false);
-                }}
-              >
-                Go Back
+                )}
               </div>
 
-              <div
-                className={`leckerli text-3xl font-semibold px-2 py-1.5 rounded-md bg-red-500 shadow-2xl  text-white ${
-                  caption.length === 0 && files.length === 0
-                    ? "cursor-not-allowed pointer-events-none"
-                    : "cursor-pointer"
-                } `}
-                onClick={
-                  caption.length > 0 || files.length > 0
-                    ? handleCreatePost
-                    : undefined
-                }
-              >
-                Create Post
+              {/* Footer Actions */}
+              <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 pb-safe sm:pb-0">
+                {error && (
+                  <p className="text-red-500 text-sm mr-auto font-medium">
+                    {error}
+                  </p>
+                )}
+                <button
+                  className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    setCreationTab("");
+                    setCreateModal(false);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`px-8 py-2.5 rounded-xl font-semibold text-white shadow-lg shadow-red-200 transition-all transform active:scale-95 ${
+                    (!caption && files.length === 0) || createLoading
+                      ? "bg-gray-300 cursor-not-allowed shadow-none"
+                      : "bg-red-500 hover:bg-red-600 hover:shadow-xl hover:shadow-red-200"
+                  }`}
+                  onClick={handleCreatePost}
+                  disabled={(!caption && files.length === 0) || createLoading}
+                >
+                  {createLoading ? "Posting..." : "Post"}
+                </button>
               </div>
-            </div>
 
-            {error && <p className="text-red-500 text-3xl">{error} </p>}
-
-            {createLoading && (
-              <div className="w-full mt-3">
-                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+              {/* Progress Bar */}
+              {createLoading && (
+                <div className="h-1 bg-gray-100 w-full overflow-hidden rounded-full">
                   <div
                     className="h-full bg-red-500 transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
-                  />
+                  ></div>
                 </div>
-
-                <p className="text-sm text-gray-600 mt-1 text-right">
-                  Uploading… {uploadProgress}%
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
       {showTripModal && (
         <div
-          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm
-               overflow-y-auto flex justify-center px-4 py-8"
+          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-md overflow-hidden flex flex-col items-center justify-end sm:justify-center animate-fadeIn"
           onClick={(e) => {
             e.stopPropagation();
             setShowTripModal(false);
@@ -1203,194 +882,110 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
         >
           {/* Main Container */}
           <div
-            className="w-full max-w-6xl min-h-screen h-fit bg-[#edf2f4]
-                 rounded-3xl shadow-2xl p-6 flex flex-col gap-10"
+            className="w-full max-w-5xl h-[90vh] sm:h-[85vh] bg-[#f8fafc]
+                 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp sm:animate-scaleIn"
             onClick={(e) => {
               e.stopPropagation();
               setSearchOpen(false);
+              setDropDownOpen(false);
             }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b pb-4">
-              <h2 className="text-3xl font-semibold text-red-500 leckerli">
+            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100 sticky top-0 z-10">
+              <h2 className="text-2xl font-bold text-gray-800 leckerli">
                 Select a Trip
               </h2>
 
               <button
                 onClick={() => setShowTripModal(false)}
-                className="p-2 rounded-full hover:bg-gray-200 transition flex items-center justify-center"
+                className="p-2 rounded-full hover:bg-gray-100 transition flex items-center justify-center text-gray-500"
               >
-                <i className="bx bx-x text-3xl text-gray-600" />
+                <i className="bx bx-x text-3xl" />
               </button>
             </div>
 
-            <section className="flex flex-col gap-5">
-              {/* headers */}
-              <div className="w-full flex items-center justify-between  ">
-                <div className="flex items-center justify-start gap-5">
-                  <h3
-                    className={`text-2xl font-semibold text-gray-800 cursor-pointer   rounded-lg px-3 py-2 ${
-                      activatedTripPage === "own-trip"
-                        ? "border-2 border-red-500 shadow-2xl hover:bg-red-500 hover:text-white"
-                        : ""
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActivatedTripPage("own-trip");
-                    }}
-                  >
-                    My Own Trips
-                  </h3>
-
-                  <div className="h-[3rem] w-[2px] bg-red-500"></div>
-
-                  <h3
-                    className={`text-2xl font-semibold text-gray-800 cursor-pointer   rounded-lg px-3 py-2 ${
-                      activatedTripPage === "collaborated-trip"
-                        ? "border-2 shadow-2xl border-red-500 hover:text-white hover:bg-red-500"
-                        : ""
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActivatedTripPage("collaborated-trip");
-                    }}
-                  >
-                    Collaborated Trips
-                  </h3>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+              
+              {/* Tabs & Info */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                {/* Custom Tab Switcher */}
+                <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 flex w-full sm:w-auto">
+                    <button
+                        className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${activatedTripPage === 'own-trip' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => setActivatedTripPage('own-trip')}
+                    >
+                        My Trips
+                    </button>
+                    <button
+                        className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${activatedTripPage === 'collaborated-trip' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                        onClick={() => setActivatedTripPage('collaborated-trip')}
+                    >
+                        Collabs
+                    </button>
                 </div>
 
-                {/* info button */}
-                <div className="flex items-center justify-center p-3 group w-fit h-fit cursor-pointer relative">
-                  <i className="bx bx-info-circle text-3xl text-red-500"></i>
-
-                  <div
-                    className="absolute z-50 opacity-0 group-hover:opacity-100 
-                  scale-0 group-hover:scale-100
-                  transition-all duration-200 ease-out
-                  bottom-0 left-1/2 -translate-x-1/2 translate-y-full
-                  mt-3 w-[260px] bg-white rounded-xl shadow-2xl 
-                  p-4 flex flex-col gap-3 text-sm text-gray-700"
-                  >
-                    {/* Arrow */}
-                    <div
-                      className="absolute -top-2 left-1/2 -translate-x-1/2 
-                    w-4 h-4 bg-red-500 rotate-45 shadow-md "
-                    ></div>
-
-                    <p className="leading-relaxed mt-3 ">
-                      <span className="text-3xl text-red-500">•</span> Selecting
-                      a <span className="font-medium text-red-500">Trip</span>{" "}
-                      will automatically change your post visibility to the
-                      <span className="font-medium"> Trip’s visibility</span>.
-                    </p>
-
-                    <p className="leading-relaxed ">
-                      <span className="text-3xl text-red-500">•</span> To change
-                      post visibility, either
-                      <span className="font-medium"> detach the trip</span> or
-                      update the{" "}
-                      <span className="font-medium">Trip visibility</span>.
-                    </p>
-                  </div>
-                </div>
+                {/* Info Note */}
+                 <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm">
+                    <i className="bx bx-info-circle text-red-400 text-lg"></i>
+                    <span>Visibility will sync with trip settings</span>
+                 </div>
               </div>
 
-              {/* search bar and option */}
-              <div className="w-[80%] flex  items-center justify-between ">
-                <div
-                  className={`w-[70%] bg-white rounded-lg shadow-lg ${
-                    searchOpen ? "border-3 border-red-500  " : "border-none"
-                  } flex items-center justify-start gap-2 px-4 py-2 `}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSearchOpen(true);
-                  }}
-                >
-                  <i className="bx bx-search text-xl text-gray-500"></i>
-                  <input
-                    value={search}
-                    className="w-full text-xl text-black focus:outline-none border-none"
-                    placeholder="Search trips..."
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                    }}
-                  />
+              {/* Search & Sort Bar */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i className='bx bx-search text-xl text-gray-400 group-focus-within:text-red-500 transition-colors'></i>
+                    </div>
+                    <input 
+                        type="text"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition-all bg-white"
+                        placeholder="Search trips by title, tag, or friends..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
                 </div>
+                
+                <div className="relative z-20">
+                    <button 
+                        className="w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl flex items-center justify-between sm:justify-center gap-2 text-gray-600 hover:border-red-400 hover:text-red-500 transition-all font-medium"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setDropDownOpen(!dropdownOpen);
+                        }}
+                    >
+                        <i className='bx bx-sort-alt-2'></i>
+                        <span>{sortBy}</span>
+                        <i className={`bx bx-chevron-down transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}></i>
+                    </button>
 
-                <div className="w-[25%] flex flex-col items-center gap-2 justify-center text-base text-black z-20">
-                  <div
-                    className="relative shadow-2xl bg-white text-xl text-black flex items-center gap-3 justify-between px-2 py-2 rounded-lg w-full cursor-pointer"
-                    onClick={() => setDropDownOpen((prev) => !prev)}
-                  >
-                    <i className="bx bx-slider text-xl text-black"></i>
-                    <p className="text-sm ">Sort By {sortBy}</p>
-                    <i className="bx bx-chevron-down text-2xl text-gray-500"></i>
-                  </div>
-
-                  <div className="px-3 relative w-full ">
                     {dropdownOpen && (
-                      <div className="w-full absolute top-0 left-1/2 -translate-x-1/2 bg-white flex flex-col items-start justify-center gap-3 px-3 py-2  rounded-lg shadow-2xl ">
-                        <p
-                          className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
-                          onClick={() => {
-                            setDropDownOpen(false);
-                            setSortBy("Start Date");
-                          }}
-                        >
-                          Sort By Start Date
-                          {sortBy === "Start Date" && (
-                            <i className="bx bx-check text-2xl ml-2"></i>
-                          )}
-                        </p>
-                        <p
-                          className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
-                          onClick={() => {
-                            setDropDownOpen(false);
-                            setSortBy("End Date");
-                          }}
-                        >
-                          Sort By End Date
-                          {sortBy === "End Date" && (
-                            <i className="bx bx-check text-2xl ml-2"></i>
-                          )}
-                        </p>
-                        <p
-                          className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
-                          onClick={() => {
-                            setDropDownOpen(false);
-                            setSortBy("Destinations");
-                          }}
-                        >
-                          Sort By Destinations
-                          {sortBy === "Destinations" && (
-                            <i className="bx bx-check text-2xl ml-2"></i>
-                          )}
-                        </p>
-                        <p
-                          className="text-sm w-full flex  items-center justify-center hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg cursor-pointer"
-                          onClick={() => {
-                            setDropDownOpen(false);
-                            setSortBy("Posts");
-                          }}
-                        >
-                          Sort By Posts
-                          {sortBy === "Posts" && (
-                            <i className="bx bx-check text-2xl ml-2"></i>
-                          )}
-                        </p>
-                      </div>
+                        <div className="absolute top-full right-0 mt-2 w-full sm:w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-2 overflow-hidden animate-fadeIn">
+                            {["Start Date", "End Date", "Destinations", "Posts"].map((sort) => (
+                                <div
+                                    key={sort}
+                                    className={`px-4 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between ${sortBy === sort ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                                    onClick={() => {
+                                        setSortBy(sort);
+                                        setDropDownOpen(false);
+                                    }}
+                                >
+                                    {sort}
+                                    {sortBy === sort && <i className='bx bx-check text-lg'></i>}
+                                </div>
+                            ))}
+                        </div>
                     )}
-                  </div>
                 </div>
               </div>
 
               {/*  Loading State */}
               {tripLoading && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}
-                      className="bg-white rounded-2xl shadow-md p-4 animate-pulse"
+                      className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 animate-pulse"
                     >
                       <div className="h-40 w-full bg-gray-200 rounded-xl mb-4" />
                       <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
@@ -1402,141 +997,109 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
               {/*  Error State */}
               {!tripLoading && tripError && (
-                <div className="w-full flex flex-col items-center justify-center gap-3 py-16">
-                  <i className="bx bx-error-circle text-5xl text-red-500"></i>
-                  <p className="text-lg font-medium text-gray-700">
-                    {tripError}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Please try again later.
-                  </p>
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                   <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                      <i className="bx bx-error-circle text-4xl text-red-500"></i>
+                   </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h3>
+                  <p className="text-gray-500 mb-6">{tripError}</p>
+                  <button onClick={() => setActivatedTripPage(activatedTripPage)} className="px-6 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition">Try Again</button>
                 </div>
               )}
 
-              {/* 3 Empty State */}
+              {/* Empty State */}
               {!tripLoading && !tripError && trips.length === 0 && (
-                <div className="w-full flex flex-col items-center justify-center gap-4 py-16">
-                  <i className="bx bx-map-alt text-6xl text-gray-400"></i>
-                  <p className="text-xl font-semibold text-gray-700">
-                    No trips found
-                  </p>
-                  <p className="text-sm text-gray-500 text-center max-w-sm">
-                    You don’t have any{" "}
-                    {activatedTripPage === "own-trip"
-                      ? "personal trips"
-                      : "collaborated trips"}{" "}
-                    yet.
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                     <i className="bx bx-map-alt text-5xl text-gray-400"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">No trips found</h3>
+                  <p className="text-gray-500 max-w-xs mx-auto">
+                    You don’t have any {activatedTripPage === "own-trip" ? "personal" : "collaborated"} trips matching your search yet.
                   </p>
                 </div>
               )}
 
-              {/* 4 Trips Loaded */}
+              {/* Trips Grid */}
               {!tripLoading && !tripError && trips.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-20">
                   {sortedSearchTrips.map((trip) => (
                     <div
                       key={trip._id}
-                      className={`${
-                        selectedTrip?._id === trip._id
-                          ? "border-5 border-red-500"
-                          : "border-none"
-                      } bg-white rounded-2xl shadow-md overflow-hidden
-                   hover:shadow-2xl transition cursor-pointer group`}
-                      onClick={() => {
-                        handleTripSelect(trip);
-                      }}
+                      className={`group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border-2 ${selectedTrip?._id === trip._id ? 'border-red-500 ring-4 ring-red-500/10' : 'border-transparent hover:border-gray-200'}`}
+                      onClick={() => handleTripSelect(trip)}
                     >
+                      {/* Image Badge */}
+                      <div className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-bold text-gray-700 shadow-sm">
+                        {trip.visibility}
+                      </div>
+
                       {/* Cover Image */}
-                      <div className="h-44 w-full bg-gray-100 overflow-hidden">
+                      <div className="h-48 w-full bg-gray-100 overflow-hidden relative">
                         {trip?.coverPhoto?.url ? (
                           <img
                             src={trip.coverPhoto.url}
                             alt={trip.title}
-                            className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                            className="h-full w-full object-cover group-hover:scale-105 transition duration-500"
                           />
                         ) : (
-                          <div className="h-full w-full bg-black/40" />
+                          <div className="h-full w-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                             <i className='bx bx-image text-4xl text-gray-400'></i>
+                          </div>
                         )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
+                        
+                        <div className="absolute bottom-3 left-3 text-white">
+                             <p className="text-xs font-medium opacity-90 flex items-center gap-1">
+                                <i className='bx bx-calendar'></i>
+                                {formatDate(trip.startDate)}
+                             </p>
+                        </div>
                       </div>
 
                       {/* Content */}
-                      <div className="p-4 flex flex-col gap-2">
-                        <h4 className="text-lg font-semibold text-gray-800 line-clamp-1">
+                      <div className="p-4">
+                        <h4 className="text-lg font-bold text-gray-800 line-clamp-1 mb-1 group-hover:text-red-500 transition-colors">
                           {trip.title}
                         </h4>
-
-                        <div className="flex  items-center justify-start gap-5">
-                          <i className="bx bx-calendar text-2xl text-red-500 " />
-                          <p className="text-sm text-gray-600">
-                            {" "}
-                            {formatDate(trip.startDate)} -{" "}
-                            {formatDate(trip.endDate)}
-                          </p>
-                        </div>
-
-                        {/* collaborators */}
-                        <div className="text-sm text-black px-5 py-2 flex items-center justify-start gap-2 w-full">
-                          {trip.acceptedFriends &&
-                            trip.acceptedFriends.length > 0 && (
-                              <i className="bx bx-group text-3xl text-red-500"></i>
-                            )}
-
-                          {trip.acceptedFriends &&
-                            trip.acceptedFriends.length > 0 && (
-                              <div className=" flex -space-x-3  px-2 ">
-                                <span className="h-16 w-16 overflow-hidden rounded-full border-2 border-white">
-                                  <img
-                                    src={
-                                      trip.acceptedFriends[0].user.avatar
-                                        ?.url ||
-                                      trip.acceptedFriends[0].user.avatar
-                                    }
-                                    className="h-full object-cover "
-                                  />
-                                </span>
-                                {trip.acceptedFriends.length > 1 && (
-                                  <span className="h-16 w-16 overflow-hidden rounded-full border-2 border-white">
-                                    <img
-                                      src={
-                                        trip.acceptedFriends[1].user.avatar
-                                          ?.url ||
-                                        trip.acceptedFriends[1].user.avatar
-                                      }
-                                      className="h-full object-cover "
-                                    />
-                                  </span>
-                                )}
-
-                                {trip.acceptedFriends.length > 2 && (
-                                  <span>
-                                    and {trip.acceptedFriends.length - 2} other
-                                    collaborators
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                        </div>
-
-                        <p className="text-sm text-gray-500 line-clamp-2">
-                          {trip.description || "No description provided"}
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">
+                          {trip.description || "No description provided for this trip."}
                         </p>
 
-                        <div className="flex items-center justify-between pt-2">
-                          <span className="text-xs px-3 py-1 rounded-full bg-red-100 text-red-600">
-                            {trip.visibility}
-                          </span>
-
-                          <span className="text-xs text-gray-600">
-                            {trip.posts.length || 0} posts
-                          </span>
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                           {/* Collaborators Avatars */}
+                           <div className="flex items-center -space-x-2">
+                                <img src={trip.user.avatar?.url || trip.user.avatar} className="w-8 h-8 rounded-full border-2 border-white object-cover" title={`Owner: ${trip.user.name}`} />
+                                {trip.acceptedFriends?.slice(0, 3).map((friend, idx) => (
+                                    <img key={idx} src={friend.user.avatar?.url || friend.user.avatar} className="w-8 h-8 rounded-full border-2 border-white object-cover" title={friend.user.name} />
+                                ))}
+                                {trip.acceptedFriends?.length > 3 && (
+                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                        +{trip.acceptedFriends.length - 3}
+                                    </div>
+                                )}
+                           </div>
+                           
+                           <div className="flex items-center gap-1 text-gray-400 text-xs font-medium">
+                                <i className='bx bx-photo-album'></i>
+                                {trip.posts?.length || 0}
+                           </div>
                         </div>
                       </div>
-                      {selectedTrip && <div></div>}
+                      
+                      {/* Selection Overlay */}
+                      {selectedTrip?._id === trip._id && (
+                        <div className="absolute inset-0 bg-red-500/10 z-20 flex items-center justify-center backdrop-blur-[1px]">
+                            <div className="bg-white text-red-500 rounded-full p-3 shadow-xl transform scale-100 animate-bounce">
+                                <i className='bx bx-check text-3xl'></i>
+                            </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </div>
           </div>
         </div>
       )}

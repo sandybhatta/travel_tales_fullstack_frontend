@@ -31,17 +31,11 @@ const TripCover = ({
     setLikeCount(trip?.totalLikes || 0);
   }, [trip]);
 
-  // Determine permissions based on Redux state and trip data
-  const isOwner = currentUser?._id && (
-      (trip?.user?._id === currentUser._id) || 
-      (trip?.user === currentUser._id)
-  );
-
+  // Determine permissions based on Backend provided status
+  const isOwner = trip?.currentUser?.userStatus === 'owner';
+  
   // Check if user is a collaborator
-  // Collaborators can be an array of objects (populated) or IDs
-  const isCollaborator = trip?.collaborators?.some(c => 
-      (c._id === currentUser?._id) || (c === currentUser?._id)
-  );
+  const isCollaborator = trip?.currentUser?.userStatus === 'collaborator';
 
   const canInvite = isOwner || isCollaborator;
   
@@ -109,19 +103,19 @@ const TripCover = ({
 
           {showMenu && (
             <div
-              className="absolute top-5 right-5 bg-black/40 p-3 cursor-pointer rounded-lg flex items-center justify-center gap-3"
+              className="absolute top-3 right-3 md:top-5 md:right-5 bg-black/40 p-2 md:p-3 cursor-pointer rounded-lg flex items-center justify-center gap-2 md:gap-3 z-50"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowEditModal((prev) => !prev);
               }}
             >
               {!showEditModal && (
-                <i className="bx bx-dots-vertical text-3xl text-white p-1 "></i>
+                <i className="bx bx-dots-vertical text-xl md:text-3xl text-white p-1 "></i>
               )}
               {showEditModal && (
-                <div className="px-3 py-1 relative rounded-lg flex flex-col items-start justify-evenly gap-1 ">
+                <div className="px-2 py-1 md:px-3 relative rounded-lg flex flex-col items-start justify-evenly gap-1 ">
                   <i
-                    className="absolute top-1 right-1 bx bx-x text-3xl text-white cursor-pointer"
+                    className="absolute top-1 right-1 bx bx-x text-xl md:text-3xl text-white cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowEditModal(false);
@@ -130,39 +124,39 @@ const TripCover = ({
 
                   {isOwner && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-xs md:text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsEditFormOpen(true);
                         setShowEditModal(false);
                       }}
                     >
-                      <i className="bx bx-edit text-2xl "></i>
+                      <i className="bx bx-edit text-lg md:text-2xl "></i>
                       <span>Edit Trip</span>
                     </p>
                   )}
                   {canInvite && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-xs md:text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsInviteFormOpen(true);
                         setShowEditModal(false);
                       }}
                     >
-                      <i className="bx bx-user-plus text-2xl "></i>
+                      <i className="bx bx-user-plus text-lg md:text-2xl "></i>
                       <span>Invite Trip</span>
                     </p>
                   )}
                   {isOwner && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-xs md:text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteTrip();
                       }}
                     >
-                      <i className="bx bx-trash text-2xl "></i>
+                      <i className="bx bx-trash text-lg md:text-2xl "></i>
                       <span>Delete Trip</span>
                     </p>
                   )}
@@ -171,16 +165,16 @@ const TripCover = ({
             </div>
           )}
 
-          <div className="w-full absolute bottom-5 left-5 flex flex-col items-start justify-evenly gap-2">
-            <h2 className="w-[80%] truncate font-semibold text-3xl text-white">
+          <div className="w-full absolute bottom-3 left-3 md:bottom-5 md:left-5 flex flex-col items-start justify-evenly gap-1 md:gap-2">
+            <h2 className="w-[90%] md:w-[80%] truncate font-semibold text-lg md:text-3xl text-white">
               {trip.title}
             </h2>
 
             {/* trip engagement info */}
-            <div className="flex items-center justify-evenly gap-5">
-              <p className="text-white flex items-center justify-around gap-2 ">
-                <i className="bx bx-calendar-week text-3xl text-white"></i>
-                <span className="text-xl">
+            <div className="flex items-center justify-evenly gap-2 md:gap-5">
+              <p className="text-white flex items-center justify-around gap-1 md:gap-2 ">
+                <i className="bx bx-calendar-week text-lg md:text-3xl text-white"></i>
+                <span className="text-xs md:text-xl">
                   {formatDate(trip.startDate)} -{" "}
                   {formatDate(trip.endDate)}
                 </span>
@@ -193,7 +187,7 @@ const TripCover = ({
                     fill="#EF233C"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-7 h-7"
+                    className="w-5 h-5 md:w-7 md:h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -211,7 +205,7 @@ const TripCover = ({
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-7 h-7"
+                    className="w-5 h-5 md:w-7 md:h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -227,7 +221,7 @@ const TripCover = ({
               </div>
 
               <button 
-                  className="text-white text-xl font-semibold cursor-pointer hover:bg-black/40 hover:underline bg-transparent border-none"
+                  className="text-white text-xs md:text-xl font-semibold cursor-pointer hover:bg-black/40 hover:underline bg-transparent border-none"
                   onClick={(e)=>{
                     e.stopPropagation()
                     setShowLikedUsersModal(true)
@@ -237,24 +231,24 @@ const TripCover = ({
               </button>
 
               {/* comment */}
-              <div className=" flex items-center justify-around gap-5">
-                <i className="bx bx-message-circle-image text-white text-3xl"></i>
-                <p className="text-white text-xl font-semibold">
+              <div className=" flex items-center justify-around gap-2 md:gap-5">
+                <i className="bx bx-message-circle-image text-white text-lg md:text-3xl"></i>
+                <p className="text-white text-xs md:text-xl font-semibold">
                   {trip.totalComments} Comments{" "}
                 </p>
               </div>
             </div>
 
             {/* tags */}
-            <div className="w-4/5">
+            <div className="w-[95%] md:w-4/5">
               {trip.tags && trip.tags.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap justify-around w-full">
+                <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-start md:justify-around w-full">
                   {trip.tags.map((tag, index) => {
                     return (
                       <Link
                         to={`/trips/tag/${tag}`}
                         key={index}
-                        className="px-3 py-1 bg-[#EF233C] text-white rounded-lg  text-sm font-semibold hover:bg-[#D90429] transition-colors"
+                        className="px-2 py-0.5 md:px-3 md:py-1 bg-[#EF233C] text-white rounded-lg text-[10px] md:text-sm font-semibold hover:bg-[#D90429] transition-colors"
                       >
                         #{tag}
                       </Link>
@@ -266,22 +260,22 @@ const TripCover = ({
           </div>
         </div>
       ) : (
-        <div className="w-full px-5 py-3 bg-white rounded-lg relative ">
+        <div className="w-full px-3 py-2 md:px-5 md:py-3 bg-white rounded-lg relative shadow-md">
           {showMenu && (
             <div
-              className="absolute top-5 right-5 bg-black/40 p-3 cursor-pointer rounded-lg flex items-center justify-center gap-3"
+              className="absolute top-3 right-3 md:top-5 md:right-5 bg-black/40 p-2 md:p-3 cursor-pointer rounded-lg flex items-center justify-center gap-2 md:gap-3 z-50"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowEditModal((prev) => !prev);
               }}
             >
               {!showEditModal && (
-                <i className="bx bx-dots-vertical text-3xl text-white p-1 "></i>
+                <i className="bx bx-dots-vertical text-xl md:text-3xl text-white p-1 "></i>
               )}
               {showEditModal && (
-                <div className="px-3 py-1 relative rounded-lg flex flex-col items-start justify-evenly gap-1 ">
+                <div className="px-2 py-1 md:px-3 relative rounded-lg flex flex-col items-start justify-evenly gap-1 ">
                   <i
-                    className="absolute top-1 right-1 bx bx-x text-3xl text-white cursor-pointer"
+                    className="absolute top-1 right-1 bx bx-x text-xl md:text-3xl text-white cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowEditModal(false);
@@ -290,39 +284,39 @@ const TripCover = ({
 
                   {isOwner && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold hover:bg-[#EF233C] px-2 py-1 rounded-lg text-xs md:text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsEditFormOpen(true);
                         setShowEditModal(false);
                       }}
                     >
-                      <i className="bx bx-edit text-2xl "></i>
+                      <i className="bx bx-edit text-lg md:text-2xl "></i>
                       <span>Edit Trip</span>
                     </p>
                   )}
                   {canInvite && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold hover:bg-[#EF233C] px-2 py-1 rounded-lg text-xs md:text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsInviteFormOpen(true);
                         setShowEditModal(false);
                       }}
                     >
-                      <i className="bx bx-user-plus text-2xl "></i>
+                      <i className="bx bx-user-plus text-lg md:text-2xl "></i>
                       <span>Invite Trip</span>
                     </p>
                   )}
                   {isOwner && (
                     <p 
-                      className="mr-5 text-white font-semibold  hover:bg-[#EF233C] px-2 py-1 rounded-lg text-base flex items-center justify-start gap-2"
+                      className="mr-5 text-white font-semibold hover:bg-[#EF233C] px-2 py-1 rounded-lg text-xs md:text-base flex items-center justify-start gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteTrip();
                       }}
                     >
-                      <i className="bx bx-trash text-2xl "></i>
+                      <i className="bx bx-trash text-lg md:text-2xl "></i>
                       <span>Delete Trip</span>
                     </p>
                   )}
@@ -330,16 +324,16 @@ const TripCover = ({
               )}
             </div>
           )}
-          <div className="w-full mt-20 flex flex-col items-start justify-evenly gap-2">
-            <h2 className="w-[80%] truncate font-semibold text-3xl text-white">
+          <div className="w-full mt-8 md:mt-20 flex flex-col items-start justify-evenly gap-1 md:gap-2">
+            <h2 className="w-[90%] md:w-[80%] truncate font-semibold text-lg md:text-3xl text-gray-800">
               {trip.title}
             </h2>
 
             {/* trip engagement info */}
-            <div className="flex items-center justify-evenly gap-5">
-              <p className="text-white flex items-center justify-around gap-2 ">
-                <i className="bx bx-calendar-week text-3xl text-white"></i>
-                <span className="text-xl">
+            <div className="flex items-center justify-evenly gap-2 md:gap-5">
+              <p className="text-gray-600 flex items-center justify-around gap-1 md:gap-2 ">
+                <i className="bx bx-calendar-week text-lg md:text-3xl text-red-500"></i>
+                <span className="text-xs md:text-xl">
                   {formatDate(trip.startDate)} -{" "}
                   {formatDate(trip.endDate)}
                 </span>
@@ -351,8 +345,8 @@ const TripCover = ({
                     xmlns="http://www.w3.org/2000/svg"
                     fill="#EF233C"
                     viewBox="0 0 24 24"
-                    stroke="white"
-                    className="w-7 h-7"
+                    stroke="#EF233C"
+                    className="w-5 h-5 md:w-7 md:h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -369,8 +363,8 @@ const TripCover = ({
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
-                    stroke="white"
-                    className="w-7 h-7"
+                    stroke="#EF233C"
+                    className="w-5 h-5 md:w-7 md:h-7"
                   >
                     <path
                       strokeLinecap="round"
@@ -386,7 +380,7 @@ const TripCover = ({
               </div>
 
               <button 
-                  className="text-white text-xl font-semibold cursor-pointer hover:bg-black/40 hover:underline bg-transparent border-none"
+                  className="text-gray-600 text-xs md:text-xl font-semibold cursor-pointer hover:bg-gray-100 hover:underline bg-transparent border-none rounded px-1 md:px-2"
                   onClick={(e)=>{
                     e.stopPropagation()
                     setShowLikedUsersModal(true)
@@ -396,9 +390,9 @@ const TripCover = ({
               </button>
 
               {/* comment */}
-              <div className=" flex items-center justify-around gap-5">
-                <i className="bx bx-message-circle-image text-white text-3xl"></i>
-                <p className="text-white text-xl font-semibold">
+              <div className=" flex items-center justify-around gap-1 md:gap-5">
+                <i className="bx bx-message-circle-image text-gray-500 text-lg md:text-3xl"></i>
+                <p className="text-gray-600 text-xs md:text-xl font-semibold">
                   {trip.totalComments} Comments{" "}
                 </p>
               </div>
@@ -407,12 +401,12 @@ const TripCover = ({
             {/* tags */}
             <div>
               {trip.tags && trip.tags.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap justify-around w-full">
+                <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-start md:justify-around w-full">
                   {trip.tags.map((tag, index) => {
                     return (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-[#EF233C] text-white rounded-lg  text-sm font-semibold"
+                        className="px-2 py-0.5 md:px-3 md:py-1 bg-[#EF233C] text-white rounded-lg text-[10px] md:text-sm font-semibold"
                       >
                         #{tag}
                       </span>

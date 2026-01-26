@@ -370,32 +370,32 @@ const PostsOfTrip = ({ trip, setTrip }) => {
   
 
   return (
-    <div className="w-full bg-white rounded-xl p-4 shadow-lg flex flex-col gap-5 z-2">
+    <div className="w-full bg-white rounded-xl p-3 md:p-4 shadow-lg flex flex-col gap-4 md:gap-5 z-2">
       {/* Header */}
       <div className="flex justify-between items-center ">
-        <h3 className="text-2xl font-semibold leckerli text-red-500">
+        <h3 className="text-xl md:text-2xl font-semibold leckerli text-red-500">
           Trip Posts
         </h3>
 
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex items-center justify-end gap-2 md:gap-4">
           {canEdit && (
             <div
               onClick={() => setShowAddModal(true)}
-              className="bg-red-500 px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+              className="bg-red-500 px-3 py-1.5 md:px-4 md:py-2 rounded-lg flex items-center justify-center gap-1.5 md:gap-2"
             >
-              <i className="bx bx-image-plus text-white text-2xl" />
-              <p className=" text-white font-semibold cursor-pointer">
+              <i className="bx bx-image-plus text-white text-lg md:text-2xl" />
+              <p className=" text-white text-xs md:text-base font-semibold cursor-pointer">
                 Add Posts
               </p>
             </div>
           )}
 
           <div
-            className="bg-red-500 px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+            className="bg-red-500 px-3 py-1.5 md:px-4 md:py-2 rounded-lg flex items-center justify-center gap-1.5 md:gap-2"
             onClick={() => setShowViewItenary(true)}
           >
-            <i className="bx  bx-glasses-alt text-white text-2xl"></i>
-            <p className=" text-white font-semibold cursor-pointer">
+            <i className="bx  bx-glasses-alt text-white text-lg md:text-2xl"></i>
+            <p className=" text-white text-xs md:text-base font-semibold cursor-pointer">
               View Itinerary
             </p>
           </div>
@@ -403,7 +403,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
       </div>
 
       {/* Posts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
         {sortedTripPosts.map((p) => (
           <div
             key={p._id}
@@ -418,7 +418,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
             )}
             <div
               onClick={() => setShowViewItenary(true)}
-              className="w-full h-80 relative overflow-hidden group rounded-lg block cursor-pointer"
+              className="w-full h-40 md:h-80 relative overflow-hidden group rounded-lg block cursor-pointer"
             >
               {/* Media / Caption */}
               {p.post.media?.length ? (
@@ -426,63 +426,54 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   <img
                     src={p.post.media[0].url}
                     alt=""
-                    className="h-full object-cover "
+                    className="h-full w-full object-cover "
                   />
                 ) : (
                   <video
                     src={p.post.media[0].url}
                     controls
-                    className="w-full object-cover "
+                    className="w-full h-full object-cover "
                   />
                 )
               ) : (
-                <div className="w-full h-full overflow-hidden p-4 text-gray-700">
-                  <p className="leading-relaxed line-clamp-[12]">
+                <div className="w-full h-full overflow-hidden p-2 md:p-4 text-gray-700">
+                  <p className="leading-relaxed line-clamp-[6] md:line-clamp-[12] text-xs md:text-base">
                     {p.post.caption}
                   </p>
                 </div>
               )}
 
               {/* post author */}
-              <div className="w-full h-full bg-black/30  absolute inset-0 opacity-0 group-hover:opacity-100 ">
-                <div className="absolute bottom-2 left-1 px-2 w-full flex flex-col items-start gap-2">
-                  <div className="w-full flex items-center justify-start gap-2">
+              <div className="w-full h-full bg-black/30  absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-2 left-1 px-1 md:px-2 w-full flex flex-col items-start gap-1 md:gap-2">
+                  <div className="w-full flex items-center justify-start gap-1.5 md:gap-2">
                     {/* avatar */}
-                    <div className="w-8 h-8 rounded-full">
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full">
                       <img
                         src={p.post.author.avatar?.url || p.post.author.avatar}
-                        className="w-full object-cover"
+                        className="w-full h-full object-cover rounded-full"
                       />
                     </div>
                     {/* name and username */}
-                    <div className="flex flex-col items-start gap-1.5">
-                      <p className="text-white text-sm">
+                    <div className="flex flex-col items-start gap-0.5 md:gap-1.5">
+                      <p className="text-white text-xs md:text-sm font-semibold">
                         {p.post.author.name}{" "}
-                      </p>
-                      <p className="text-white text-xs">
-                        @{p.post.author.username}{" "}
                       </p>
                     </div>
                   </div>
-
-                  {p.post.media?.length > 0 && p.post.caption.length > 0 && (
-                    <div className="w-full text-white text-sm truncate ">
-                      {p.post.caption}
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* likes and comments of the post */}
-              <div className="w-full absolute top-1/2 left-1/2 -translate-1/2 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
+              <div className="w-full absolute top-1/2 left-1/2 -translate-1/2 flex items-center justify-center gap-2 md:gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 {/* like */}
-                <div className="flex items-center justify-center gap-1.5">
+                <div className="flex items-center justify-center gap-1 md:gap-1.5">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="red"
                     viewBox="0 0 24 24"
                     stroke="white"
-                    className="w-5 h-5 "
+                    className="w-4 h-4 md:w-5 md:h-5 "
                   >
                     <path
                       strokeLinecap="round"
@@ -494,14 +485,14 @@ const PostsOfTrip = ({ trip, setTrip }) => {
              3.78-3.4 6.86-8.545 11.54l-1.46 1.31z"
                     />
                   </svg>
-                  <p className="text-white text-sm">{p.post.likes?.length} </p>
+                  <p className="text-white text-xs md:text-sm">{p.post.likes?.length} </p>
                 </div>
 
                 {/* comment */}
-                <div className="flex items-center justify-center gap-1.5">
-                  <i className="bx  bx-message-bubble text-white text-xl" />
+                <div className="flex items-center justify-center gap-1 md:gap-1.5">
+                  <i className="bx  bx-message-bubble text-white text-base md:text-xl" />
 
-                  <p className="text-white text-sm">
+                  <p className="text-white text-xs md:text-sm">
                     {p.post.comments?.length}{" "}
                   </p>
                 </div>
@@ -509,11 +500,11 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
               {/* highlight , multiple post icon , remove post */}
 
-              <div className=" absolute right-2 top-2 flex items-center justify-center gap-3 ">
+              <div className=" absolute right-1 top-1 md:right-2 md:top-2 flex items-center justify-center gap-1.5 md:gap-3 ">
                 {/* Highlight Star */}
                 {p.isHighlighted ? (
                   <div
-                    className={`h-7 w-7  bg-yellow-500 border-1 border-yellow-600 rounded-full ${
+                    className={`h-5 w-5 md:h-7 md:w-7  bg-yellow-500 border-1 border-yellow-600 rounded-full ${
                       highlightLoading[p.post._id]
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
@@ -537,7 +528,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   </div>
                 ) : !p.isHighlighted && canEdit ? (
                   <div
-                    className={`h-7 w-7  rounded-full bg-gray-600 border-1 border-white ${
+                    className={`h-5 w-5 md:h-7 md:w-7  rounded-full bg-gray-600 border-1 border-white ${
                       highlightLoading[p.post._id]
                         ? "opacity-50 cursor-not-allowed"
                         : "cursor-pointer"
@@ -564,9 +555,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                 )}
 
                 {p.post.media?.length > 1 && (
-                  <div className="bg-black/30 px-3 py-1.5 rounded-full flex items-center justify-center gap-1.5 ">
-                    <i className="bx bx-images text-white text-2xl" />
-                    <p className=" text-white text-sm font-semibold">
+                  <div className="bg-black/30 px-2 py-1 md:px-3 md:py-1.5 rounded-full flex items-center justify-center gap-1 ">
+                    <i className="bx bx-images text-white text-base md:text-2xl" />
+                    <p className=" text-white text-xs md:text-sm font-semibold">
                       {p.post.media?.length}{" "}
                     </p>
                   </div>
@@ -574,7 +565,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                 {canRemovePostFromTrip(p.post) && (
                   <i
-                    className="bx bx-trash p-2 bg-white rounded-full text-red-500 text-xl  cursor-pointer"
+                    className="bx bx-trash p-1 md:p-2 bg-white rounded-full text-red-500 text-sm md:text-xl  cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePostRemove(p.post._id);
@@ -585,7 +576,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
               {/* Day Badge */}
               {p.dayNumber && (
-                <div className="absolute top-2 left-2 bg-red-500  text-white font-semibold px-2 rounded-lg ">
+                <div className="absolute top-1 left-1 md:top-2 md:left-2 bg-red-500  text-white font-semibold px-1.5 py-0.5 md:px-2 md:py-1 rounded-md md:rounded-lg text-[10px] md:text-base">
                   Day {p.dayNumber}
                 </div>
               )}
@@ -594,9 +585,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
             {/* highlighted by  */}
 
             {p.isHighlighted && (
-              <div className="w-full flex  items-center gap-3 px-2 py-1.5 bg-yellow-500/30 border-2 border-yellow-600 rounded-lg shadow-md hover:shadow-2xl mt-2">
+              <div className="w-full flex  items-center gap-1.5 md:gap-3 px-1.5 py-1 md:px-2 md:py-1.5 bg-yellow-500/30 border-2 border-yellow-600 rounded-lg shadow-md hover:shadow-2xl mt-1 md:mt-2">
                 <svg
-                  className="w-6 h-6"
+                  className="w-4 h-4 md:w-6 md:h-6"
                   viewBox="0 0 200 200"
                   xmlns="http://www.w3.org/2000/svg"
                 >
@@ -609,15 +600,15 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                 <Link
                   to={`/profile/${p.highlightedBy._id}`}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 md:gap-2"
                 >
                   <img
                     src={p.highlightedBy.avatar?.url || p.highlightedBy.avatar}
                     alt="image"
-                    className="h-8 w-8 rounded-full object-cover"
+                    className="h-6 w-6 md:h-8 md:w-8 rounded-full object-cover"
                   />
                 </Link>
-                <p className="text-black text-sm">
+                <p className="text-black text-xs md:text-sm truncate">
                   <Link
                     to={`/profile/${p.highlightedBy._id}`}
                     className="font-semibold hover:underline"
@@ -644,13 +635,13 @@ const PostsOfTrip = ({ trip, setTrip }) => {
           >
             <>
               {/* ================= HEADER ================= */}
-              <div className="sticky top-0 bg-gradient-to-r from-red-500 to-red-600 p-6 flex items-center justify-between z-10">
+              <div className="sticky top-0 bg-gradient-to-r from-red-500 to-red-600 p-4 md:p-6 flex items-center justify-between z-10">
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-2xl md:text-3xl text-white font-semibold leckerli">
+                  <h3 className="text-xl md:text-3xl text-white font-semibold leckerli">
                     Add Posts to The Trip
                   </h3>
                   {selectedPosts.length > 0 && (
-                    <p className="text-sm font-medium text-white/90">
+                    <p className="text-xs md:text-sm font-medium text-white/90">
                       {selectedPosts.length} post selected
                     </p>
                   )}
@@ -658,14 +649,14 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-white/20 transition"
+                  className="h-8 w-8 md:h-9 md:w-9 flex items-center justify-center rounded-full hover:bg-white/20 transition"
                 >
-                  <i className="bx bx-x text-white text-3xl" />
+                  <i className="bx bx-x text-white text-2xl md:text-3xl" />
                 </button>
               </div>
 
               {/* ================= BODY ================= */}
-              <div className="flex flex-col gap-4 p-5 overflow-y-auto">
+              <div className="flex flex-col gap-3 md:gap-4 p-3 md:p-5 overflow-y-auto">
                 {/* loading shimmer*/}
                 {loading && (
                   <>
@@ -730,11 +721,11 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                             : "bg-white border-gray-300 hover:border-red-400"
                         }`}
                       >
-                        <div className="flex flex-col gap-4 p-4">
+                        <div className="flex flex-col gap-3 md:gap-4 p-3 md:p-4">
                           {/* ===== AUTHOR INFO ===== */}
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="h-11 w-11 rounded-full overflow-hidden">
+                            <div className="flex items-center gap-2 md:gap-3">
+                              <div className="h-8 w-8 md:h-11 md:w-11 rounded-full overflow-hidden">
                                 <img
                                   src={p.author.avatar?.url || p.author.avatar}
                                   alt=""
@@ -744,12 +735,12 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                               <div className="flex flex-col">
                                 <div className=" flex items-center justify-start ">
-                                  <p className="text-sm font-semibold">
+                                  <p className="text-xs md:text-sm font-semibold">
                                     {p.author.name}
                                   </p>
                                   {p.taggedUsers?.length > 0 && (
-                                    <div className="flex items-center gap-2 ml-4">
-                                      <span className="text-sm text-gray-600">
+                                    <div className="flex items-center gap-1 md:gap-2 ml-2 md:ml-4">
+                                      <span className="text-xs md:text-sm text-gray-600">
                                         With
                                       </span>
                                       <img
@@ -758,25 +749,25 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                           p.taggedUsers[0].avatar
                                         }
                                         alt=""
-                                        className="h-7 w-7 rounded-full"
+                                        className="h-5 w-5 md:h-7 md:w-7 rounded-full"
                                       />
                                       {p.taggedUsers.length > 1 && (
-                                        <span className="text-sm text-gray-600">
+                                        <span className="text-xs md:text-sm text-gray-600">
                                           & {p.taggedUsers.length - 1} others
                                         </span>
                                       )}
                                     </div>
                                   )}
                                 </div>
-                                <div className=" flex items-center justify-start gap-3">
-                                  <p className="text-sm text-gray-500">
+                                <div className=" flex items-center justify-start gap-1 md:gap-3">
+                                  <p className="text-xs md:text-sm text-gray-500">
                                     @{p.author.username}
                                   </p>
-                                  <span className="text-xl text-gray-600">
+                                  <span className="text-lg md:text-xl text-gray-600">
                                     {" "}
                                     |{" "}
                                   </span>
-                                  <span className="text-sm text-gray-600">
+                                  <span className="text-[10px] md:text-sm text-gray-600">
                                     {" "}
                                     Created at {formatDate(p.createdAt)}
                                   </span>
@@ -786,22 +777,22 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                             {/* ===== SELECT INDICATOR ===== */}
                             <div
-                              className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition ${
+                              className={`h-6 w-6 md:h-8 md:w-8 rounded-full border-2 flex items-center justify-center transition ${
                                 isPostSelected(p._id)
                                   ? "bg-red-500 border-red-500"
                                   : "border-gray-400"
                               }`}
                             >
                               {isPostSelected(p._id) && (
-                                <i className="bx bx-check text-white text-xl" />
+                                <i className="bx bx-check text-white text-base md:text-xl" />
                               )}
                             </div>
                           </div>
 
                           {/* caption */}
                           {p.caption?.length > 0 && (
-                            <div className="w-full px-2">
-                              <p className="text-base flex flex-wrap gap-1">
+                            <div className="w-full px-1 md:px-2">
+                              <p className="text-sm md:text-base flex flex-wrap gap-1">
                                 {p.caption.split(" ").map((word, i) => {
                                   if (word.startsWith("@")) {
                                     const isMentioned = isUsernameMatch(
@@ -811,7 +802,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     return isMentioned ? (
                                       <span
                                         key={i}
-                                        className="text-red-500 text-lg leckerli"
+                                        className="text-red-500 text-base md:text-lg leckerli"
                                       >
                                         {word}
                                       </span>
@@ -1136,27 +1127,27 @@ const PostsOfTrip = ({ trip, setTrip }) => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* header */}
-            <div className="w-full flex items-center justify-between px-3 py-4  bg-white sticky top-0 z-40">
-              <div className="flex flex-col items-start gap-3">
-                <h2 className="text-2xl text-red-500 font-semibold">
+            <div className="w-full flex items-center justify-between px-3 py-3 md:py-4  bg-white sticky top-0 z-40">
+              <div className="flex flex-col items-start gap-1 md:gap-3">
+                <h2 className="text-xl md:text-2xl text-red-500 font-semibold">
                   Trip Itinerary
                 </h2>
-                <p>
+                <p className="text-xs md:text-base">
                   {" "}
                   {totalDaysAndPhotosOFTrip.totalDays} Days{" "}
-                  <span className="text-gray-500 text-xl"> | </span>
+                  <span className="text-gray-500 text-lg md:text-xl"> | </span>
                   {totalDaysAndPhotosOFTrip.totalPhotos} Moments captured
                 </p>
               </div>
 
               {/* cancel */}
-              <i className="bx bx-x text-3xl text-gray-500" 
+              <i className="bx bx-x text-2xl md:text-3xl text-gray-500" 
               onClick={() => setShowViewItenary(false)}
               />
             </div>
 
             {/* posts */}
-            <div className="flex flex-col items-center gap-5 w-full p-4 bg-[#edf2f4] h-fit">
+            <div className="flex flex-col items-center gap-3 md:gap-5 w-full p-2 md:p-4 bg-[#edf2f4] h-fit">
               {Object.keys(trip.itinerary).map((day, i) => {
                 const memory = trip.itinerary[day].length || 0;
                 const photosCaptured = trip.itinerary[day].reduce(
@@ -1178,61 +1169,61 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                   >
                     {/* Day Header */}
                     <div
-                      className={`flex items-center justify-between  w-full p-4 ${
+                      className={`flex items-center justify-between  w-full p-2 md:p-4 ${
                         dayThemes[i % dayThemes.length].bg
                       } rounded-t-xl`}
                     >
                       {/* Day number and memory */}
-                      <div className="flex items-center justify-start gap-3">
+                      <div className="flex items-center justify-start gap-2 md:gap-3">
                         <h2
                           className={`${
                             dayThemes[i % dayThemes.length].badge
-                          }  text-white px-4 py-2.5 rounded-lg text-2xl font-semibold leckerli `}
+                          }  text-white px-2 py-1 md:px-4 md:py-2.5 rounded-lg text-base md:text-2xl font-semibold leckerli `}
                         >
                           Day {day}
                         </h2>
 
-                        <div className=" flex flex-col items-start gap-2">
+                        <div className=" flex flex-col items-start gap-0.5 md:gap-2">
                           <h3
-                            className={` text-xl ${
+                            className={` text-sm md:text-xl ${
                               dayThemes[i % dayThemes.length].accent
                             }`}
                           >
                             {memory} {memory === 1 ? "Memory" : "Memories"}
                           </h3>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-gray-500 text-[10px] md:text-sm">
                             {photosCaptured}{" "}
                             {photosCaptured === 1 ? "photo" : "photos"} captured{" "}
                           </p>
                         </div>
                       </div>
                       {/* like counts */}
-                      <div className=" flex items-center justify-end gap-2">
-                        <i className="bx bx-heart text-xl text-red-600" />
-                        <p className="text-sm text-gray-500 ">
+                      <div className=" flex items-center justify-end gap-1 md:gap-2">
+                        <i className="bx bx-heart text-base md:text-xl text-red-600" />
+                        <p className="text-[10px] md:text-sm text-gray-500 ">
                           {totalLikes} likes{" "}
                         </p>
                       </div>
                     </div>
 
                     {/* posts in a day */}
-                    <div className=" p-4 bg-white flex flex-col items-center gap-4 w-full rounded-b-xl">
+                    <div className=" p-2 md:p-4 bg-white flex flex-col items-center gap-3 md:gap-4 w-full rounded-b-xl">
                       {trip.itinerary[day].map((p) => {
                         const isLikedByCurrentUser = p.likes.some(id=>id===_id);
 
                         return (
                           <div
                             key={p._id}
-                            className={`w-full p-2.5 flex flex-col items-center gap-3 ${
+                            className={`w-full p-2 md:p-2.5 flex flex-col items-center gap-2 md:gap-3 ${
                               dayThemes[i % dayThemes.length].bg
                             } rounded-lg`}
                           >
                             {/* author */}
                             <div className="flex items-center justify-between w-full">
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 md:gap-3">
                                 <Link
                                   to={`/profile/${p.author._id}`}
-                                  className="h-11 w-11 rounded-full overflow-hidden"
+                                  className="h-8 w-8 md:h-11 md:w-11 rounded-full overflow-hidden"
                                 >
                                   <img
                                     src={
@@ -1247,7 +1238,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                   <div className=" flex items-center justify-start ">
                                     <Link
                                       to={`/profile/${p.author._id}`}
-                                      className="text-sm font-semibold flex items-center justify-start hover:underline"
+                                      className="text-xs md:text-sm font-semibold flex items-center justify-start hover:underline"
                                     >
                                       <span>{p.author.name}</span>
                                       {trip.user._id === p.author._id && (
@@ -1259,7 +1250,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                           strokeWidth="3"
                                           strokeLinecap="round"
                                           strokeLinejoin="round"
-                                          className="lucide lucide-crown-icon lucide-crown h-6 w-6 ml-1"
+                                          className="lucide lucide-crown-icon lucide-crown h-4 w-4 md:h-6 md:w-6 ml-1"
                                         >
                                           <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
                                           <path d="M5 21h14" />
@@ -1274,7 +1265,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                           strokeWidth="3"
                                           strokeLinecap="round"
                                           strokeLinejoin="round"
-                                          className="lucide lucide-crown-icon lucide-crown h-6 w-6 ml-1"
+                                          className="lucide lucide-crown-icon lucide-crown h-4 w-4 md:h-6 md:w-6 ml-1"
                                         >
                                           <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
                                           <path d="M5 21h14" />
@@ -1282,8 +1273,8 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                       )}
                                     </Link>
                                     {p.taggedUsers?.length > 0 && (
-                                      <div className="flex items-center gap-2 ml-4">
-                                        <span className="text-sm text-gray-600">
+                                      <div className="flex items-center gap-1 md:gap-2 ml-2 md:ml-4">
+                                        <span className="text-xs md:text-sm text-gray-600">
                                           With
                                         </span>
                                         <Link
@@ -1295,12 +1286,12 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                               p.taggedUsers[0].avatar
                                             }
                                             alt=""
-                                            className="h-7 w-7 rounded-full object-cover"
+                                            className="h-5 w-5 md:h-7 md:w-7 rounded-full object-cover"
                                           />
                                         </Link>
                                         {p.taggedUsers.length > 1 && (
                                           <span
-                                            className="text-sm text-gray-600 cursor-pointer hover:underline"
+                                            className="text-xs md:text-sm text-gray-600 cursor-pointer hover:underline"
                                             onClick={() =>
                                               setTaggedUsersModal({
                                                 show: true,
@@ -1314,18 +1305,18 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                       </div>
                                     )}
                                   </div>
-                                  <div className=" flex items-center justify-start gap-3">
+                                  <div className=" flex items-center justify-start gap-1 md:gap-3">
                                     <Link
                                       to={`/profile/${p.author._id}`}
-                                      className="text-sm text-gray-500 hover:underline"
+                                      className="text-xs md:text-sm text-gray-500 hover:underline"
                                     >
                                       @{p.author.username}
                                     </Link>
-                                    <span className="text-xl text-gray-600">
+                                    <span className="text-lg md:text-xl text-gray-600">
                                       {" "}
                                       |{" "}
                                     </span>
-                                    <span className="text-sm text-gray-600">
+                                    <span className="text-[10px] md:text-sm text-gray-600">
                                       {" "}
                                       Created at {formatDate(p.createdAt)}
                                     </span>
@@ -1333,7 +1324,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                 </div>
                               </div>
                               {p.isHighlighted && p.highlightedBy && (
-                                <div className="flex items-center justify-end gap-1.5 bg-yellow-500/20 rounded-full px-4 py-1 border-1 border-yellow-700 shadow-xl">
+                                <div className="flex items-center justify-end gap-1.5 bg-yellow-500/20 rounded-full px-2 py-0.5 md:px-4 md:py-1 border-1 border-yellow-700 shadow-xl">
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 24 24"
@@ -1342,11 +1333,11 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     strokeWidth="4.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="lucide lucide-star-icon lucide-star h-6 w-6"
+                                    className="lucide lucide-star-icon lucide-star h-4 w-4 md:h-6 md:w-6"
                                   >
                                     <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
                                   </svg>
-                                  <p className="text-sm text-yellow-800">
+                                  <p className="text-xs md:text-sm text-yellow-800">
                                     Highlighted
                                   </p>
                                 </div>
@@ -1354,7 +1345,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                             </div>
                             {/* caption */}
                             {p.caption.length > 0 && (
-                              <p className="text-base flex flex-wrap gap-1">
+                              <p className="text-sm md:text-base flex flex-wrap gap-1">
                                 {p.caption.split(/\s+/).map((word, i) => {
                                   if (word.startsWith("@")) {
                                     const username = word.slice(1);
@@ -1365,7 +1356,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                       <Link
                                         key={i}
                                         to={`/profile/${mentionedUser._id}`}
-                                        className="text-red-500 text-lg leckerli hover:underline"
+                                        className="text-red-500 text-base md:text-lg leckerli hover:underline"
                                       >
                                         {word}
                                       </Link>
@@ -1413,11 +1404,11 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                   <div>
                                     <div className="flex items-center gap-2 mb-2 text-gray-600">
                                       <i
-                                        className={` bx bx-images  text-3xl ${
+                                        className={` bx bx-images  text-2xl md:text-3xl ${
                                           dayThemes[i % dayThemes.length].accent
                                         }`}
                                       />
-                                      <span className="text-sm">
+                                      <span className="text-xs md:text-sm">
                                         {p.media.length} photos
                                       </span>
                                     </div>
@@ -1455,7 +1446,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                             {index === 5 &&
                                               p.media.length > 6 && (
                                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                  <span className="text-white text-xl">
+                                                  <span className="text-white text-base md:text-xl">
                                                     +{p.media.length - 6} more
                                                   </span>
                                                 </div>
@@ -1476,9 +1467,9 @@ const PostsOfTrip = ({ trip, setTrip }) => {
 
                             {/*Likes and Comments  */}
 
-                            <div className="w-full flex items-center justify-start gap-5">
+                            <div className="w-full flex items-center justify-start gap-3 md:gap-5">
                               {/* likes */}
-                              <div className="flex items-center justify-start gap-2">
+                              <div className="flex items-center justify-start gap-1 md:gap-2">
                                 {isLikedByCurrentUser ? (
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -1488,7 +1479,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     strokeWidth="2.625"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="lucide lucide-heart-icon lucide-heart h-8 w-8"
+                                    className="lucide lucide-heart-icon lucide-heart h-6 w-6 md:h-8 md:w-8"
                                     onClick={(e) => {
                                       handlePostLikeInItinerary(p._id, day);
                                     }}
@@ -1504,7 +1495,7 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     strokeWidth="1.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="lucide lucide-heart-icon lucide-heart h-8 w-8"
+                                    className="lucide lucide-heart-icon lucide-heart h-6 w-6 md:h-8 md:w-8"
                                     onClick={(e) => {
                                       handlePostLikeInItinerary(p._id, day);
                                     }}
@@ -1512,15 +1503,15 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                                     <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />
                                   </svg>
                                 )}
-                                <p className="text-gray-600 text-sm">
+                                <p className="text-gray-600 text-xs md:text-sm">
                                   {p.likeCount} Likes
                                 </p>
                               </div>
 
                               {/* comments */}
-                              <div className="flex items-center justify-start gap-2">
-                                <i className="bx  bx-message-circle-reply text-gray-600 text-3xl" />
-                                <p className="text-gray-600 text-sm">
+                              <div className="flex items-center justify-start gap-1 md:gap-2">
+                                <i className="bx  bx-message-circle-reply text-gray-600 text-2xl md:text-3xl" />
+                                <p className="text-gray-600 text-xs md:text-sm">
                                   {p.commentCount}
                                 </p>
                               </div>
@@ -1529,16 +1520,16 @@ const PostsOfTrip = ({ trip, setTrip }) => {
                             {/* highlighted post */}
 
                             {p.isHighlighted && p.highlightedBy && (
-                              <div className="p-3 bg-yellow-500/30 border-2 border-yellow-700 rounded-xl flex items-center justify-start  gap-3 w-full">
+                              <div className="p-2 md:p-3 bg-yellow-500/30 border-2 border-yellow-700 rounded-xl flex items-center justify-start  gap-2 md:gap-3 w-full">
                                 <img
                                   src={
                                     p.highlightedBy.avatar.url ||
                                     p.highlightedBy.avatar
                                   }
-                                  className="h-8 w-8 rounded-full object-cover"
+                                  className="h-6 w-6 md:h-8 md:w-8 rounded-full object-cover"
                                   alt="image"
                                 />
-                                <p className="text-sm text-yellow-800 ">
+                                <p className="text-xs md:text-sm text-yellow-800 ">
                                   <span className="font-semibold ">
                                     {p.highlightedBy.name}{" "}
                                   </span>{" "}

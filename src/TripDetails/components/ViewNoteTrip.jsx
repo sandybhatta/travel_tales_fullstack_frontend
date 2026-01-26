@@ -197,7 +197,7 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
   return (
     <div>
       <div
-        className={`w-full flex flex-col gap-5 p-4 bg-white ${
+        className={`w-full flex flex-col gap-4 md:gap-5 p-3 md:p-4 bg-white ${
           isModal ? "" : "rounded-2xl shadow-sm border border-gray-100"
         }`}
       >
@@ -327,21 +327,21 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
           } gap-3`}
         >
           {!isModal && (
-            <div className="flex items-center justify-center gap-2.5">
-              <i className="bx bx-note text-3xl text-red-500"></i>
-              <h2 className="text-xl font-semibold text-gray-800">Notes</h2>
+            <div className="flex items-center justify-center gap-2 md:gap-2.5">
+              <i className="bx bx-note text-2xl md:text-3xl text-red-500"></i>
+              <h2 className="text-base md:text-xl font-semibold text-gray-800">Notes</h2>
             </div>
           )}
 
           <div
-            className="px-4 py-2 bg-red-500 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all hover:bg-red-600"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-red-500 rounded-xl flex items-center justify-center gap-1 md:gap-2 cursor-pointer shadow-md hover:shadow-lg transition-all hover:bg-red-600"
             onClick={(e) => {
               e.stopPropagation();
               setAddNoteModal(true);
             }}
           >
-            <i className="bx bx-plus text-xl text-white"></i>
-            <p className="text-sm font-semibold text-white">Add Note</p>
+            <i className="bx bx-plus text-lg md:text-xl text-white"></i>
+            <p className="text-xs md:text-sm font-semibold text-white">Add Note</p>
           </div>
         </div>
 
@@ -380,7 +380,7 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
                   return (
                     <div
                       key={note._id}
-                      className={`w-full group bg-white rounded-2xl p-5 border transition-all duration-300 relative ${
+                      className={`w-full group bg-white rounded-2xl p-3 md:p-5 border transition-all duration-300 relative ${
                         note.isPinned
                           ? "border-red-200 shadow-sm ring-1 ring-red-50"
                           : "border-gray-100 hover:border-red-100 hover:shadow-md"
@@ -388,12 +388,12 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
                       onClick={() => !isProcessing && handlePinUnpinNote(note._id)}
                     >
                       {/* Pin Status Indicator (Corner) */}
-                      <div className="absolute top-4 right-4 transition-transform duration-300 group-hover:scale-110">
-                        <i className={`bx ${note.isPinned ? 'bxs-pin text-red-500' : 'bx-pin text-gray-300 group-hover:text-red-400'} text-2xl`}></i>
+                      <div className="absolute top-3 right-3 md:top-4 md:right-4 transition-transform duration-300 group-hover:scale-110">
+                        <i className={`bx ${note.isPinned ? 'bxs-pin text-red-500' : 'bx-pin text-gray-300 group-hover:text-red-400'} text-xl md:text-2xl`}></i>
                       </div>
 
                       {/* Header: Avatar & Info */}
-                      <div className="flex items-center gap-3 mb-3 pr-8">
+                      <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3 pr-8">
                          <Link 
                             to={`/profile/${note.createdBy?._id}`}
                             onClick={(e) => e.stopPropagation()}
@@ -402,24 +402,24 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
                             <img 
                                 src={note.createdBy?.avatar?.url || note.createdBy?.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"} 
                                 alt={note.createdBy?.username}
-                                className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                                className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border border-gray-100"
                             />
                          </Link>
                          <div className="flex flex-col">
                             <Link 
                                 to={`/profile/${note.createdBy?._id}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-sm font-bold text-gray-800 hover:underline"
+                                className="text-xs md:text-sm font-bold text-gray-800 hover:underline"
                             >
                                 {note.createdBy?.name || note.createdBy?.username || "Unknown User"}
                             </Link>
-                            <p className="text-xs text-gray-500">{formatAcceptedDate(note.createdAt)}</p>
+                            <p className="text-[10px] md:text-xs text-gray-500">{formatAcceptedDate(note.createdAt)}</p>
                          </div>
                       </div>
 
                       {/* Note Body */}
                       <div className="w-full">
-                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                        <p className="text-gray-700 text-xs md:text-sm leading-relaxed whitespace-pre-wrap">
                             {note.body}
                         </p>
                       </div>
@@ -427,7 +427,7 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
                       {/* Footer Actions */}
                       <div className="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
                          <div className="flex items-center gap-2">
-                            <span className={`text-xs font-semibold px-2 py-1 rounded-md ${note.isPinned ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}`}>
+                            <span className={`text-[10px] md:text-xs font-semibold px-2 py-1 rounded-md ${note.isPinned ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}`}>
                                 {note.isPinned ? 'Pinned Note' : 'Standard Note'}
                             </span>
                          </div>

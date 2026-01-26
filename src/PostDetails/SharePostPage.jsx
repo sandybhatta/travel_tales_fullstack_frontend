@@ -287,18 +287,18 @@ const SharePostPage = () => {
         <button onClick={() => navigate(-1)} className="text-gray-600">
             <i className="bx bx-arrow-back text-2xl"></i>
         </button>
-        <h1 className="text-lg font-bold text-gray-800">Share Post</h1>
+        <h1 className="text-base md:text-lg font-bold text-gray-800">Share Post</h1>
         <div className="flex items-center gap-2">
             <button 
               onClick={handleShare}
               disabled={sharing}
-              className="px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 text-sm md:text-base"
+              className="px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 text-xs md:text-base"
             >
               {sharing ? "Sharing..." : "Share"}
             </button>
             <button 
               onClick={() => navigate(-1)}
-              className="px-3 py-1.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 text-sm md:text-base"
+              className="px-3 py-1.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 text-xs md:text-base"
             >
               Cancel
             </button>

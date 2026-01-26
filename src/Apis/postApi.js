@@ -40,6 +40,11 @@ export const editComment = async (commentId, content) => {
     return response.data;
 };
 
+export const deleteComment = async (commentId) => {
+    const response = await mainApi.delete(`/api/comment/${commentId}`);
+    return response.data;
+};
+
 export const getCommentLikes = async (commentId) => {
     const response = await mainApi.get(`/api/comment/${commentId}/likes`);
     return response.data;

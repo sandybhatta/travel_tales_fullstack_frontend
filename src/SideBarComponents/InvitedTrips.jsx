@@ -82,18 +82,18 @@ const InvitedTrips = () => {
       }}
     >
       {/* Sticky Header for Navigation */}
-      <div className='sticky top-[80px] z-10 bg-gray-900/95 backdrop-blur-sm w-full border-b border-gray-800 mb-8'>
-        <div className='flex justify-center items-center max-w-6xl mx-auto py-4 px-4'>
-            <div className='flex w-full md:w-auto p-1 gap-2 bg-gray-800 rounded-full'>
+      <div className='sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm w-full border-b border-gray-800 mb-4 md:mb-8'>
+        <div className='flex justify-center items-center max-w-6xl mx-auto py-2 md:py-4 px-2 md:px-4'>
+            <div className='flex w-full md:w-auto p-1 gap-1 md:gap-2 bg-gray-800 rounded-full overflow-x-auto no-scrollbar'>
                 <button
                     onClick={() => setActivePage("pending")}
-                    className={`flex-1 md:flex-none px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    className={`flex-1 md:flex-none px-3 py-2 md:px-6 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                         activePage === "pending"
                             ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
                             : "text-gray-400 hover:text-white hover:bg-gray-700"
                     }`}
                 >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-1 md:gap-2">
                         <i className='bx bx-envelope'></i>
                         <span>Pending ({invitedTrips.length})</span>
                     </div>
@@ -101,13 +101,13 @@ const InvitedTrips = () => {
 
                 <button
                     onClick={() => setActivePage("accepted")}
-                    className={`flex-1 md:flex-none px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    className={`flex-1 md:flex-none px-3 py-2 md:px-6 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                         activePage === "accepted"
                             ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
                             : "text-gray-400 hover:text-white hover:bg-gray-700"
                     }`}
                 >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-1 md:gap-2">
                         <i className='bx bx-check-circle'></i>
                         <span>Accepted ({acceptedTrips.length})</span>
                     </div>
@@ -115,7 +115,7 @@ const InvitedTrips = () => {
 
                 <button
                     onClick={() => setActivePage("all")}
-                    className={`flex-1 md:flex-none px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    className={`flex-1 md:flex-none px-3 py-2 md:px-6 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                         activePage === "all"
                             ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
                             : "text-gray-400 hover:text-white hover:bg-gray-700"
@@ -127,40 +127,40 @@ const InvitedTrips = () => {
         </div>
       </div>
 
-      <div className="w-[90%] max-w-6xl flex flex-col gap-8">
+      <div className="w-[95%] md:w-[90%] max-w-6xl flex flex-col gap-4 md:gap-8">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold text-white mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">
               Invited Trips
             </h2>
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-sm md:text-base">
               Manage trip invitations from your friends and family
             </p>
           </div>
 
           {/* Search and Sort */}
-          <div className="flex items-center gap-4 w-full md:w-auto">
-             <div className="relative flex-1 md:w-64">
-                <i className="bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+          <div className="flex flex-col sm:flex-row items-center gap-2 md:gap-4 w-full md:w-auto">
+             <div className="relative w-full sm:flex-1 md:w-64">
+                <i className="bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg md:text-xl"></i>
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-gray-800 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border border-gray-700 placeholder-gray-500"
+                  className="w-full bg-gray-800 text-white pl-9 md:pl-10 pr-4 py-2 text-sm md:text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border border-gray-700 placeholder-gray-500"
                   placeholder="Search trips..."
                 />
              </div>
 
-             <div className="relative">
+             <div className="relative w-full sm:w-auto">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         setDropDownOpen(!dropdownOpen);
                     }}
-                    className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-sm md:text-base"
                 >
                     <i className="bx bx-slider"></i>
-                    <span className="hidden md:inline">{sortBy ? `Sort: ${sortBy}` : "Sort"}</span>
+                    <span>{sortBy ? `Sort: ${sortBy}` : "Sort"}</span>
                     <i className="bx bx-chevron-down"></i>
                 </button>
 
