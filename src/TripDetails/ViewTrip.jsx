@@ -84,13 +84,6 @@ const ViewTrip = () => {
   },[showLikedUsersModal])
 
 
-
-
-
-
-console.log(trip);
-
-
   const fetchTripData = async (withLoading = true) => {
     if (withLoading) setLoading(true);
     setError("");
@@ -165,7 +158,7 @@ console.log(trip);
     tripsStats.duration = trip?.virtuals.duration;
     tripsStats.tripStatus = trip?.virtuals.tripStatus;
 
-    if (trip?.currentUser.canAccessPrivateData) {
+    if (trip?.currentUser?.canAccessPrivateData) {
       tripsStats.travelBudget = trip.travelBudget;
 
       if (trip?.expenses && trip?.expenses.length > 0) {

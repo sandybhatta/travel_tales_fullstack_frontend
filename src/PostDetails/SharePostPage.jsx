@@ -157,15 +157,22 @@ const SharePostPage = () => {
 
     return words.map((word, index) => {
       if (word.startsWith("@")) {
-        const username = word.slice(1);
-        const isMentioned = mentions.some((m) => m.username === username);
+        const match = word.match(/^@([a-zA-Z0-9_]+)(.*)$/);
+        if (match) {
+          const username = match[1];
+          const suffix = match[2];
+          const isMentioned = mentions.some((m) => m.username === username);
 
-        if (isMentioned) {
-          return (
-            <span key={index} className="text-red-500 text-sm font-normal">
-              {word}
-            </span>
-          );
+          if (isMentioned) {
+            return (
+              <span key={index}>
+                <span className="text-red-500 text-sm font-normal">
+                  @{username}
+                </span>
+                <span className="text-sm font-normal">{suffix}</span>
+              </span>
+            );
+          }
         }
       }
       return (

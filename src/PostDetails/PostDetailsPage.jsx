@@ -154,18 +154,25 @@ const PostDetailsPage = () => {
     const parts = text.split(/(\s+)/);
     return parts.map((part, index) => {
       if (part.startsWith("@")) {
-        const username = part.slice(1);
-        const mention = mentions.find((u) => u.username === username);
-        if (mention) {
-          return (
-            <Link
-              key={index}
-              to={`/profile/${mention._id}`}
-              className="text-red-500 hover:underline"
-            >
-              {part}
-            </Link>
-          );
+        // Handle punctuation after mention (e.g. "@user!")
+        const match = part.match(/^@([a-zA-Z0-9_]+)(.*)$/);
+        if (match) {
+          const username = match[1];
+          const suffix = match[2];
+          const mention = mentions.find((u) => u.username === username);
+          if (mention) {
+            return (
+              <React.Fragment key={index}>
+                <Link
+                  to={`/profile/${mention._id}`}
+                  className="text-red-500 hover:underline"
+                >
+                  @{username}
+                </Link>
+                {suffix}
+              </React.Fragment>
+            );
+          }
         }
       }
       return part;
