@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import mainApi from "../Apis/axios";
+import {
+  useGetTripByIdQuery,
+  useToggleTripLikeMutation,
+  useGetTripLikesQuery,
+} from "../slices/tripApiSlice";
 
 import ViewNoteTrip from "./components/ViewNoteTrip";
 import ViewTodoTrip from "./components/ViewTodoTrip";
@@ -18,21 +22,35 @@ import TripStats from "./components/TripStats";
 
 const ViewTrip = () => {
   const { tripId } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  
+  const {
+    data: tripData,
+    isLoading,
+    error: tripError,
+    refetch,
+  } = useGetTripByIdQuery(tripId);
+  
+  const trip = tripData?.trip;
 
   const [showLikedUsersModal, setShowLikedUsersModal] = useState(false);
-  const [likedUsers, setLikedUsers] = useState([]);
+  
+  const { data: likesData } = useGetTripLikesQuery(tripId, {
+    skip: !showLikedUsersModal,
+  });
+
+  const [toggleTripLike] = useToggleTripLikeMutation();
 
   const [showEditModal, setShowEditModal] = useState(false);
-
   const [activeModal, setActiveModal] = useState(null); // 'expenses', 'notes', 'todos'
-
-  const [trip, setTrip] = useState(null);
-
   const[showTripStats , setShowTripStats] = useState(false)
-
   const [showDescription, setShowDescription] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (tripError) {
+       setError(tripError?.data?.message || "Error loading trip");
+    }
+  }, [tripError]);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -43,67 +61,12 @@ const ViewTrip = () => {
   };
 
   const handleLike = async () => {
-    setError("");
     try {
-      const result = await mainApi.post(`/api/trips/${tripId}/like`);
-      setTrip((prevTrip) => ({
-        ...prevTrip,
-        currentUser: {
-          ...prevTrip.currentUser,
-          isLiked: result.data.liked,
-        },
-
-        totalLikes: result.data.likesCount,
-      }));
+      await toggleTripLike(tripId).unwrap();
     } catch (error) {
-      setError(error?.response?.data?.message || "Internal Server Error");
+      setError(error?.data?.message || "Internal Server Error");
     }
   };
-
-  useEffect(()=>{
-
-    const fetchLikesOfTheTrip = async()=>{
-      try {
-        setError("")
-        const response = await mainApi.get(`/api/trips/${tripId}/likes`)
-        setLikedUsers({
-          totalLikes:response.data.totalLikes,
-          users:response.data.likes
-        })
-
-      } catch (error) {
-        setError(error?.response?.data?.message || "Error while fetching likes of the")
-      }
-    }
-
-
-    if(showLikedUsersModal){
-      fetchLikesOfTheTrip()
-    }
-
-  },[showLikedUsersModal])
-
-
-  const fetchTripData = async (withLoading = true) => {
-    if (withLoading) setLoading(true);
-    setError("");
-    try {
-      const response = await mainApi.get(`/api/trips/${tripId}`);
-      setTrip(response.data.trip);
-    } catch (error) {
-      if (error?.response?.data?.message) {
-        setError(error.response.data.message);
-      } else if (error.code === "ERR_NETWORK") {
-        setError("Network connection is bad");
-      }
-    } finally {
-      if (withLoading) setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTripData(true);
-  }, [tripId]);
 
   function formatAcceptedDate(dateString) {
     return new Date(dateString).toLocaleString("en-IN", {
@@ -182,7 +145,7 @@ const ViewTrip = () => {
     return tripsStats;
   }, [trip]);
   
-  if (loading) return <ViewTripSkeleton />;
+  if (isLoading) return <ViewTripSkeleton />;
 
   return (
     <div
@@ -201,7 +164,7 @@ const ViewTrip = () => {
         <TripLikesModal 
             isOpen={showLikedUsersModal}
             onClose={() => setShowLikedUsersModal(false)}
-            likedUsersData={likedUsers}
+            likedUsersData={likesData ? { totalLikes: likesData.totalLikes, users: likesData.likes } : { totalLikes: 0, users: [] }}
         />
 
         {trip && (
@@ -214,7 +177,7 @@ const ViewTrip = () => {
                 handleLike={handleLike}
                 setShowLikedUsersModal={setShowLikedUsersModal}
                 formatDate={formatDate}
-                onTripUpdate={() => fetchTripData(false)}
+                onTripUpdate={refetch}
             />
 
             <TripCollaborators
@@ -319,21 +282,23 @@ const ViewTrip = () => {
                                     trip={trip}
                                     organizedExpenses={organizedExpenses}
                                     formatAcceptedDate={formatAcceptedDate}
-                                    onTripUpdate={() => fetchTripData(false)}
+                                    onTripUpdate={refetch}
                                     isModal={true}
                                 />
                             )}
                             {activeModal === 'notes' && (
                                 <ViewNoteTrip 
                                     trip={trip} 
-                                    setTrip={setTrip} 
+                                    setTrip={() => {}} // Read-only or handled by refetch
+                                    onTripUpdate={refetch}
                                     isModal={true}
                                 />
                             )}
                             {activeModal === 'todos' && (
                                 <ViewTodoTrip 
                                     trip={trip} 
-                                    setTrip={setTrip} 
+                                    setTrip={() => {}} 
+                                    onTripUpdate={refetch}
                                     isModal={true}
                                 />
                             )}
@@ -342,7 +307,7 @@ const ViewTrip = () => {
                 </div>
             )}
 
-            <PostsOfTrip trip={trip} setTrip={setTrip} />
+            <PostsOfTrip trip={trip} setTrip={() => {}} onTripUpdate={refetch} />
           </div>
         )}
       </div>

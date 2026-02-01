@@ -32,8 +32,7 @@ mainApi.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
-      !originalRequest._isRetried &&
-      error.response?.data?.message === "Token expired"
+      !originalRequest._isRetried
     ) {
       originalRequest._isRetried = true
 

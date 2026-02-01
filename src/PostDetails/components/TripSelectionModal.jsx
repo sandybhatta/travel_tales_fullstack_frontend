@@ -1,47 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { getOwnTrips, getCollaboratedTrips } from '../../Apis/tripApi';
+import { useGetOwnTripsQuery, useGetCollaboratedTripsQuery } from '../../slices/tripApiSlice';
 
 const TripSelectionModal = ({ onClose, onSelectTrip, currentTripId }) => {
     const { _id: userId } = useSelector(state => state.user);
     const [activeTab, setActiveTab] = useState('own'); // 'own' or 'collaborated'
-    const [trips, setTrips] = useState([]);
-    const [loading, setLoading] = useState(false);
+    
+    // Queries
+    const { data: ownTripsData, isLoading: ownLoading } = useGetOwnTripsQuery(userId, {
+        skip: !userId || activeTab !== 'own',
+    });
+    
+    const { data: collabTripsData, isLoading: collabLoading } = useGetCollaboratedTripsQuery(userId, {
+        skip: !userId || activeTab !== 'collaborated',
+    });
+
     const [selectedTripId, setSelectedTripId] = useState(null);
     const [dayNumber, setDayNumber] = useState(1);
     const [isHighlighted, setIsHighlighted] = useState(false);
 
-    useEffect(() => {
-        const fetchTrips = async () => {
-            setLoading(true);
-            try {
-                let data;
-                if (activeTab === 'own') {
-                    data = await getOwnTrips(userId);
-                } else {
-                    data = await getCollaboratedTrips(userId);
-                }
-                
-                // Safely extract trips array
-                let tripsArray = [];
-                if (data && Array.isArray(data.trips)) {
-                    tripsArray = data.trips;
-                } else if (Array.isArray(data)) {
-                    tripsArray = data;
-                }
-                
-                // Filter out the currently assigned trip if needed
-                const filtered = (tripsArray || []).filter(t => t._id !== currentTripId);
-                setTrips(filtered);
-            } catch (error) {
-                console.error("Failed to load trips", error);
-                setTrips([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (userId) fetchTrips();
-    }, [userId, activeTab, currentTripId]);
+    // Derived State
+    const loading = activeTab === 'own' ? ownLoading : collabLoading;
+    const rawData = activeTab === 'own' ? ownTripsData : collabTripsData;
+    
+    let tripsArray = [];
+    if (rawData && Array.isArray(rawData.trips)) {
+        tripsArray = rawData.trips;
+    } else if (Array.isArray(rawData)) {
+        tripsArray = rawData;
+    }
+    
+    const trips = (tripsArray || []).filter(t => t._id !== currentTripId);
 
     const handleTripClick = (tripId) => {
         if (selectedTripId === tripId) {

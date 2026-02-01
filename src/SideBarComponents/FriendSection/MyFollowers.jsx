@@ -1,54 +1,42 @@
 import React, { useEffect, useState } from "react";
-import mainApi from "../../Apis/axios";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom"; 
+import { useGetUserFollowersQuery, useFollowUserMutation, useUnfollowUserMutation } from "../../slices/userApiSlice";
 
 const MyFollowers = () => {
-  const [followers, setFollowers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const reduxState = useSelector((state) => state.user);
   const storageState = JSON.parse(localStorage.getItem("userInfo") || "{}");
-
   const userId = reduxState._id || storageState._id;
 
-  useEffect(() => {
-    const fetchFollowers = async () => {
-      try {
-        const response = await mainApi.get(`/api/user/${userId}/followers`);
-        setFollowers(response.data.followers || []);
-      } catch (error) {
-        console.error("Error fetching followers:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data, isLoading: loading } = useGetUserFollowersQuery(userId, { skip: !userId });
+  const followers = data?.followers || [];
 
-    fetchFollowers();
-  }, [userId]);
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
+  
+  const [followLoading, setFollowLoading] = useState({});
 
-  const handleFollow = async (id, index) => {
+  const handleFollow = async (id) => {
+    if (followLoading[id]) return;
+    setFollowLoading(prev => ({...prev, [id]: true}));
     try {
-      await mainApi.post(`/api/user/follow/${id}`); 
-      setFollowers((prev) =>
-        prev.map((user, i) =>
-          i === index ? { ...user, followBack: true } : user
-        )
-      );
+      await followUser(id).unwrap();
     } catch (error) {
       console.error("Error following user:", error);
+    } finally {
+      setFollowLoading(prev => ({...prev, [id]: false}));
     }
   };
 
-  const handleUnfollow = async (id, index) => {
+  const handleUnfollow = async (id) => {
+    if (followLoading[id]) return;
+    setFollowLoading(prev => ({...prev, [id]: true}));
     try {
-      await mainApi.post(`/api/user/unfollow/${id}`); 
-      setFollowers((prev) =>
-        prev.map((user, i) =>
-          i === index ? { ...user, followBack: false } : user
-        )
-      );
+      await unfollowUser(id).unwrap();
     } catch (error) {
       console.error("Error unfollowing user:", error);
+    } finally {
+      setFollowLoading(prev => ({...prev, [id]: false}));
     }
   };
 
@@ -102,11 +90,12 @@ const MyFollowers = () => {
                   }`}
                   onClick={() =>
                     user.followBack
-                      ? handleUnfollow(user._id, index)
-                      : handleFollow(user._id, index)
+                      ? handleUnfollow(user._id)
+                      : handleFollow(user._id)
                   }
+                  disabled={followLoading[user._id]}
                 >
-                  {user.followBack ? "Unfollow" : "Follow Back"}
+                  {followLoading[user._id] ? <i className="bx bx-loader-alt animate-spin"></i> : (user.followBack ? "Unfollow" : "Follow Back")}
                 </button>
               </div>
             );

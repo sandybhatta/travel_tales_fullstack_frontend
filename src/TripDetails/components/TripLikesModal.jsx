@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import mainApi from '../../Apis/axios';
+import { useFollowUserMutation, useUnfollowUserMutation } from '../../slices/userApiSlice';
 
 const TripLikesModal = ({ isOpen, onClose, likedUsersData }) => {
     const currentUser = useSelector((state) => state.user);
     const [usersList, setUsersList] = useState([]);
     const [actionLoading, setActionLoading] = useState({}); // { [userId]: true/false }
+
+    const [followUser] = useFollowUserMutation();
+    const [unfollowUser] = useUnfollowUserMutation();
 
     useEffect(() => {
         if (likedUsersData?.users) {
@@ -18,7 +21,7 @@ const TripLikesModal = ({ isOpen, onClose, likedUsersData }) => {
     const handleFollow = async (userId) => {
         setActionLoading(prev => ({ ...prev, [userId]: true }));
         try {
-            await mainApi.post(`/api/users/follow/${userId}`);
+            await followUser(userId).unwrap();
             // Update local list state
             setUsersList(prev => prev.map(u => 
                 u._id === userId ? { ...u, isFollowing: true } : u
@@ -33,7 +36,7 @@ const TripLikesModal = ({ isOpen, onClose, likedUsersData }) => {
     const handleUnfollow = async (userId) => {
         setActionLoading(prev => ({ ...prev, [userId]: true }));
         try {
-            await mainApi.post(`/api/users/unfollow/${userId}`);
+            await unfollowUser(userId).unwrap();
             // Update local list state
             setUsersList(prev => prev.map(u => 
                 u._id === userId ? { ...u, isFollowing: false } : u

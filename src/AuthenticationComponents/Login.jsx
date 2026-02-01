@@ -1,10 +1,8 @@
 import React, { useRef, useState } from "react";
-import axios from "axios";
 import OtpVerification from "./OtpVerification.jsx";
 import ReactivationModal from "./ReactivationModal.jsx";
 import ForgotPassword from "./ForgotPassword";
-
-const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/login`; 
+import { useLoginMutation } from "../slices/authApiSlice.js";
 
 const Login = () => {
   const emailRef = useRef();
@@ -13,31 +11,28 @@ const Login = () => {
   const [userId, setUserId] = useState(null);
   const [reactivateData, setReactivateData] = useState(null);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [login, { isLoading }] = useLoginMutation();
 
   const handleLogin = async () => {
     if (isLoading) return;
     setError("");
-    setIsLoading(true);
     const email = emailRef.current.value;
     const password = passwordRef.current.value;
 
     try {
-      const res = await axios.post(`${API_BASE}`, { email, password });
-      setUserId(res.data.userId);
+      const res = await login({ email, password }).unwrap();
+      setUserId(res.userId);
       setStage("otp");
     } catch (err) {
-      const msg = err.response?.data?.message || "Login failed.";
-      if (err.response?.data?.allowReactivation) {
+      const msg = err?.data?.message || "Login failed.";
+      if (err?.data?.allowReactivation) {
         setReactivateData({
-          userId: err.response.data.userId,
+          userId: err.data.userId,
           message: msg,
         });
       } else {
         setError(msg);
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 

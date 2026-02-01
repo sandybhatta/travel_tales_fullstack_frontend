@@ -1,23 +1,43 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Crown } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import mainApi from "../../Apis/axios";
+import { 
+  useAddPostsToTripMutation, 
+  useHighlightTripPostMutation, 
+  useRemovePostFromTripMutation 
+} from "../../slices/tripApiSlice";
+import { 
+  useGetOwnPostsQuery, 
+  useTogglePostLikeMutation 
+} from "../../slices/postApiSlice";
 
-const PostsOfTrip = ({ trip, setTrip }) => {
+const PostsOfTrip = ({ trip }) => {
   const canEdit = trip?.currentUser?.canAccessPrivateData;
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewItenary, setShowViewItenary] = useState(false);
 
-  const [myPosts, setMyPosts] = useState([]);
+  // Fetch own posts using RTK Query
+  const { 
+    data: myPostsData, 
+    isLoading: postsLoading, 
+    error: postsError 
+  } = useGetOwnPostsQuery(undefined, {
+    skip: !showAddModal || !canEdit,
+  });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const myPosts = myPostsData?.post || [];
 
   const { _id, username, avatar } = useSelector((state) => state.user);
 
-  // loading state for highligting post
+  // Mutations
+  const [addPostsToTrip, { isLoading: postAddLoading }] = useAddPostsToTripMutation();
+  const [highlightTripPost, { isLoading: highlightLoadingState }] = useHighlightTripPostMutation();
+  const [removePostFromTrip] = useRemovePostFromTripMutation();
+  const [togglePostLike] = useTogglePostLikeMutation();
+
+  // loading state for highligting post (local tracking for UI feedback)
   const [highlightLoading, setHighlightLoading] = useState({});
 
   const [selectedPosts, setSelectedPosts] = useState([]);
@@ -28,7 +48,6 @@ const PostsOfTrip = ({ trip, setTrip }) => {
     } else return false;
   };
 
-  const [postAddLoading, setPostAddLoading] = useState(false);
   /* -------------------------------- utils -------------------------------- */
 
   const formatDate = (date) => new Date(date).toDateString();
@@ -38,32 +57,6 @@ const PostsOfTrip = ({ trip, setTrip }) => {
     const end = new Date(trip.endDate);
     return Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
   }, [trip.startDate, trip.endDate]);
-
-  /* --------------------------- fetch own posts ---------------------------- */
-
-  useEffect(() => {
-    if (!showAddModal || !canEdit) return;
-
-    const controller = new AbortController();
-
-    const fetchMyPosts = async () => {
-      try {
-        setError("");
-        setLoading(true);
-        const res = await mainApi.get("/api/posts/me", {
-          signal: controller.signal,
-        });
-        setMyPosts(res.data?.post || []);
-      } catch (err) {
-        setError(err?.response?.data?.message || "Failed to fetch posts");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMyPosts();
-    return () => controller.abort();
-  }, [showAddModal, canEdit]);
 
   /* ----------------------- filter posts not in trips ----------------------- */
 
@@ -108,41 +101,15 @@ const PostsOfTrip = ({ trip, setTrip }) => {
     if (selectedPosts.length === 0) return;
 
     try {
-      setPostAddLoading(true);
-
-      await mainApi.post(`/api/trips/${trip._id}/posts`, {
+      await addPostsToTrip({
+        tripId: trip._id,
         posts: selectedPosts,
-      });
-
-      setTrip((prev) => {
-        const existingPosts = [...prev.posts];
-
-        const newPosts = selectedPosts.map((p) => {
-          const postFromAvailablePost = availablePosts.find(
-            (ap) => ap._id === p._id
-          );
-
-          return {
-            dayNumber: p.dayNumber,
-            isHighlighted: p.isHighlighted,
-            highlightedBy: p.isHighlighted ? { _id, username, avatar } : null,
-            addedAt: new Date(),
-            post: { ...postFromAvailablePost },
-          };
-        });
-
-        return {
-          ...prev,
-          posts: [...existingPosts, ...newPosts],
-        };
-      });
+      }).unwrap();
 
       setShowAddModal(false);
       setSelectedPosts([]);
     } catch (error) {
-      console.error(error);
-    } finally {
-      setPostAddLoading(false);
+      console.error("Failed to add posts:", error);
     }
   };
 
@@ -179,32 +146,13 @@ const PostsOfTrip = ({ trip, setTrip }) => {
       [postId]: true,
     }));
 
-    const prevPosts = trip.posts;
-
-    setTrip((prev) => ({
-      ...prev,
-      posts: prev.posts.map((p) =>
-        p.post._id === postId
-          ? {
-              ...p,
-              isHighlighted: !p.isHighlighted,
-              highlightedBy: {
-                _id,
-                username,
-                avatar,
-              },
-            }
-          : p
-      ),
-    }));
-
     try {
-      await mainApi.patch(`/api/trips/${trip._id}/posts/${postId}/highlight`);
+      await highlightTripPost({
+        tripId: trip._id,
+        postId,
+      }).unwrap();
     } catch (error) {
-      setTrip((prev) => ({
-        ...prev,
-        posts: prevPosts,
-      }));
+      console.error("Failed to highlight post:", error);
     } finally {
       setHighlightLoading((prev) => ({
         ...prev,
@@ -215,28 +163,13 @@ const PostsOfTrip = ({ trip, setTrip }) => {
   /* --------------------------- delete from trip ---------------------------- */
 
   const handlePostRemove = async (postId) => {
-    let removedPost;
-    let removedIndex;
-
-    setTrip((prev) => {
-      removedIndex = prev.posts.findIndex((p) => p.post._id === postId);
-      removedPost = prev.posts[removedIndex];
-
-      return {
-        ...prev,
-        posts: prev.posts.filter((p) => p.post._id !== postId),
-      };
-    });
-
     try {
-      await mainApi.delete(`/api/trips/${trip._id}/posts/${postId}`);
+      await removePostFromTrip({
+        tripId: trip._id,
+        postId,
+      }).unwrap();
     } catch (error) {
-      // exact rollback
-      setTrip((prev) => {
-        const posts = [...prev.posts];
-        posts.splice(removedIndex, 0, removedPost);
-        return { ...prev, posts };
-      });
+      console.error("Failed to remove post:", error);
     }
   };
 
@@ -300,8 +233,6 @@ const PostsOfTrip = ({ trip, setTrip }) => {
     };
   }, [trip.posts.length]);
 
-  const [likedPostsIds, setLikedPostsIds] = useState([]);
-
   const [taggedUsersModal, setTaggedUsersModal] = useState({
     show: false,
     users: [],
@@ -312,59 +243,10 @@ const PostsOfTrip = ({ trip, setTrip }) => {
   };
 
   const handlePostLikeInItinerary = async (postId, day) => {
-    if (likedPostsIds.includes(postId)) return;
-  
-    setLikedPostsIds(prev => [...prev, postId]);
-  
-    const post = trip.itinerary[day].find(p => p._id === postId);
-    const wasLiked = post.likes.includes(_id);
-  
-    // optimistic update
-    setTrip(prev => ({
-      ...prev,
-      itinerary: {
-        ...prev.itinerary,
-        [day]: prev.itinerary[day].map(p =>
-          p._id === postId
-            ? {
-                ...p,
-                likes: wasLiked
-                  ? p.likes.filter(id => id !== _id)
-                  : [...p.likes, _id],
-                likeCount: wasLiked
-                  ? p.likeCount - 1
-                  : p.likeCount + 1,
-              }
-            : p
-        ),
-      },
-    }));
-  
     try {
-      await mainApi.patch(`/api/posts/${postId}/like`);
+      await togglePostLike(postId).unwrap();
     } catch (error) {
-      // rollback on failure
-      setTrip(prev => ({
-        ...prev,
-        itinerary: {
-          ...prev.itinerary,
-          [day]: prev.itinerary[day].map(p =>
-            p._id === postId
-              ? {
-                  ...p,
-                  likes: wasLiked
-                    ? [...p.likes, _id]
-                    : p.likes.filter(id => id !== _id),
-                  likeCount: wasLiked
-                    ? p.likeCount + 1
-                    : p.likeCount - 1,
-                }
-              : p
-          ),
-        },
-      }));
-    } finally {
-      setLikedPostsIds(prev => prev.filter(id => id !== postId));
+      console.error("Failed to like post:", error);
     }
   };
   

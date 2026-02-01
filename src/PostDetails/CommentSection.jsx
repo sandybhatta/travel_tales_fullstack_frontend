@@ -1,9 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { getPostComments, getReplies, createComment, replyToComment, editComment, deleteComment, getCommentLikes } from "../Apis/postApi";
-import { searchMentionableUsers, followUser, unfollowUser } from "../Apis/userApi";
-import mainApi from "../Apis/axios";
+import { 
+    useGetPostCommentsQuery, 
+    useGetRepliesQuery, 
+    useCreateRootCommentMutation, 
+    useReplyToCommentMutation, 
+    useEditCommentMutation, 
+    useDeleteCommentMutation, 
+    useToggleCommentLikeMutation, 
+    useLazyGetCommentLikesQuery 
+} from "../slices/commentApiSlice";
+import { 
+    useSearchMentionableUsersQuery, 
+    useFollowUserMutation, 
+    useUnfollowUserMutation 
+} from "../slices/userApiSlice";
 
 // Crown Icons
 const GoldenCrown = () => (
@@ -48,6 +60,8 @@ const renderCommentContent = (text, mentions = []) => {
 
 const LikesModal = ({ isOpen, onClose, likes, loading, currentUserId }) => {
     const [localLikes, setLocalLikes] = useState(likes);
+    const [followUser] = useFollowUserMutation();
+    const [unfollowUser] = useUnfollowUserMutation();
 
     useEffect(() => {
         setLocalLikes(likes);
@@ -56,10 +70,10 @@ const LikesModal = ({ isOpen, onClose, likes, loading, currentUserId }) => {
     const handleFollowToggle = async (user) => {
         try {
             if (user.isFollowing) {
-                await unfollowUser(user._id);
+                await unfollowUser(user._id).unwrap();
                 setLocalLikes(prev => prev.map(u => u._id === user._id ? { ...u, isFollowing: false } : u));
             } else {
-                await followUser(user._id);
+                await followUser(user._id).unwrap();
                 setLocalLikes(prev => prev.map(u => u._id === user._id ? { ...u, isFollowing: true } : u));
             }
         } catch (error) {
@@ -341,7 +355,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
   const [navigationStack, setNavigationStack] = useState([]);
   
   const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false); // Handled by RTK Query
   const [processingCommentLikes, setProcessingCommentLikes] = useState(new Set());
   
   // Likes Modal State
@@ -357,69 +371,55 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
   const [commentText, setCommentText] = useState("");
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
-  const [mentionResults, setMentionResults] = useState([]);
+  // const [mentionResults, setMentionResults] = useState([]); // Handled by RTK Query
   const [mentionedUsers, setMentionedUsers] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false); // Handled by Mutation
   const commentInputRef = useRef(null);
 
-  // Load comments when navigation stack changes
+  // RTK Query Hooks
   const currentParentId = navigationStack.length > 0 ? navigationStack[navigationStack.length - 1]?._id : null;
+
+  const { 
+    data: rootData, 
+    isLoading: rootLoading, 
+    refetch: refetchRoot 
+  } = useGetPostCommentsQuery(postId, {
+    skip: currentParentId !== null || !postId,
+  });
+
+  const { 
+    data: replyData, 
+    isLoading: replyLoading, 
+    refetch: refetchReplies 
+  } = useGetRepliesQuery({ postId, parentCommentId: currentParentId }, {
+    skip: currentParentId === null || !postId,
+  });
+
+  const [createRootComment, { isLoading: isCreatingRoot }] = useCreateRootCommentMutation();
+  const [replyToComment, { isLoading: isReplying }] = useReplyToCommentMutation();
+  const [editComment] = useEditCommentMutation();
+  const [deleteComment] = useDeleteCommentMutation();
+  const [toggleCommentLike] = useToggleCommentLikeMutation();
+  const [getCommentLikes] = useLazyGetCommentLikesQuery();
   
+  const { data: mentionData } = useSearchMentionableUsersQuery(mentionQuery, {
+    skip: !showMentions || !mentionQuery,
+  });
+  const mentionResults = mentionData?.users || [];
+
+  const loading = currentParentId ? replyLoading : rootLoading;
+  const isSubmitting = isCreatingRoot || isReplying;
+
+  // Sync data to local state
   useEffect(() => {
-    fetchComments();
-  }, [currentParentId, postId]);
-
-  // Debounce user search for mentions
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (showMentions && mentionQuery) {
-          try {
-              const res = await searchMentionableUsers(mentionQuery); 
-              setMentionResults(res.users || []);
-          } catch (err) {
-              console.error("User search failed", err);
-          }
-      } else {
-          setMentionResults([]);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [mentionQuery, showMentions]);
-
-  const fetchComments = async () => {
-    setLoading(true);
-    try {
-        if (navigationStack.length === 0) {
-            // Load Root Comments
-            const data = await getPostComments(postId);
-            setComments(data.comments || []);
-        } else {
-            // Load Replies for the focused comment (last in stack)
-            const parentComment = navigationStack[navigationStack.length - 1];
-            const data = await getReplies(postId, parentComment._id);
-            setComments(data.replies || []);
-        }
-    } catch (err) {
-        console.error("Failed to load comments", err);
-    } finally {
-        setLoading(false);
+    if (currentParentId === null) {
+        if (rootData?.comments) setComments(rootData.comments);
+    } else {
+        if (replyData?.replies) setComments(replyData.replies);
     }
-  };
+  }, [rootData, replyData, currentParentId]);
 
-  const handleReplyClick = (comment) => {
-    setNavigationStack([...navigationStack, comment]);
-    setCommentText(""); 
-  };
-
-  const handleBack = () => {
-      setNavigationStack(prev => prev.slice(0, -1));
-  };
-
-  const handleGoToRoot = () => {
-      setNavigationStack([]);
-  }
-
+  // Handle Comment Like
   const handleCommentLike = async (commentId) => {
     if (processingCommentLikes.has(commentId) || !currentUserId) return;
 
@@ -432,13 +432,9 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
             const newHasLiked = !wasLiked;
             let newLikes = c.likes || [];
             
-            // Handle both populated (objects) and unpopulated (IDs) likes arrays
             if (newHasLiked) {
-                // Optimistically add current user
-                // Ensure we match the structure expected by the UI (populated object with _id)
                 newLikes = [...newLikes, { _id: currentUserId, name: "You", username: "you" }];
             } else {
-                // Optimistically remove current user
                 newLikes = newLikes.filter(like => {
                     const likeId = like._id || like;
                     return likeId !== currentUserId;
@@ -457,10 +453,9 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
     setNavigationStack(prev => updateLikeInList(prev));
 
     try {
-      await mainApi.post(`/api/comment/${commentId}/like`);
+      await toggleCommentLike(commentId).unwrap();
     } catch (err) {
       console.error("Failed to like comment", err);
-      // Manual Rollback on error to avoid refetch/skeleton flash
       setComments(previousComments);
       setNavigationStack(previousStack);
     } finally {
@@ -472,10 +467,23 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
     }
   };
 
+  const handleReplyClick = (comment) => {
+    setNavigationStack([...navigationStack, comment]);
+    setCommentText(""); 
+  };
+
+  const handleBack = () => {
+      setNavigationStack(prev => prev.slice(0, -1));
+  };
+
+  const handleGoToRoot = () => {
+      setNavigationStack([]);
+  }
+
   const handleLikeCountClick = async (commentId) => {
       setLikesModal({ isOpen: true, likes: [], loading: true });
       try {
-          const data = await getCommentLikes(commentId);
+          const data = await getCommentLikes(commentId).unwrap();
           setLikesModal({ isOpen: true, likes: data.likes || [], loading: false });
       } catch (err) {
           console.error("Failed to fetch likes", err);
@@ -489,7 +497,7 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
 
   const handleEditSubmit = async (commentId, newContent) => {
       try {
-          const updatedCommentRes = await editComment(commentId, newContent);
+          const updatedCommentRes = await editComment({ commentId, content: newContent }).unwrap();
           const updatedComment = updatedCommentRes.comment;
 
           // Update lists
@@ -513,7 +521,6 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
       const { commentId } = deleteModal;
       if (!commentId) return;
 
-      // Close modal immediately
       setDeleteModal({ isOpen: false, commentId: null });
 
       try {
@@ -522,14 +529,12 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
           setComments(prev => removeList(prev));
           setNavigationStack(prev => removeList(prev));
 
-          await deleteComment(commentId);
+          await deleteComment(commentId).unwrap();
           
-          // Re-fetch comments to sync with server (ensures no deleted comments are shown)
-          await fetchComments();
+          // Refetch handled by tag invalidation, but we can force it if needed
       } catch (err) {
           console.error("Failed to delete comment", err);
-          // Revert on error (optional, but good practice)
-          await fetchComments();
+          // Revert handled by refetch usually
       }
   };
 
@@ -577,7 +582,6 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
 
   const handleSubmit = async () => {
       if (!commentText.trim()) return;
-      setIsSubmitting(true);
       try {
           const finalMentions = mentionedUsers
             .filter(u => commentText.includes(`@${u.username}`))
@@ -585,25 +589,22 @@ const CommentSection = ({ postId, canComment, privacyMessage, onCommentAdded }) 
 
           if (navigationStack.length === 0) {
               // Create Root Comment
-              await createComment(postId, commentText, finalMentions);
+              await createRootComment({ postId, content: commentText, mentions: finalMentions }).unwrap();
           } else {
-              // Create Reply to the LAST item in stack
+              // Create Reply
               const parentComment = navigationStack[navigationStack.length - 1];
               const rootComment = navigationStack[0];
               const rootId = rootComment._id;
               const parentId = parentComment._id;
               
-              await replyToComment(postId, rootId, parentId, commentText, finalMentions);
+              await replyToComment({ postId, rootCommentId: rootId, parentCommentId: parentId, content: commentText, mentions: finalMentions }).unwrap();
           }
           
           setCommentText("");
           setMentionedUsers([]);
-          await fetchComments();
           if (onCommentAdded) onCommentAdded();
       } catch (err) {
           console.error("Failed to post comment", err);
-      } finally {
-          setIsSubmitting(false);
       }
   };
 

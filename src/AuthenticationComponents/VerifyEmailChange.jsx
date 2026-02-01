@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import mainApi from "../Apis/axios";
+import { useVerifyEmailChangeMutation } from "../slices/userApiSlice";
 
 const VerifyEmailChange = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const navigate = useNavigate();
+
+  const [verifyEmailChange] = useVerifyEmailChangeMutation();
 
   const [status, setStatus] = useState("verifying"); // verifying, success, error
   const [message, setMessage] = useState("Verifying your new email...");
@@ -19,12 +21,7 @@ const VerifyEmailChange = () => {
 
     const verifyEmail = async () => {
       try {
-        // Backend expects token in query param: req.query.token
-        // But the route is POST /api/user/verify-email-change
-        // And my current URL is /verify-email-change?token=XYZ
-        
-        // So I need to call the backend with the token in query params
-        await mainApi.post(`/api/user/verify-email-change?token=${token}`);
+        await verifyEmailChange(token).unwrap();
         
         setStatus("success");
         setMessage("Email updated successfully! Redirecting...");
@@ -34,12 +31,12 @@ const VerifyEmailChange = () => {
         }, 3000);
       } catch (err) {
         setStatus("error");
-        setMessage(err.response?.data?.message || "Verification failed. Link may be expired.");
+        setMessage(err.data?.message || "Verification failed. Link may be expired.");
       }
     };
 
     verifyEmail();
-  }, [token, navigate]);
+  }, [token, navigate, verifyEmailChange]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">

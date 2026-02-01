@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
-  globalSearch,
-  userSearch,
-  postSearch,
-  tripSearch,
-} from "../Apis/searchApi";
-import { followUser, unfollowUser } from "../Apis/userApi";
+  useLazyGlobalSearchQuery,
+  useLazyUserSearchQuery,
+  useLazyPostSearchQuery,
+  useLazyTripSearchQuery,
+} from "../slices/searchApiSlice";
+import { useFollowUserMutation, useUnfollowUserMutation } from "../slices/userApiSlice";
 
 const SearchResultsPage = () => {
   const [searchParams] = useSearchParams();
@@ -16,34 +16,43 @@ const SearchResultsPage = () => {
 
   const [activeTab, setActiveTab] = useState("All");
   const [results, setResults] = useState({ users: [], trips: [], posts: [] });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  
+  // RTK Query hooks
+  const [triggerGlobalSearch, { isFetching: globalLoading }] = useLazyGlobalSearchQuery();
+  const [triggerUserSearch, { isFetching: userLoading }] = useLazyUserSearchQuery();
+  const [triggerTripSearch, { isFetching: tripLoading }] = useLazyTripSearchQuery();
+  const [triggerPostSearch, { isFetching: postLoading }] = useLazyPostSearchQuery();
+
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
   const [followLoading, setFollowLoading] = useState({});
+
+  const loading = globalLoading || userLoading || tripLoading || postLoading;
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchResults = async () => {
       if (!query) return;
       
-      setLoading(true);
       setError("");
       try {
         let res;
         switch (activeTab) {
           case "All":
-            res = await globalSearch(query);
-            setResults(res.data);
+            res = await triggerGlobalSearch(query).unwrap();
+            setResults(res);
             break;
           case "Users":
-            res = await userSearch(query);
-            setResults({ users: res.data.users, trips: [], posts: [] });
+            res = await triggerUserSearch({ query }).unwrap();
+            setResults({ users: res.users, trips: [], posts: [] });
             break;
           case "Trips":
-            res = await tripSearch(query);
-            setResults({ users: [], trips: res.data.trips, posts: [] });
+            res = await triggerTripSearch({ query }).unwrap();
+            setResults({ users: [], trips: res.trips, posts: [] });
             break;
           case "Posts":
-            res = await postSearch(query);
-            setResults({ users: [], trips: [], posts: res.data.posts });
+            res = await triggerPostSearch({ query }).unwrap();
+            setResults({ users: [], trips: [], posts: res.posts });
             break;
           default:
             break;
@@ -51,13 +60,11 @@ const SearchResultsPage = () => {
       } catch (err) {
         console.error(err);
         setError("Failed to fetch results");
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchResults();
-  }, [query, activeTab]);
+  }, [query, activeTab, triggerGlobalSearch, triggerUserSearch, triggerTripSearch, triggerPostSearch]);
 
   const handleFollowToggle = async (e, targetUser) => {
     e.preventDefault();
@@ -78,7 +85,7 @@ const SearchResultsPage = () => {
     }));
 
     try {
-      await action(targetUser._id);
+      await action(targetUser._id).unwrap();
     } catch (error) {
       console.error("Follow toggle failed", error);
       // Rollback
@@ -177,7 +184,7 @@ const SearchResultsPage = () => {
       ) : error ? (
         <div className="text-center py-20 text-red-400">
           <i className="bx bx-error-circle text-4xl mb-2"></i>
-          <p>{error}</p>
+          <p>{error?.data?.message || "Failed to fetch results"}</p>
         </div>
       ) : (
         <div className="space-y-12 pb-10">

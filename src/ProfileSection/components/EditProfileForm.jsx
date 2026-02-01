@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import mainApi from "../../Apis/axios";
+import { useUpdateProfileMutation } from "../../slices/userApiSlice";
 import AvatarUploader from "./AvatarUploader";
 
 const INTEREST_OPTIONS = [
@@ -27,9 +27,8 @@ const EditProfileForm = ({ user, onClose, onUpdate }) => {
     interests: [],
   });
   const [avatarFile, setAvatarFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [updateProfile, { isLoading: loading }] = useUpdateProfileMutation();
   const [error, setError] = useState("");
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -60,8 +59,6 @@ const EditProfileForm = ({ user, onClose, onUpdate }) => {
 
   const handleSubmit = async () => {
     setError("");
-    setLoading(true);
-    setUploadProgress(0);
 
     try {
       const payload = { ...formData };
@@ -78,30 +75,20 @@ const EditProfileForm = ({ user, onClose, onUpdate }) => {
         });
         data.append("avatar", avatarFile);
 
-        res = await mainApi.patch("/api/user/update-profile", data, {
-          headers: { "Content-Type": "multipart/form-data" },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            setUploadProgress(percentCompleted);
-          },
-        });
+        res = await updateProfile(data).unwrap();
       } else {
-        res = await mainApi.patch("/api/user/update-profile", payload);
+        res = await updateProfile(payload).unwrap();
       }
 
-      const updatedUser = res.data?.user;
+      const updatedUser = res?.user;
       if (updatedUser) {
         onUpdate(updatedUser);
       }
       onClose();
     } catch (err) {
       const message =
-        err?.response?.data?.message || "Failed to update profile";
+        err?.data?.message || "Failed to update profile";
       setError(message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -177,10 +164,10 @@ const EditProfileForm = ({ user, onClose, onUpdate }) => {
 
         {loading && avatarFile && (
            <div className="mt-4">
-             <div className="w-full bg-gray-200 rounded-full h-2.5">
-               <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
+             <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+               <div className="bg-red-500 h-2.5 rounded-full animate-pulse w-full"></div>
              </div>
-             <p className="text-xs text-center text-gray-500 mt-1">Uploading... {uploadProgress}%</p>
+             <p className="text-xs text-center text-gray-500 mt-1">Uploading...</p>
            </div>
         )}
 

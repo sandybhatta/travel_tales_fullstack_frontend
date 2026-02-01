@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import axios from "axios";
 import ResetPasswordOtp from "./ResetPasswordOtp";
-
-const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
+import { useForgotPasswordMutation } from "../slices/authApiSlice.js";
 
 const ForgotPassword = ({ onBack }) => {
   const [stage, setStage] = useState("email"); // "email" or "reset"
@@ -10,6 +8,7 @@ const ForgotPassword = ({ onBack }) => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [forgotPassword] = useForgotPasswordMutation();
 
   const handleSend = async () => {
     setError("");
@@ -20,12 +19,12 @@ const ForgotPassword = ({ onBack }) => {
     }
 
     try {
-      const res = await axios.post(`${API_BASE}/forget-password`, { email });
-      setMessage(res.data.message || "OTP sent to your email.");
+      const res = await forgotPassword({ email }).unwrap();
+      setMessage(res.message || "OTP sent to your email.");
       setUserEmail(email);
       setStage("reset"); // move to OTP + new password step
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send reset email.");
+      setError(err?.data?.message || "Failed to send reset email.");
     }
   };
 

@@ -5,11 +5,13 @@ import Destinations from "./Destinations";
 import Expense from "./Expense";
 import Notes from "./Notes";
 import Todos from "./Todos";
-import mainApi from "../Apis/axios";
+import { useCreateTripMutation } from "../slices/tripApiSlice";
 
 const TripCreation = ({ setCreationTab }) => {
   const reduxUser = useSelector((state) => state.user);
   const { name, username, avatar, _id } = reduxUser;
+
+  const [createTrip, { isLoading }] = useCreateTripMutation();
 
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -279,12 +281,12 @@ const TripCreation = ({ setCreationTab }) => {
       if (coverPhoto) formData.append("coverPhoto", coverPhoto);
   
       // API CALL
-      const { data } = await mainApi.post("/api/trips/", formData);
+      const data = await createTrip(formData).unwrap();
       console.log(data.message);
       setCreationTab("");
-  
+
     } catch (error) {
-      const errorResponse = error?.response?.data?.message;
+      const errorResponse = error?.data?.message || "Failed to create trip";
       setApiError(errorResponse);
       if (apiErrorRef.current) {
         apiErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });

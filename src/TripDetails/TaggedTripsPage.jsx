@@ -1,32 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams, Link } from "react-router-dom";
-import { getTripsByTag } from "../Apis/tripApi";
+import { useGetTripsByTagQuery } from "../slices/tripApiSlice";
 
 const TaggedTripsPage = () => {
   const { tagname } = useParams();
-  const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const fetchTrips = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const data = await getTripsByTag(tagname);
-        setTrips(data.trips);
-      } catch (err) {
-        setError("Failed to fetch trips.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (tagname) {
-      fetchTrips();
-    }
-  }, [tagname]);
+  
+  const { data, isLoading: loading, error } = useGetTripsByTagQuery(tagname, {
+    skip: !tagname,
+  });
+  
+  const trips = data?.trips || [];
 
   return (
     <div className="w-full min-h-screen p-3 md:p-8 animate-fadeIn bg-[#EDF2F4]">
@@ -57,7 +40,7 @@ const TaggedTripsPage = () => {
       ) : error ? (
         <div className="text-center py-20 text-red-400">
           <i className="bx bx-error-circle text-4xl mb-2"></i>
-          <p>{error}</p>
+          <p>Failed to fetch trips.</p>
         </div>
       ) : (
         <div className="space-y-12 pb-10">

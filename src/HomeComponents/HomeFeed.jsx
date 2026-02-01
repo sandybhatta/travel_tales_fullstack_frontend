@@ -1,21 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import CreatePost from "./CreatePost";
-import { getUniversalFeed } from "../Apis/feedApi.js";
-import { togglePostLike, toggleTripLike } from "../Apis/likeApi.js";
-import { createRootComment } from "../Apis/commentApi.js";
+import { useGetUniversalFeedQuery } from "../slices/feedApiSlice";
+import { useTogglePostLikeMutation } from "../slices/postApiSlice";
+import { useToggleTripLikeMutation } from "../slices/tripApiSlice";
+import { useCreateRootCommentMutation } from "../slices/commentApiSlice";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import LikesModal from "./LikesModal.jsx";
 
 const HomeFeed = ({ createModal, setCreateModal }) => {
   const navigate = useNavigate();
-  const [feedItems, setFeedItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [likingStates, setLikingStates] = useState({});
   const [selectedPostId, setSelectedPostId] = useState(null); // For Likes Modal
   const [selectedLikeType, setSelectedLikeType] = useState("post"); // "post" or "trip"
   
@@ -26,48 +21,33 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
   // Comment Input State
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
   const [commentText, setCommentText] = useState("");
-  const [commentLoading, setCommentLoading] = useState(false);
+
+  // Like Loading State
+  const [likingStates, setLikingStates] = useState({});
 
   const { _id } = useSelector((state) => state.user);
   
+  // RTK Queries
+  const { data: feedData, isLoading, isFetching, error } = useGetUniversalFeedQuery({ page, limit: 20 });
+  const [togglePostLike] = useTogglePostLikeMutation();
+  const [toggleTripLike] = useToggleTripLikeMutation();
+  const [createRootComment, { isLoading: commentLoading }] = useCreateRootCommentMutation();
+
+  const feedItems = feedData?.feed || [];
+  const hasMore = feedData?.hasMore;
+
   const observerTarget = useRef(null);
 
-  useEffect(() => {
-    fetchFeed(1);
-  }, []);
-
-  const fetchFeed = async (pageNum = 1) => {
-    if (pageNum === 1) setLoading(true);
-    else setLoadingMore(true);
-    
-    setError("");
-    try {
-      const response = await getUniversalFeed(pageNum, 20);
-      const items = response.feed || [];
-      
-      setFeedItems((prev) => (pageNum === 1 ? items : [...prev, ...items]));
-      setHasMore(response.hasMore);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load feed");
-      console.error("Error fetching feed:", err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
   const loadMore = () => {
-    if (!loading && hasMore && !loadingMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchFeed(nextPage);
+    if (!isLoading && !isFetching && hasMore) {
+      setPage((prev) => prev + 1);
     }
   };
 
   // Intersection Observer for Infinite Scroll
   const lastItemElementRef = useCallback(
     (node) => {
-      if (loading || loadingMore || !hasMore) return;
+      if (isLoading || isFetching || !hasMore) return;
       if (observerTarget.current) observerTarget.current.disconnect();
 
       observerTarget.current = new IntersectionObserver((entries) => {
@@ -78,87 +58,41 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
 
       if (node) observerTarget.current.observe(node);
     },
-    [loading, loadingMore, hasMore, page]
+    [isLoading, isFetching, hasMore]
   );
 
   const handleLike = async (itemId, currentLiked, type) => {
-    if (likingStates[itemId]) return;
-    
+    // Optimistic update is handled in the mutation's onQueryStarted in slices
     setLikingStates((prev) => ({ ...prev, [itemId]: true }));
-    const newLikedState = !currentLiked;
-    let previousStateItems = null;
-
-    // Optimistic update
-    setFeedItems((prev) => {
-        previousStateItems = prev; // Capture current state for rollback
-        return prev.map((item) => {
-            const data = item.data;
-            if (data._id === itemId) {
-            const currentLikes = data.likes || [];
-            const newLikes = newLikedState
-                ? [...currentLikes, { _id, username: "You", avatar: "" }] 
-                : currentLikes.filter((l) => (l._id || l).toString() !== _id.toString());
-            
-            return {
-                ...item,
-                data: {
-                ...data,
-                likes: newLikes,
-                isLikedByViewer: newLikedState,
-                likeCount: newLikes.length
-                },
-            };
-            }
-            return item;
-        })
-    });
-
     try {
       if (type === "post") {
-        await togglePostLike(itemId);
+        await togglePostLike(itemId).unwrap();
       } else {
-        await toggleTripLike(itemId);
+        await toggleTripLike(itemId).unwrap();
       }
     } catch (err) {
-      // Rollback
       console.error("Error toggling like:", err);
-      if(previousStateItems) setFeedItems(previousStateItems);
     } finally {
-      setLikingStates((prev) => ({ ...prev, [itemId]: false }));
+      setLikingStates((prev) => {
+        const newState = { ...prev };
+        delete newState[itemId];
+        return newState;
+      });
     }
   };
 
   const handleCommentSubmit = async (postId, mentions) => {
     if(!commentText.trim()) return;
     
-    setCommentLoading(true);
     try {
-        await createRootComment(postId, commentText, mentions);
-        // Optimistically add comment count? Or just clear input.
-        // For now, clear input and close.
+        await createRootComment({ postId, content: commentText, mentions }).unwrap();
         setCommentText("");
         setActiveCommentPostId(null);
-        
-        // Update comment count in feed (Optimistic)
-        setFeedItems(prev => prev.map(item => {
-            if(item.data._id === postId) {
-                return {
-                    ...item,
-                    data: {
-                        ...item.data,
-                        commentCount: (item.data.commentCount || 0) + 1
-                    }
-                }
-            }
-            return item;
-        }));
-
     } catch (error) {
         console.error("Failed to post comment", error);
-    } finally {
-        setCommentLoading(false);
     }
   };
+
 
   const formatDate = (date) => {
     const now = new Date();
@@ -614,7 +548,7 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
         <CreatePost createModal={createModal} setCreateModal={setCreateModal} />
 
         {/* Loading Initial */}
-        {loading && (
+        {isLoading && page === 1 && (
           <div className="flex flex-col gap-4">
              {[1, 2].map(i => (
                  <div key={i} className="bg-white rounded-2xl h-64 animate-pulse shadow-sm border border-gray-100"></div>
@@ -623,17 +557,18 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
         )}
 
         {/* Error */}
-        {!loading && error && (
+        {error && (
            <div className="text-center py-10">
               <div className="bg-red-50 text-red-500 px-4 py-3 rounded-xl inline-block">
-                 <i className="bx bx-error-circle mr-2"></i> {error}
+                 <i className="bx bx-error-circle mr-2"></i> {error?.data?.message || "Failed to load feed"}
               </div>
-              <button onClick={() => fetchFeed(1)} className="block mx-auto mt-4 text-sm font-medium text-gray-600 hover:text-gray-900 underline">Try Again</button>
+              {/* Retry not straightforward with hook unless we refetch, but hook auto-retries on focus. 
+                  We can add a refetch button if needed. */}
            </div>
         )}
 
         {/* Feed List */}
-        {!loading && !error && (
+        {!error && (
             <div className="space-y-6">
                 {feedItems.map((item, index) => {
                     if (item.type === "post") return renderPost(item, index);
@@ -644,7 +579,7 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
         )}
 
         {/* Empty State */}
-        {!loading && !error && feedItems.length === 0 && (
+        {!isLoading && !error && feedItems.length === 0 && (
              <div className="text-center py-20">
                 <div className="bg-white p-8 rounded-full inline-flex mb-4 shadow-sm">
                     <i className="bx bx-world text-5xl text-gray-300"></i>
@@ -655,7 +590,7 @@ const HomeFeed = ({ createModal, setCreateModal }) => {
         )}
 
         {/* Load More Spinner */}
-        {loadingMore && (
+        {isFetching && page > 1 && (
            <div className="py-4 flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-500 border-t-transparent"></div>
            </div>

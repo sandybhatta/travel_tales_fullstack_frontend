@@ -1,24 +1,10 @@
-import React, { useEffect, useState } from 'react'
-import mainApi from '../Apis/axios'
+import React from 'react'
 import { Link } from 'react-router-dom'
+import { useGetMentionedCommentsQuery } from '../slices/commentApiSlice'
 
 const Comments = () => {
-  const [comments, setComments] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchMentionedComments = async () => {
-      try {
-        const response = await mainApi.get('/api/comment/mentioned-comments')
-        setComments(response.data.comments || [])
-      } catch (error) {
-        console.error("Error fetching mentioned comments:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchMentionedComments()
-  }, [])
+  const { data, isLoading: loading } = useGetMentionedCommentsQuery()
+  const comments = data?.comments || []
 
   if (loading) {
     return (

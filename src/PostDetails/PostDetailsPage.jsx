@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { getPostDetails, getUserFollowings } from "../Apis/postApi";
-import { togglePostLike } from "../Apis/likeApi";
-import mainApi from "../Apis/axios";
+import { useGetPostDetailsQuery, useTogglePostLikeMutation } from "../slices/postApiSlice";
+import { useBookmarkPostMutation } from "../slices/userApiSlice";
 import { useSelector } from "react-redux";
 import CommentSection from "./CommentSection";
 import PostHeader from "./components/PostHeader";
@@ -14,137 +13,63 @@ const PostDetailsPage = () => {
   const navigate = useNavigate();
   const { _id: currentUserId } = useSelector((state) => state.user);
 
-  const [postData, setPostData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [liking, setLiking] = useState(false);
-  const [bookmarking, setBookmarking] = useState(false);
-  const [showAllTags, setShowAllTags] = useState(false);
+  // RTK Queries
+  const { data: postData, isLoading: loading, error: queryError, refetch } = useGetPostDetailsQuery(postId);
+  const [togglePostLike, { isLoading: liking }] = useTogglePostLikeMutation();
+  const [bookmarkPost, { isLoading: bookmarking }] = useBookmarkPostMutation();
 
-  // Privacy State
-  const [canComment, setCanComment] = useState(true);
-  const [commentPrivacyMessage, setCommentPrivacyMessage] = useState("");
-
-  // Media Modal State
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(null);
 
-  useEffect(() => {
-    fetchPostDetails();
-  }, [postId]);
+  const error = queryError?.data?.message || (queryError ? "Failed to load post" : "");
 
-  // Privacy Logic
-  useEffect(() => {
-    if (!postData || !postData.post) return;
+  // Derived Privacy State (can compute directly from data)
+  const getPrivacyStatus = () => {
+    if (!postData || !postData.post) return { canComment: false, message: "" };
     const { author } = postData.post;
-    if (!author) return;
-    const allow = author.privacy?.allowComments || "everyone";
-    if (author._id === currentUserId) {
-      setCanComment(true);
-      setCommentPrivacyMessage("");
-      return;
-    }
-    if (allow === "everyone") {
-      setCanComment(true);
-      setCommentPrivacyMessage("");
-    } else if (allow === "no_one") {
-      setCanComment(false);
-      setCommentPrivacyMessage("Comments have been disabled by the author.");
-    } else if (allow === "followers") {
-      const isFollower = author.followers.some(
-        (f) => f._id === currentUserId || f === currentUserId,
-      );
-      if (isFollower) {
-        setCanComment(true);
-        setCommentPrivacyMessage("");
-      } else {
-        setCanComment(false);
-        setCommentPrivacyMessage("Comments have been disabled by the author.");
-      }
-    } else if (allow === "close_friends") {
-      const isClose = author.closeFriends.some(
-        (f) => f._id === currentUserId || f === currentUserId,
-      );
-      if (isClose) {
-        setCanComment(true);
-        setCommentPrivacyMessage("");
-      } else {
-        setCanComment(false);
-        setCommentPrivacyMessage("Comments have been disabled by the author.");
-      }
-    }
-  }, [postData, currentUserId]);
+    if (!author) return { canComment: false, message: "" };
+    
+    if (author._id === currentUserId) return { canComment: true, message: "" };
 
-  const fetchPostDetails = async () => {
-    setLoading(true);
-    try {
-      const data = await getPostDetails(postId);
-      setPostData(data);
-    } catch (err) {
-      console.error("Error fetching details", err);
-      if (!postData)
-        setError(err.response?.data?.message || "Failed to load post");
-    } finally {
-      setLoading(false);
+    const allow = author.privacy?.allowComments || "everyone";
+    if (allow === "everyone") return { canComment: true, message: "" };
+    if (allow === "no_one") return { canComment: false, message: "Comments have been disabled by the author." };
+    
+    if (allow === "followers") {
+        const isFollower = author.followers.some(f => f._id === currentUserId || f === currentUserId);
+        return { 
+            canComment: isFollower, 
+            message: isFollower ? "" : "Comments have been disabled by the author." 
+        };
     }
+    
+    if (allow === "close_friends") {
+        const isClose = author.closeFriends.some(f => f._id === currentUserId || f === currentUserId);
+        return {
+            canComment: isClose,
+            message: isClose ? "" : "Comments have been disabled by the author."
+        };
+    }
+    return { canComment: true, message: "" };
   };
+
+  const { canComment, message: commentPrivacyMessage } = getPrivacyStatus();
 
   const handleLike = async () => {
     if (liking || !postData) return;
-    setLiking(true);
-    const wasLiked = postData.hasLiked;
-    setPostData((prev) => ({
-      ...prev,
-      hasLiked: !wasLiked,
-      likesCount: wasLiked ? prev.likesCount - 1 : prev.likesCount + 1,
-    }));
     try {
-      await togglePostLike(postId);
+      await togglePostLike(postId).unwrap();
     } catch (err) {
-      setPostData((prev) => ({
-        ...prev,
-        hasLiked: wasLiked,
-        likesCount: wasLiked ? prev.likesCount : prev.likesCount - 1,
-      }));
       console.error("Error toggling like:", err);
-    } finally {
-      setLiking(false);
     }
   };
 
   const handleBookmark = async () => {
     if (bookmarking || !postData) return;
-    setBookmarking(true);
-    const wasBookmarked = postData.isBookmarked;
-    setPostData((prev) => ({
-      ...prev,
-      isBookmarked: !wasBookmarked,
-      bookmarkCount: wasBookmarked
-        ? prev.bookmarkCount - 1
-        : prev.bookmarkCount + 1,
-    }));
     try {
-      await mainApi.patch(`/api/user/bookmark/${postId}`);
+      await bookmarkPost(postId).unwrap();
     } catch (err) {
-      setPostData((prev) => ({
-        ...prev,
-        isBookmarked: wasBookmarked,
-        bookmarkCount: wasBookmarked
-          ? prev.bookmarkCount
-          : prev.bookmarkCount - 1,
-      }));
       console.error("Error toggling bookmark:", err);
-    } finally {
-      setBookmarking(false);
     }
-  };
-
-  const formatDate = (date) => {
-    const d = new Date(date);
-    return (
-      d.toLocaleDateString() +
-      " " +
-      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    );
   };
 
   const renderCaption = (text) => {
@@ -178,6 +103,7 @@ const PostDetailsPage = () => {
       return part;
     });
   };
+
 
   if (loading) {
     return (
@@ -241,7 +167,7 @@ const PostDetailsPage = () => {
         {/* Header */}
         <PostHeader
           post={post}
-          onPostUpdate={() => fetchPostDetails()}
+          onPostUpdate={refetch}
         />
 
         {/* Caption */}
@@ -401,12 +327,7 @@ const PostDetailsPage = () => {
           postId={postId}
           canComment={canComment}
           privacyMessage={commentPrivacyMessage}
-          onCommentAdded={() =>
-            setPostData((prev) => ({
-              ...prev,
-              commentsCount: (prev.commentsCount || 0) + 1,
-            }))
-          }
+          onCommentAdded={() => {}} // Handled via RTK Query invalidation
         />
       </div>
 

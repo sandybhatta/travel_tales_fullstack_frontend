@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import mainApi from "../../Apis/axios";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import {
+  useAddTripTodoMutation,
+  useToggleTripTodoMutation,
+  useDeleteTripTodoMutation,
+} from "../../slices/tripApiSlice";
 
-const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
+const ViewTodoTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
   const [showMore, setShowMore] = useState(false);
   const [addTodoModal, setAddTodoModal] = useState(false);
   const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
@@ -12,23 +16,23 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
 
   const [error, setError] = useState("");
   const [isAddingTodo, setIsAddingTodo] = useState(false);
-  const [isFetchingTodos, setIsFetchingTodos] = useState(false);
   const [processingTodos, setProcessingTodos] = useState(new Set());
 
-  const fetchTodos = async () => {
-    setIsFetchingTodos(true);
-    try {
-      const response = await mainApi.get(`/api/trips/${trip._id}/todos`);
-      setTrip((prev) => ({
-        ...prev,
-        todoList: response.data.todoList,
-      }));
-    } catch (err) {
-      console.error("Failed to fetch todos", err);
-    } finally {
-      setIsFetchingTodos(false);
-    }
-  };
+  // RTK Query Mutations
+  const [addTripTodo] = useAddTripTodoMutation();
+  const [toggleTripTodo] = useToggleTripTodoMutation();
+  const [deleteTripTodo] = useDeleteTripTodoMutation();
+
+  const [todo, setTodo] = useState({
+    task: "",
+    dueDate: new Date(),
+    assignedTo: {
+      _id: _id,
+      username: username,
+      avatar: avatar,
+      name: name
+    },
+  });
 
   const handleAddTodo = async () => {
     setError("");
@@ -44,13 +48,11 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
       task: todo.task,
       dueDate: todo.dueDate,
       assignedTo: todo.assignedTo._id,
+      tripId: trip._id,
     };
 
     try {
-      await mainApi.post(
-        `/api/trips/${trip._id}/todos`,
-        addTodoPayload
-      );
+      await addTripTodo(addTodoPayload).unwrap();
       
       setTodo({
         task: "",
@@ -64,9 +66,9 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
       });
 
       setAddTodoModal(false);
-      await fetchTodos();
+      // No need to fetchTodos, cache invalidation handles it
     } catch (error) {
-      setError(error?.response?.data?.message || "Something went wrong");
+      setError(error?.data?.message || "Something went wrong");
     } finally {
         setIsAddingTodo(false);
     }
@@ -74,9 +76,7 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
 
   useEffect(() => {
     if (_id && username) {
-         // Only reset if we are not already editing or if needed. 
-         // Actually, better to just ensure default is set correctly on mount/modal open.
-         // Keeping it simple to avoid overriding user input during re-renders.
+        // Init logic if needed
     }
   }, [_id, username]);
 
@@ -100,20 +100,15 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
 
     setProcessingTodos((prev) => new Set(prev).add(todoId));
 
-    // Optimistic Update
-    const previousTodos = [...trip.todoList];
-    setTrip((prev) => ({
-        ...prev,
-        todoList: prev.todoList.map((t) => 
-            t._id === todoId ? { ...t, done: !t.done } : t
-        )
-    }));
-
+    // Optimistic Update is handled by RTK Query if we configured it, 
+    // or we can rely on fast re-fetch. 
+    // For manual optimistic UI here (complex due to props), we might just wait for invalidation.
+    // But let's try to be responsive.
+    
     try {
-      await mainApi.patch(`/api/trips/${trip._id}/todos/${todoId}/toggle`);
+      await toggleTripTodo({ tripId: trip._id, todoId }).unwrap();
     } catch (error) {
-        // Rollback
-        setTrip((prev) => ({ ...prev, todoList: previousTodos }));
+       console.error("Toggle failed", error);
     } finally {
         setProcessingTodos((prev) => {
             const newSet = new Set(prev);
@@ -124,16 +119,10 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
   };
 
   const handleDeleteTodo = async (todoId) => {
-     const previousTodos = [...trip.todoList];
-     setTrip((prev) => ({
-      ...prev,
-      todoList: prev.todoList.filter((t) => t._id !== todoId),
-    }));
-
     try {
-        await mainApi.delete(`/api/trips/${trip._id}/todos/${todoId}`);
+        await deleteTripTodo({ tripId: trip._id, todoId }).unwrap();
     } catch (error) {
-        setTrip((prev) => ({ ...prev, todoList: previousTodos }));
+        console.error("Delete failed", error);
     }
   };
 
@@ -152,12 +141,13 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
   );
 
   const todoList = useMemo(() => {
+    if (!trip?.todoList) return [];
     if (showMore || isModal) {
       return trip.todoList;
     } else {
       return trip.todoList.slice(0, 3);
     }
-  }, [showMore, trip.todoList, isModal]);
+  }, [showMore, trip?.todoList, isModal]);
 
   return (
     <div
@@ -286,7 +276,7 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
                     <label className="text-sm font-bold text-gray-700 ml-1">Due Date</label>
                     <input 
                         type="datetime-local"
-                        value={new Date(todo.dueDate).toISOString().slice(0, 16)} // simplistic handling
+                        value={new Date(todo.dueDate).toISOString().slice(0, 16)}
                         onChange={(e) => setTodo(prev => ({...prev, dueDate: new Date(e.target.value)}))}
                         className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500 text-sm text-gray-700"
                     />
@@ -348,13 +338,6 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
 
       {/* Todo List Items */}
       <div className="w-full flex flex-col gap-4">
-        {isFetchingTodos ? (
-             <div className="flex flex-col gap-4 w-full">
-                <TodoShimmer />
-                <TodoShimmer />
-                <TodoShimmer />
-             </div>
-        ) : (
             <>
                 {trip?.todoList &&
                 trip?.todoList.length > 0 &&
@@ -449,9 +432,8 @@ const ViewTodoTrip = ({ trip, setTrip, isModal = false }) => {
                     );
                 })}
             </>
-        )}
         
-        {!isModal && !isFetchingTodos && trip.todoList.length > 3 && (
+        {!isModal && trip.todoList.length > 3 && (
           <div
             className="w-full px-4 py-3 bg-white border border-red-100 text-red-500 hover:bg-red-50 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors font-medium"
             onClick={(e) => {

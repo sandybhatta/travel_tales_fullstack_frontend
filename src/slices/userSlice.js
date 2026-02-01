@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import mainApi from "../Apis/axios";
 
 const initialState={
     _id:"",
@@ -38,14 +37,6 @@ const initialState={
     }
 
 }
-
-export const logout = createAsyncThunk("user/logout", async () => {
-    try {
-        await mainApi.post("/api/auth/logout");
-    } catch (error) {
-        console.error("Logout error:", error);
-    }
-});
 
 const userSlice = createSlice({
     name:"user",
@@ -110,6 +101,11 @@ const userSlice = createSlice({
 
             localStorage.setItem("userInfo", JSON.stringify(state))
         },
+        logout: (state) => {
+            localStorage.removeItem("userInfo");
+            localStorage.removeItem("accessToken");
+            return initialState;
+        },
         loadUserFromStorage: (state) => {
             const storedUser = localStorage.getItem("userInfo");
             const storedToken = localStorage.getItem("accessToken");
@@ -125,18 +121,6 @@ const userSlice = createSlice({
             }
           },
     },
-    extraReducers: (builder) => {
-        builder.addCase(logout.fulfilled, (state) => {
-            localStorage.removeItem("userInfo");
-            localStorage.removeItem("accessToken");
-            return initialState;
-        });
-        builder.addCase(logout.rejected, (state) => {
-            localStorage.removeItem("userInfo");
-            localStorage.removeItem("accessToken");
-            return initialState;
-        });
-    }
 }) 
 export default userSlice.reducer
-export const {setAccessToken , setUserInformation , loadUserFromStorage} = userSlice.actions
+export const {setAccessToken , setUserInformation , loadUserFromStorage, logout} = userSlice.actions

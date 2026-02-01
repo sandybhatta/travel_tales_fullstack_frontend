@@ -1,5 +1,5 @@
 import React, { useEffect, useRef,useState } from "react";
-import mainApi from "../Apis/axios";
+import { useCreateTripMutation } from "../slices/tripApiSlice";
 
 const BasicInfo = ({
     title,
@@ -30,8 +30,7 @@ const BasicInfo = ({
   const endDateRef = useRef(null);
   const coverPhotoRef = useRef(null);
 
-  const [ progress, setProgress] = useState(0)
-  const [ isUploading , setIsUploading ] = useState(false)
+  const [createTrip, { isLoading: isUploading }] = useCreateTripMutation();
   const [uploadError , setUploadError] = useState("")
 
   useEffect(() => {
@@ -169,14 +168,9 @@ const BasicInfo = ({
     }
 
     try {
-      setIsUploading(true);
       setUploadError("");
 
-      await mainApi.post("/api/trips", formData, {
-        onUploadProgress: (e) => {
-          setProgress(Math.round((e.loaded * 100) / e.total));
-        },
-      });
+      await createTrip(formData).unwrap();
 
       setTimeout(() => {
         setCreateModal(false);
@@ -184,11 +178,9 @@ const BasicInfo = ({
       }, 1500);
     } catch (err) {
       setUploadError(
-        err?.response?.data?.message || "Failed to create trip"
+        err?.data?.message || "Failed to create trip"
       );
       setTimeout(() => setUploadError(""), 4000);
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -366,13 +358,8 @@ const BasicInfo = ({
       </div>
       {uploadError && <p className="text-red-500">{uploadError}</p>}
       {isUploading && (
-        <div className="w-full bg-gray-200 rounded">
-          <div
-            style={{ width: `${progress}%` }}
-            className="bg-red-500 text-white text-center rounded"
-          >
-            {progress}%
-          </div>
+        <div className="w-full bg-gray-200 rounded overflow-hidden">
+          <div className="bg-red-500 h-2 animate-pulse w-full"></div>
         </div>
       )}
     </div>

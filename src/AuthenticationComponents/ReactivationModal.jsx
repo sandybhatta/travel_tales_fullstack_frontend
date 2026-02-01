@@ -1,19 +1,18 @@
 import React, { useState } from "react";
-import axios from "axios";
-
-const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
+import { useReactivateUserMutation } from "../slices/authApiSlice.js";
 
 const ReactivationModal = ({ userId, message, onClose }) => {
   const [status, setStatus] = useState("");
   const [success, setSuccess] = useState(false);
+  const [reactivateUser] = useReactivateUserMutation();
 
   const handleReactivate = async () => {
     try {
-      const res = await axios.post(`${API_BASE}/reactivate-user`, { userId });
-      setStatus(res.data.message);
+      const res = await reactivateUser({ userId }).unwrap();
+      setStatus(res.message);
       setSuccess(true);
     } catch (err) {
-      setStatus(err.response?.data?.message || "Reactivation failed");
+      setStatus(err?.data?.message || "Reactivation failed");
       setSuccess(false);
     }
   };

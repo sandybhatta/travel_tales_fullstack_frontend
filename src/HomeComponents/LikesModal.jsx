@@ -1,11 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { getPostLikes, getTripLikes } from "../Apis/likeApi.js";
-import { followUser, unfollowUser } from "../Apis/likeApi.js";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useGetPostLikesQuery } from "../slices/postApiSlice";
+import { useGetTripLikesQuery } from "../slices/tripApiSlice";
+import { useFollowUserMutation, useUnfollowUserMutation } from "../slices/userApiSlice";
+
 const LikesModal = ({ isOpen, onClose, postId, type = "post" }) => {
+  // We handle loading/data via hooks, but since we switch between post/trip, we need to conditionally call them.
+  // OR, we can just call both with skip.
+  const { 
+    data: postLikesData, 
+    isLoading: postLoading, 
+    error: postError 
+  } = useGetPostLikesQuery(postId, { skip: !isOpen || type !== "post" || !postId });
+
+  const { 
+    data: tripLikesData, 
+    isLoading: tripLoading, 
+    error: tripError 
+  } = useGetTripLikesQuery(postId, { skip: !isOpen || type !== "trip" || !postId });
+
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
+
   const [likes, setLikes] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [followingStates, setFollowingStates] = useState({});
   const [loadingStates, setLoadingStates] = useState({});
@@ -14,43 +32,46 @@ const LikesModal = ({ isOpen, onClose, postId, type = "post" }) => {
 
   useEffect(() => {
     if (isOpen && postId) {
-      fetchLikes();
+       // Reset
+       setLikes([]);
+       setError("");
     }
   }, [isOpen, postId]);
 
-  const fetchLikes = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      let likesData = [];
-      
-      if (type === "post") {
-        const response = await getPostLikes(postId);
-        likesData = response.likesInfo || [];
-      } else if (type === "trip") {
-        const response = await getTripLikes(postId);
-        // Normalize trip likes data to match post likes structure
-        // Post likes have isFollowedByMe, Trip likes might have isFollowing or similar
-        likesData = (response.likes || []).map(like => ({
-            ...like,
-            isFollowedByMe: like.isFollowing !== undefined ? like.isFollowing : like.isFollowedByMe
-        }));
-      }
+  useEffect(() => {
+    if (!isOpen) return;
 
-      setLikes(likesData);
-      
-      // Initialize following states
-      const initialStates = {};
-      likesData.forEach((like) => {
-        initialStates[like._id] = like.isFollowedByMe || false;
-      });
-      setFollowingStates(initialStates);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load likes");
-    } finally {
-      setLoading(false);
+    if (type === "post") {
+        if (postError) {
+            setError("Failed to load likes");
+        } else if (postLikesData) {
+            const likesData = postLikesData.likesInfo || [];
+            setLikes(likesData);
+            const initialStates = {};
+            likesData.forEach((like) => {
+                initialStates[like._id] = like.isFollowedByMe || false;
+            });
+            setFollowingStates(initialStates);
+        }
+    } else if (type === "trip") {
+        if (tripError) {
+            setError("Failed to load likes");
+        } else if (tripLikesData) {
+            const likesData = (tripLikesData.likes || []).map(like => ({
+                ...like,
+                isFollowedByMe: like.isFollowing !== undefined ? like.isFollowing : like.isFollowedByMe
+            }));
+            setLikes(likesData);
+            const initialStates = {};
+            likesData.forEach((like) => {
+                initialStates[like._id] = like.isFollowedByMe || false;
+            });
+            setFollowingStates(initialStates);
+        }
     }
-  };
+  }, [postLikesData, tripLikesData, postError, tripError, type, isOpen]);
+
+  const loading = type === "post" ? postLoading : tripLoading;
 
   const handleFollowToggle = async (userId, currentState) => {
     if (loadingStates[userId]) return; // Prevent double clicks
@@ -63,9 +84,9 @@ const LikesModal = ({ isOpen, onClose, postId, type = "post" }) => {
 
     try {
       if (newState) {
-        await followUser(userId);
+        await followUser(userId).unwrap();
       } else {
-        await unfollowUser(userId);
+        await unfollowUser(userId).unwrap();
       }
     } catch (err) {
       // Rollback on error

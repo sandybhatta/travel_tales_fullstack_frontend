@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import mainApi from '../../Apis/axios';
-import { getTripById } from '../../Apis/tripApi';
+import { useUpdateTripMutation } from '../../slices/tripApiSlice';
 
 const ALLOWED_TAGS = [
     "adventure", "beach", "mountains", "history", "food", "wildlife", 
@@ -26,9 +25,11 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
     });
 
     const [previewUrl, setPreviewUrl] = useState('');
-    const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState('');
+    
+    // RTK Query Mutation
+    const [updateTrip, { isLoading: loading }] = useUpdateTripMutation();
     
     const today = new Date().toISOString().split('T')[0];
     const isPastTrip = formData.endDate && formData.endDate < today;
@@ -131,8 +132,7 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
-        setUploadProgress(0);
+        setUploadProgress(0); // Cannot track progress with fetch easily, might simulate or ignore
         setError('');
 
         try {
@@ -156,24 +156,17 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
                 data.append('coverPhoto', formData.coverPhoto);
             }
 
-            await mainApi.patch(`/api/trips/${trip._id}`, data, {
-                onUploadProgress: (progressEvent) => {
-                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                    setUploadProgress(percentCompleted);
-                }
-            });
+            // Note: onUploadProgress is Axios specific. fetchBaseQuery doesn't support it out of the box easily.
+            // We'll skip the progress bar for now or just show a loading spinner.
+            
+            const result = await updateTrip({ tripId: trip._id, data }).unwrap();
 
-            // Refetch trip to show changes
-            const updatedTripData = await getTripById(trip._id);
-            if (onUpdate && updatedTripData.trip) {
-                onUpdate(updatedTripData.trip);
+            if (onUpdate && result.trip) {
+                onUpdate(result.trip);
             }
             onClose();
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to update trip");
-        } finally {
-            setLoading(false);
-            setUploadProgress(0);
+            setError(err?.data?.message || "Failed to update trip");
         }
     };
 
@@ -182,8 +175,8 @@ const EditTripModal = ({ trip, onClose, onUpdate }) => {
             {loading && (
                 <div className="fixed top-0 left-0 w-full h-1 z-[110]">
                     <div 
-                        className="h-full bg-[#EF233C] transition-all duration-300 ease-out shadow-[0_0_10px_rgba(239,35,60,0.7)]"
-                        style={{ width: `${uploadProgress}%` }}
+                        className="h-full bg-[#EF233C] animate-pulse shadow-[0_0_10px_rgba(239,35,60,0.7)]"
+                        style={{ width: `100%` }}
                     ></div>
                 </div>
             )}

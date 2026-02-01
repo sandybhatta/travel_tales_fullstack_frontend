@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from "react";
-import mainApi from "../Apis/axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../slices/userSlice";
+import { useLogoutMutation } from "../slices/authApiSlice";
+import { 
+  useUpdatePasswordMutation, 
+  useUpdateProfileMutation, 
+  useChangeUsernameMutation, 
+  useChangeEmailMutation, 
+  useDeactivateUserMutation, 
+  useDeleteUserMutation,
+  useUpdatePrivacyMutation,
+  useGetBlockedUsersQuery,
+  useUnblockUserMutation,
+  useGetUserActivityQuery // We might need lazy query if we want manual control or just standard query with dynamic arg
+} from "../slices/userApiSlice";
+
 const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
   const [activeTab, setActiveTab] = useState("account");
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false); // Managed by hooks locally in sub-components
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  const [logoutApi] = useLogoutMutation();
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Reset messages when tab changes
+  useEffect(() => {
+      setError("");
+      setSuccessMsg("");
+  }, [activeTab]);
 
   if (!isOpen) return null;
 
@@ -21,7 +42,6 @@ const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
           <AccountSettings
             userData={userData}
             setUserData={setUserData}
-            setLoading={setLoading}
             setError={setError}
             setSuccessMsg={setSuccessMsg}
             navigate={navigate}
@@ -33,7 +53,6 @@ const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
           <PrivacySettings
             userData={userData}
             setUserData={setUserData}
-            setLoading={setLoading}
             setError={setError}
             setSuccessMsg={setSuccessMsg}
           />
@@ -41,7 +60,6 @@ const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
       case "blocked":
         return (
           <BlockedUsers
-            setLoading={setLoading}
             setError={setError}
             setSuccessMsg={setSuccessMsg}
           />
@@ -53,7 +71,12 @@ const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap();
+    } catch (err) {
+      console.error("Logout API failed", err);
+    }
     dispatch(logout());
     navigate("/login");
   };
@@ -125,11 +148,7 @@ const SettingsModal = ({ isOpen, onClose, userData, setUserData }) => {
           </button>
 
           <div className="flex-1 overflow-y-auto p-5 md:p-10 pb-20 md:pb-10">
-            {loading && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center z-20">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
-              </div>
-            )}
+            {/* Loading spinner removed from here as it is handled per component */}
             
             {error && (
               <div className="mb-6 p-4 bg-red-50 text-red-600 border border-red-100 rounded-xl text-sm font-medium flex items-center gap-2 animate-fadeIn">
@@ -185,7 +204,6 @@ const SidebarItem = ({ icon, label, active, onClick }) => (
 const AccountSettings = ({
   userData,
   setUserData,
-  setLoading,
   setError,
   setSuccessMsg,
   navigate,
@@ -201,6 +219,13 @@ const AccountSettings = ({
   });
   const [deactivatePassword, setDeactivatePassword] = useState("");
 
+  const [updatePassword, { isLoading: updatingPassword }] = useUpdatePasswordMutation();
+  const [updateProfile, { isLoading: updatingProfile }] = useUpdateProfileMutation();
+  const [changeUsername, { isLoading: changingUsername }] = useChangeUsernameMutation();
+  const [changeEmail, { isLoading: changingEmail }] = useChangeEmailMutation();
+  const [deactivateUser, { isLoading: deactivating }] = useDeactivateUserMutation();
+  const [deleteUser, { isLoading: deleting }] = useDeleteUserMutation();
+
   const { canChange, daysRemaining } = userData?.usernameChangeStatus || { canChange: true, daysRemaining: 0 };
 
   const handleUpdatePassword = async () => {
@@ -215,116 +240,99 @@ const AccountSettings = ({
       return setError("Password must be at least 6 characters");
     }
 
-    setLoading(true);
     setError("");
     setSuccessMsg("");
 
     try {
-      const res = await mainApi.post("/api/auth/change-password", {
+      const res = await updatePassword({
         oldPassword,
         newPassword,
-      });
-      setSuccessMsg(res.data.message || "Password changed successfully");
+      }).unwrap();
+      setSuccessMsg(res.message || "Password changed successfully");
       setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to change password");
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || "Failed to change password");
     }
   };
 
   const handleUpdateName = async () => {
     if (!name.trim()) return setError("Name cannot be empty");
-    setLoading(true);
     setError("");
     setSuccessMsg("");
     try {
-      const res = await mainApi.patch("/api/user/update-profile", {
+      const res = await updateProfile({
         name,
-      });
+      }).unwrap();
       setUserData((prev) => ({
         ...prev,
-        user: { ...prev.user, name: res.data.user.name || name },
+        user: { ...prev.user, name: res.user.name || name },
       }));
       setSuccessMsg("Name updated successfully");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to update name");
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || "Failed to update name");
     }
   };
 
   const handleUpdateUsername = async () => {
     if (!canChange) return setError(`You can change your username in ${daysRemaining} days.`);
     if (!username.trim()) return setError("Username cannot be empty");
-    setLoading(true);
     setError("");
     setSuccessMsg("");
     try {
-      const res = await mainApi.patch("/api/user/change-username", {
+      const res = await changeUsername({
         username,
-      });
+      }).unwrap();
       setUserData((prev) => ({
         ...prev,
-        user: { ...prev.user, username: res.data.newUsername || username },
-        usernameChangeStatus: res.data.usernameChangeStatus || prev.usernameChangeStatus
+        user: { ...prev.user, username: res.newUsername || username },
+        usernameChangeStatus: res.usernameChangeStatus || prev.usernameChangeStatus
       }));
       setSuccessMsg("Username updated successfully");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to update username");
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || "Failed to update username");
     }
   };
 
   const handleUpdateEmail = async () => {
     if (!email.trim()) return setError("Email cannot be empty");
-    setLoading(true);
     setError("");
     setSuccessMsg("");
     try {
-      const res = await mainApi.patch("/api/user/change-email", { email });
+      const res = await changeEmail({ email }).unwrap();
       setSuccessMsg(
-        res.data?.message || "Verification link sent to your new email."
+        res?.message || "Verification link sent to your new email."
       );
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to update email");
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || "Failed to update email");
     }
   };
 
   const handleDeactivate = async () => {
-    setLoading(true);
     try {
-      await mainApi.post("/api/auth/deactivate-user", {
+      await deactivateUser({
         deactivationReason: "User preference",
-      });
+      }).unwrap();
       dispatch(logout());
       navigate("/");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to deactivate account");
-      setLoading(false);
+      setError(err?.data?.message || "Failed to deactivate account");
     }
   };
 
   const handleDelete = async () => {
     if (!deactivatePassword) return setError("Password required to delete account");
-    setLoading(true);
     try {
-      await mainApi.delete("/api/user/delete", {
-        data: { password: deactivatePassword },
-      });
+      await deleteUser({ password: deactivatePassword }).unwrap();
       dispatch(logout());
       navigate("/");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to delete account");
-      setLoading(false);
+      setError(err?.data?.message || "Failed to delete account");
     }
   };
 
   return (
     <div className="space-y-8 md:space-y-10 animate-slideIn">
+      {/* ... (Keep existing JSX but update button disabled/loading states) */}
       <div>
         <h3 className="text-xl font-bold text-gray-900 mb-6">Profile Information</h3>
         <div className="space-y-6">
@@ -342,9 +350,10 @@ const AccountSettings = ({
               />
               <button
                 onClick={handleUpdateName}
-                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm"
+                disabled={updatingProfile}
+                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm disabled:opacity-50"
               >
-                Update
+                {updatingProfile ? "Updating..." : "Update"}
               </button>
             </div>
           </div>
@@ -364,10 +373,10 @@ const AccountSettings = ({
               />
               <button
                 onClick={handleUpdateUsername}
-                disabled={!canChange}
-                className={`w-full sm:w-auto px-6 py-3 text-white text-sm font-semibold rounded-xl transition-all shadow-sm ${!canChange ? "bg-gray-400 cursor-not-allowed" : "bg-gray-900 hover:bg-black active:scale-95"}`}
+                disabled={!canChange || changingUsername}
+                className={`w-full sm:w-auto px-6 py-3 text-white text-sm font-semibold rounded-xl transition-all shadow-sm ${!canChange ? "bg-gray-400 cursor-not-allowed" : "bg-gray-900 hover:bg-black active:scale-95"} disabled:opacity-50`}
               >
-                Update
+                {changingUsername ? "Updating..." : "Update"}
               </button>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">
@@ -399,9 +408,10 @@ const AccountSettings = ({
               />
               <button
                 onClick={handleUpdateEmail}
-                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm"
+                disabled={changingEmail}
+                className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm disabled:opacity-50"
               >
-                Update
+                {changingEmail ? "Updating..." : "Update"}
               </button>
             </div>
           </div>
@@ -446,9 +456,10 @@ const AccountSettings = ({
               <div className="flex justify-end pt-2">
                 <button
                   onClick={handleUpdatePassword}
-                  className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm"
+                  disabled={updatingPassword}
+                  className="w-full sm:w-auto px-6 py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm disabled:opacity-50"
                 >
-                  Change Password
+                  {updatingPassword ? "Changing..." : "Change Password"}
                 </button>
               </div>
             </div>
@@ -485,9 +496,10 @@ const AccountSettings = ({
             </p>
             <button
               onClick={handleDeactivate}
-              className="w-full py-2.5 bg-white border border-red-200 text-red-600 text-sm font-semibold rounded-xl hover:bg-red-50 transition-colors cursor-pointer"
+              disabled={deactivating}
+              className="w-full py-2.5 bg-white border border-red-200 text-red-600 text-sm font-semibold rounded-xl hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50"
             >
-              Deactivate
+              {deactivating ? "Deactivating..." : "Deactivate"}
             </button>
           </div>
 
@@ -503,9 +515,10 @@ const AccountSettings = ({
             </p>
             <button
               onClick={handleDelete}
-              className="w-full py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+              disabled={deleting}
+              className="w-full py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
             >
-              Delete Account
+              {deleting ? "Deleting..." : "Delete Account"}
             </button>
           </div>
         </div>
@@ -517,7 +530,6 @@ const AccountSettings = ({
 const PrivacySettings = ({
   userData,
   setUserData,
-  setLoading,
   setError,
   setSuccessMsg,
 }) => {
@@ -528,24 +540,23 @@ const PrivacySettings = ({
     userData?.privacy?.allowComments || "everyone"
   );
 
+  const [updatePrivacy, { isLoading }] = useUpdatePrivacyMutation();
+
   const handleSave = async () => {
-    setLoading(true);
     setError("");
     setSuccessMsg("");
     try {
-      const res = await mainApi.put("/api/user/settings/privacy", {
+      const res = await updatePrivacy({
         profileVisibility: visibility,
         allowComments: comments,
-      });
+      }).unwrap();
       setUserData((prev) => ({
         ...prev,
-        privacy: res.data.privacy,
+        privacy: res.privacy,
       }));
       setSuccessMsg("Privacy settings updated");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to update privacy");
-    } finally {
-      setLoading(false);
+      setError(err?.data?.message || "Failed to update privacy");
     }
   };
 
@@ -611,43 +622,40 @@ const PrivacySettings = ({
       <div className="pt-4 flex justify-end">
         <button
           onClick={handleSave}
-          className="w-full sm:w-auto px-8 py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm"
+          disabled={isLoading}
+          className="w-full sm:w-auto px-8 py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black active:scale-95 transition-all shadow-sm disabled:opacity-50"
         >
-          Save Changes
+          {isLoading ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </div>
   );
 };
 
-const BlockedUsers = ({ setLoading, setError }) => {
-  const [users, setUsers] = useState([]);
-  const [fetchLoading, setFetchLoading] = useState(true);
+const BlockedUsers = ({ setError, setSuccessMsg }) => {
+  const { data, isLoading: fetchLoading, error: fetchError } = useGetBlockedUsersQuery();
+  const [unblockUser, { isLoading: unblocking }] = useUnblockUserMutation();
+  const [loadingId, setLoadingId] = useState(null);
+
+  const users = data?.blockedUsers || [];
 
   useEffect(() => {
-    fetchBlocked();
-  }, []);
-
-  const fetchBlocked = async () => {
-    try {
-      const res = await mainApi.get("/api/user/settings/blocked");
-      setUsers(res.data.blockedUsers || []);
-    } catch (err) {
-      setError("Failed to fetch blocked users");
-    } finally {
-      setFetchLoading(false);
-    }
-  };
+      if (fetchError) {
+          setError("Failed to fetch blocked users");
+      }
+  }, [fetchError, setError]);
 
   const handleUnblock = async (id) => {
-    setLoading(true);
+    setLoadingId(id);
+    setError("");
+    setSuccessMsg("");
     try {
-      await mainApi.delete(`/api/user/settings/unblock/${id}`);
-      setUsers((prev) => prev.filter((u) => u._id !== id));
+      await unblockUser(id).unwrap();
+      setSuccessMsg("User unblocked successfully");
     } catch (err) {
       setError("Failed to unblock user");
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
@@ -689,9 +697,10 @@ const BlockedUsers = ({ setLoading, setError }) => {
               </div>
               <button
                 onClick={() => handleUnblock(u._id)}
-                className="px-4 py-2 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-black transition-colors shadow-sm"
+                disabled={loadingId === u._id}
+                className="px-4 py-2 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-black transition-colors shadow-sm disabled:opacity-50"
               >
-                Unblock
+                {loadingId === u._id ? "Unblocking..." : "Unblock"}
               </button>
             </div>
           ))}
@@ -703,29 +712,19 @@ const BlockedUsers = ({ setLoading, setError }) => {
 
 const ActivitySettings = () => {
   const [subTab, setSubTab] = useState("likes");
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchActivity();
-  }, [subTab]);
-
-  const fetchActivity = async () => {
-    setLoading(true);
-    setItems([]);
-    try {
-      let endpoint = "/api/user/activity/likes/posts";
-      if (subTab === "comments") endpoint = "/api/user/activity/comments/posts";
-      if (subTab === "trips") endpoint = "/api/user/activity/likes/trips";
-
-      const res = await mainApi.get(endpoint);
-      setItems(res.data?.posts || res.data?.trips || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  // Mapping tab to endpoint type
+  // likes -> likes/posts
+  // comments -> comments/posts
+  // trips -> likes/trips
+  const getType = () => {
+      if (subTab === "likes") return "likes/posts";
+      if (subTab === "comments") return "comments/posts";
+      if (subTab === "trips") return "likes/trips";
+      return "likes/posts";
   };
+
+  const { data, isLoading } = useGetUserActivityQuery(getType());
+  const items = data?.posts || data?.trips || [];
 
   return (
     <div className="animate-slideIn h-full flex flex-col">
@@ -750,7 +749,7 @@ const ActivitySettings = () => {
         ))}
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 md:gap-2 animate-pulse">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="aspect-square bg-gray-100 rounded-lg" />

@@ -1,31 +1,72 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import useDebounce from "../CustomHooks/useDebounceHook";
 import {
-  history,
-  globalSearch,
-  userSearch,
-  postSearch,
-  tripSearch,
-  deleteOneHistory,
-  deleteAllHistory,
-} from "../Apis/searchApi";
-import { followUser, unfollowUser } from "../Apis/userApi";
+  useGlobalSearchQuery,
+  useUserSearchQuery,
+  usePostSearchQuery,
+  useTripSearchQuery,
+  useGetSearchHistoryQuery,
+  useDeleteOneHistoryMutation,
+  useDeleteAllHistoryMutation,
+} from "../slices/searchApiSlice";
+import { useFollowUserMutation, useUnfollowUserMutation } from "../slices/userApiSlice";
 
 const Search = ({ isSearchOpen, setIsSearchOpen }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("All");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState({ users: [], trips: [], posts: [] });
-  const [recent, setRecent] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [followLoading, setFollowLoading] = useState({});
-
-  const debounceTimeoutRef = useRef(null);
+  const debouncedQuery = useDebounce(query, 500);
+  
   const searchContainerRef = useRef(null);
   const { user: currentUser } = useSelector((state) => state.user);
+
+  // Queries
+  const skipSearch = !debouncedQuery.trim();
+  
+  const { data: globalData, isFetching: globalFetching } = useGlobalSearchQuery(debouncedQuery, {
+    skip: skipSearch || activeTab !== "All",
+  });
+  
+  const { data: userData, isFetching: userFetching } = useUserSearchQuery({ query: debouncedQuery }, {
+    skip: skipSearch || activeTab !== "Users",
+  });
+
+  const { data: tripData, isFetching: tripFetching } = useTripSearchQuery({ query: debouncedQuery }, {
+    skip: skipSearch || activeTab !== "Trips",
+  });
+
+  const { data: postData, isFetching: postFetching } = usePostSearchQuery({ query: debouncedQuery }, {
+    skip: skipSearch || activeTab !== "Posts",
+  });
+
+  const { data: historyData, isFetching: historyFetching } = useGetSearchHistoryQuery(undefined, {
+    skip: !isSearchOpen || !!query.trim(),
+  });
+
+  // Mutations
+  const [deleteOneHistory] = useDeleteOneHistoryMutation();
+  const [deleteAllHistory] = useDeleteAllHistoryMutation();
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
+
+  const [followLoading, setFollowLoading] = useState({});
+
+  // Derived State
+  const loading = globalFetching || userFetching || tripFetching || postFetching;
+  const recent = historyData?.history || [];
+  
+  let results = { users: [], trips: [], posts: [] };
+  if (activeTab === "All" && globalData) {
+      results = globalData;
+  } else if (activeTab === "Users" && userData) {
+      results = { users: userData.users, trips: [], posts: [] };
+  } else if (activeTab === "Trips" && tripData) {
+      results = { users: [], trips: tripData.trips, posts: [] };
+  } else if (activeTab === "Posts" && postData) {
+      results = { users: [], trips: [], posts: postData.posts };
+  }
 
   // Close search when clicking outside
   useEffect(() => {
@@ -44,72 +85,6 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
     };
   }, [setIsSearchOpen]);
 
-  // Fetch history when search opens
-  useEffect(() => {
-    if (isSearchOpen && !query.trim()) {
-      fetchHistory();
-    }
-  }, [isSearchOpen, query]);
-
-  const fetchHistory = async () => {
-    try {
-      setHistoryLoading(true);
-      const { data } = await history();
-      setRecent(data.history);
-    } catch (error) {
-      console.error("Failed to fetch history", error);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-
-  // Debounced Search Effect
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults({ users: [], trips: [], posts: [] });
-      return;
-    }
-
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    setLoading(true);
-    debounceTimeoutRef.current = setTimeout(async () => {
-      try {
-        let res;
-        switch (activeTab) {
-          case "All":
-            res = await globalSearch(query);
-            setResults(res.data);
-            break;
-          case "Users":
-            res = await userSearch(query);
-            setResults({ users: res.data.users, trips: [], posts: [] });
-            break;
-          case "Trips":
-            res = await tripSearch(query);
-            setResults({ users: [], trips: res.data.trips, posts: [] });
-            break;
-          case "Posts":
-            res = await postSearch(query);
-            setResults({ users: [], trips: [], posts: res.data.posts });
-            break;
-          default:
-            break;
-        }
-        setError("");
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch results");
-      } finally {
-        setLoading(false);
-      }
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(debounceTimeoutRef.current);
-  }, [query, activeTab]);
-
   const handleTabClick = (tab) => {
     setActiveTab(tab);
   };
@@ -117,38 +92,28 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
   const closeSearch = () => {
     setIsSearchOpen(false);
     setQuery("");
-    setResults({ users: [], trips: [], posts: [] });
   };
 
-  // Optimistic History Deletion
+  // History Deletion
   const handleDeleteHistory = async (id, e) => {
     e.stopPropagation();
-    // Optimistic update
-    const previousRecent = [...recent];
-    setRecent(recent.filter((item) => item._id !== id));
-
     try {
-      await deleteOneHistory(id);
+      await deleteOneHistory(id).unwrap();
     } catch (error) {
       console.error("Failed to delete history", error);
-      setRecent(previousRecent); // Rollback
     }
   };
 
-  // Optimistic Clear All History
+  // Clear All History
   const handleClearHistory = async () => {
-    const previousRecent = [...recent];
-    setRecent([]);
-
     try {
-      await deleteAllHistory();
+      await deleteAllHistory().unwrap();
     } catch (error) {
       console.error("Failed to clear history", error);
-      setRecent(previousRecent); // Rollback
     }
   };
 
-  // Optimistic Follow/Unfollow
+  // Follow/Unfollow
   const handleFollowToggle = async (e, targetUser) => {
     e.preventDefault(); // Prevent navigation
     e.stopPropagation();
@@ -161,25 +126,10 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
     // Set loading
     setFollowLoading((prev) => ({ ...prev, [targetUser._id]: true }));
 
-    // Optimistic Update
-    setResults((prev) => ({
-      ...prev,
-      users: prev.users.map((u) =>
-        u._id === targetUser._id ? { ...u, isFollowing: !isFollowing } : u
-      ),
-    }));
-
     try {
-      await action(targetUser._id);
+      await action(targetUser._id).unwrap();
     } catch (error) {
       console.error("Follow toggle failed", error);
-      // Rollback
-      setResults((prev) => ({
-        ...prev,
-        users: prev.users.map((u) =>
-          u._id === targetUser._id ? { ...u, isFollowing: isFollowing } : u
-        ),
-      }));
     } finally {
       setFollowLoading((prev) => ({ ...prev, [targetUser._id]: false }));
     }
@@ -316,7 +266,7 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
                   ))}
 
                 {/* Empty History State */}
-                {!historyLoading && recent.length === 0 && (
+                {!historyFetching && recent.length === 0 && (
                   <div className="text-center py-10 text-[#8D99AE] opacity-60">
                     <i className="bx bx-history text-4xl mb-2"></i>
                     <p className="text-sm">No recent searches</p>

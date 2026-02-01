@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
+import { useResetPasswordMutation } from "../slices/authApiSlice.js";
 
 const ResetPasswordOtp = ({ email, onBack }) => {
     const navigate = useNavigate();
@@ -10,6 +8,7 @@ const ResetPasswordOtp = ({ email, onBack }) => {
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [resetPassword] = useResetPasswordMutation();
 
   const handleResetPassword = async () => {
     setError("");
@@ -20,17 +19,17 @@ const ResetPasswordOtp = ({ email, onBack }) => {
     }
 
     try {
-      const res = await axios.post(`${API_BASE}/reset-password`, {
+      const res = await resetPassword({
         token: otp,
         password: newPassword,
         email,
-      });
-      setMessage(res.data.message || "Password changed successfully!");
+      }).unwrap();
+      setMessage(res.message || "Password changed successfully!");
       setError("");
 
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Password reset failed");
+      setError(err?.data?.message || "Password reset failed");
       setMessage("");
     }
   };

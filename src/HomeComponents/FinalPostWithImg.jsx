@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
 import VisibilityOfPost from './VisibilityOfPost'
 import TagUsers from './TagUsers'
-import mainApi from '../Apis/axios'
+import { useCreatePostMutation } from '../slices/postApiSlice'
 
 const FinalPostWithImg = ({caption, setCaption, files,visibilityStatus,setVisibilityStatus,visibilityOpen,setVisibilityOpen,setCreateModal,setCreationTab,tagOpen,setTagOpen , setNext}) => {
   const reduxUserState = useSelector(state=>state.user)
@@ -11,12 +11,11 @@ const FinalPostWithImg = ({caption, setCaption, files,visibilityStatus,setVisibi
     const name =reduxUserState.name || storageUserState.name
     const username = reduxUserState.username || storageUserState.username
     const location= reduxUserState.location || storageUserState.location
-    const [progress, setProgress] =useState(0)
-    const [ isUploading ,setIsUploading ] = useState(false)
+    
+    const [createPost, { isLoading: isUploading }] = useCreatePostMutation();
 
 
     const handlePost= async()=>{
-      setIsUploading(true)
       const formData = new FormData() ;
       formData.append('caption',caption)
       formData.append('location',location)
@@ -26,19 +25,13 @@ const FinalPostWithImg = ({caption, setCaption, files,visibilityStatus,setVisibi
       });
 
      try {
-        let resp = await mainApi.post("/api/posts",formData,{
-          onUploadProgress:(event)=>{
-            let percent = Math.round((event.loaded * 100)/event.total)
-            setProgress(percent)
-          }
-        })
+        await createPost(formData).unwrap();
 
-        setIsUploading(false)
         setCreationTab("")
         setCreateModal(false)
      } catch (error) {
       console.log("post error")
-      console.log(error?.response?.data?.message)
+      console.log(error?.data?.message || "Failed to create post")
      }
       
     }
@@ -210,11 +203,8 @@ const FinalPostWithImg = ({caption, setCaption, files,visibilityStatus,setVisibi
         </div>
 
                             {/* upload percentage */}
-                            {isUploading && <div className='absolute top-0 w-screen h-[5px] bg-black'>
-                              <div className={` w-[${progress}] h-full   
-                              ${progress<50?"bg-red-400": progress<80 ? "bg-yellow-400" : "bg-green-400"}
-                              ` } 
-                              > </div>
+                            {isUploading && <div className='absolute top-0 w-screen h-[5px] bg-gray-200 overflow-hidden'>
+                              <div className='w-full h-full bg-green-400 animate-pulse'></div>
                             </div>}
                             
         </div>

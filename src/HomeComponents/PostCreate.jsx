@@ -1,20 +1,40 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import mainApi from "../Apis/axios";
 import { useSelector } from "react-redux";
 import useDebounce from "../CustomHooks/useDebounceHook";
+import { useCreatePostMutation } from "../slices/postApiSlice";
+import { useLazySearchMentionableUsersQuery } from "../slices/userApiSlice";
+import {
+  useGetOwnTripsQuery,
+  useGetCollaboratedTripsQuery,
+} from "../slices/tripApiSlice";
 
 const PostCreate = ({ setCreationTab, setCreateModal }) => {
   const [error, setError] = useState("");
-  const [createLoading, setCreateLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Removed custom createLoading state as mutation provides it
+  // Removed uploadProgress state as RTK Query doesn't support it natively for now
 
-  const { _id, location, avatar: reduxAvatar, following: reduxFollowing } = useSelector((state) => state.user);
+  const {
+    _id,
+    location,
+    avatar: reduxAvatar,
+    following: reduxFollowing,
+  } = useSelector((state) => state.user);
   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
   const userAvatar = userInfo?.avatar;
-  const avatar = reduxAvatar || userAvatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+  const avatar =
+    reduxAvatar ||
+    userAvatar ||
+    "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
   const [files, setFiles] = useState([]);
   const [fileError, setFileError] = useState("");
+
+  // RTK Query hooks
+  const [createPost, { isLoading: createLoading }] = useCreatePostMutation();
+  const [
+    triggerSearchMentions,
+    { data: mentionData, isFetching: mentionLoading },
+  ] = useLazySearchMentionableUsersQuery();
 
   //   for tag related states
   const [tagOpen, setTagOpen] = useState(false);
@@ -38,17 +58,39 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   const [mentionQuery, setMentionQuery] = useState("");
 
-  const [usersToMention, setUsersToMention] = useState([]);
   const [mentionedUsers, setMentionedUsers] = useState([]);
 
-  const [mentionLoading, setMentionLoading] = useState(false);
   const [mentionError, setMentionError] = useState("");
 
   //   trip selection
   const [activatedTripPage, setActivatedTripPage] = useState("own-trip");
-  const [trips, setTrips] = useState([]);
-  const [tripLoading, setTripLoading] = useState(true);
-  const [tripError, setTripError] = useState("");
+
+  // Trip Queries
+  const {
+    data: ownTripsData,
+    isLoading: ownTripsLoading,
+    error: ownTripsError,
+  } = useGetOwnTripsQuery(_id, {
+    skip: !showTripModal || activatedTripPage !== "own-trip",
+  });
+  const {
+    data: collabTripsData,
+    isLoading: collabTripsLoading,
+    error: collabTripsError,
+  } = useGetCollaboratedTripsQuery(_id, {
+    skip: !showTripModal || activatedTripPage !== "collaborated-trip",
+  });
+
+  const trips =
+    (activatedTripPage === "own-trip"
+      ? ownTripsData?.trips
+      : collabTripsData?.trips) || [];
+  const tripLoading =
+    activatedTripPage === "own-trip" ? ownTripsLoading : collabTripsLoading;
+  const tripError =
+    (activatedTripPage === "own-trip" ? ownTripsError : collabTripsError)?.data
+      ?.message || "";
+
   const [selectedTrip, setSelectedTrip] = useState(null);
 
   // search
@@ -62,8 +104,8 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   const [isHighlighted, setIsHighlighted] = useState(false);
   const [dayNumber, setDayNumber] = useState(1);
-  const [daysInATrip, setDaysInATrip] = useState(0)
-  const [dayDropdownOpen, setDayDropdownOpen] = useState(false);;
+  const [daysInATrip, setDaysInATrip] = useState(0);
+  const [dayDropdownOpen, setDayDropdownOpen] = useState(false);
 
   //   files
   const MAX_FILES = 20;
@@ -118,28 +160,19 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     }
   };
 
+  const usersToMention = mentionData?.users || [];
+
   //   when user mentions someone this fetches result
   useEffect(() => {
     if (!mentionOpen || !mentionQuery) return;
 
-    const fetchMentionUsers = async () => {
-      setMentionLoading(true);
-      setMentionError("");
+    // Debounce manual call or just call
+    const timeout = setTimeout(() => {
+      triggerSearchMentions(mentionQuery);
+    }, 300);
 
-      try {
-        const res = await mainApi.get(
-          `/api/user/search-mentions?q=${mentionQuery}`
-        );
-        setUsersToMention(res.data.users);
-      } catch (err) {
-        setMentionError("Failed to fetch users");
-      } finally {
-        setMentionLoading(false);
-      }
-    };
-
-    fetchMentionUsers();
-  }, [mentionQuery, mentionOpen]);
+    return () => clearTimeout(timeout);
+  }, [mentionQuery, mentionOpen, triggerSearchMentions]);
 
   const handleMentionSelect = (user) => {
     const textarea = captionRef.current;
@@ -216,8 +249,8 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   useEffect(() => {
     if (captionRef.current) {
-        captionRef.current.style.height = "auto";
-        captionRef.current.style.height = captionRef.current.scrollHeight + "px";
+      captionRef.current.style.height = "auto";
+      captionRef.current.style.height = captionRef.current.scrollHeight + "px";
     }
   }, [caption]);
 
@@ -259,12 +292,16 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
 
   const handleCreatePost = async () => {
     setError("");
-    setCreateLoading(true);
+    // createLoading is handled by mutation hook
+
     const formData = new FormData();
     formData.append("caption", caption);
 
     if (taggedUsers.length > 0) {
-      formData.append("taggedUsers", JSON.stringify(taggedUsers.map((u) => u._id)));
+      formData.append(
+        "taggedUsers",
+        JSON.stringify(taggedUsers.map((u) => u._id))
+      );
     }
 
     if (selectedTrip) {
@@ -279,7 +316,10 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     formData.append("location", JSON.stringify(locationArea));
 
     if (mentionedUsers && mentionedUsers.length > 0) {
-      formData.append("mentions", JSON.stringify(mentionedUsers.map((u) => u._id)));
+      formData.append(
+        "mentions",
+        JSON.stringify(mentionedUsers.map((u) => u._id))
+      );
     }
 
     if (files && files.length > 0) {
@@ -289,54 +329,17 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
     }
 
     try {
-      await mainApi.post("/api/posts", formData, {
-        onUploadProgress: (event) => {
-          if (!event.total) return;
-
-          const percent = Math.round((event.loaded * 100) / event.total);
-
-          setUploadProgress(percent);
-        },
-      });
+      await createPost(formData).unwrap();
 
       setCreateModal(false);
       setCreationTab("");
     } catch (error) {
-      setError(error?.response?.data?.message || "Some thing went worng");
+      setError(error?.data?.message || "Some thing went worng");
       setTimeout(() => {
         setError("");
       }, 5000);
-    } finally {
-      setCreateLoading(false);
     }
   };
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchTrips = async () => {
-      setTripError("");
-      setTripLoading(true);
-
-      try {
-        const result = await mainApi.get(
-          `/api/trips/${_id}/${activatedTripPage}`,
-          { signal: controller.signal }
-        );
-        setTrips(result.data?.message ? [] : result.data.trips);
-      } catch (error) {
-        setTripError(error?.response?.data?.message || "something went wrong");
-      } finally {
-        setTripLoading(false);
-      }
-    };
-
-    if (showTripModal) {
-      fetchTrips();
-    }
-
-    return () => controller.abort();
-  }, [activatedTripPage, showTripModal]);
 
   const handleTripSelect = (trip) => {
     setSelectedTrip(trip);
@@ -441,16 +444,46 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                 <div className="flex-1 relative">
                   {/* Custom Textarea Wrapper */}
                   <div className="relative min-h-[120px] shadow-sm rounded-2xl border border-gray-100 bg-gray-50/30 p-2">
-                    <div className="absolute inset-0 px-4 py-3 pointer-events-none text-gray-800 whitespace-pre-wrap break-words text-base leading-relaxed z-0">
-                      {renderStyledCaption(caption)}
-                    </div>
-                    <textarea
-                      value={caption}
-                      onChange={handleCaption}
-                      ref={captionRef}
-                      className="relative w-full min-h-[120px] bg-transparent text-transparent caret-gray-800 resize-none outline-none text-base leading-relaxed z-10 placeholder-gray-400 px-2 py-1"
-                      placeholder="What's on your mind? Use @ to mention or # for tags."
-                    />
+                  <div
+  className="
+    absolute inset-0
+    pointer-events-none
+    whitespace-pre-wrap
+    break-words
+    leading-[24px]
+    px-2 py-1
+    font-sans
+    z-10
+  "
+>
+  {renderStyledCaption(caption)}
+</div>
+
+<textarea
+  ref={captionRef}
+  value={caption}
+  onChange={handleCaption}
+  placeholder="What's on your mind? Use @ to mention or # for tags."
+  className="
+    relative
+    w-full
+    min-h-[120px]
+    resize-none
+    bg-transparent
+    text-transparent
+    caret-gray-800
+    outline-none
+    leading-[24px]
+    text-sm
+    px-0
+    font-sans
+    z-0
+    placeholder-gray-400
+    no-scrollbar
+  "
+/>
+
+
                     <div className="absolute bottom-2 right-4 text-xs text-gray-400">
                       {caption.length}/1000
                     </div>
@@ -581,7 +614,9 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                 {/* Visibility */}
                 <div className="p-3 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors bg-gray-50/50 relative">
                   <div
-                    className={`flex items-center justify-between cursor-pointer ${selectedTrip ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`flex items-center justify-between cursor-pointer ${
+                      selectedTrip ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                     onClick={() =>
                       !selectedTrip && setVisibilityOpen(!visibilityOpen)
                     }
@@ -593,7 +628,9 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                             ? "globe"
                             : visibilityStatus === "lock"
                             ? "lock"
-                            : visibilityStatus === "close_friends" ? "user-check" : "group"
+                            : visibilityStatus === "close_friends"
+                            ? "user-check"
+                            : "group"
                         } text-xl`}
                       ></i>
                       <span className="font-medium capitalize">
@@ -601,7 +638,7 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                       </span>
                     </div>
                     {!selectedTrip && (
-                        <i className="bx bx-chevron-down text-gray-400"></i>
+                      <i className="bx bx-chevron-down text-gray-400"></i>
                     )}
                   </div>
                   {/* Dropdown */}
@@ -617,7 +654,17 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                               setVisibilityOpen(false);
                             }}
                           >
-                             <i className={`bx bx-${v === 'public' ? 'globe' : v === 'private' ? 'lock' : v === 'close_friends' ? 'user-check' : 'group'}`}></i>
+                            <i
+                              className={`bx bx-${
+                                v === "public"
+                                  ? "globe"
+                                  : v === "private"
+                                  ? "lock"
+                                  : v === "close_friends"
+                                  ? "user-check"
+                                  : "group"
+                              }`}
+                            ></i>
                             {v.replace("_", " ")}
                           </div>
                         )
@@ -711,27 +758,42 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                       onChange={(e) => setTagQuery(e.target.value)}
                     />
                   </div>
-                   {/* Tag Dropdown */}
-                   {tagOpen && (
-                  <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-48 overflow-y-auto z-30">
-                     <div className="flex justify-between items-center px-4 py-2 bg-gray-50 sticky top-0">
-                      <span className="text-xs font-medium uppercase text-gray-500">Select users</span>
-                      <i className="bx bx-x text-xl cursor-pointer" onClick={() => setTagOpen(false)}></i>
-                     </div>
-                     {filteredUsers.map((user, i) => (
+                  {/* Tag Dropdown */}
+                  {tagOpen && (
+                    <div className="absolute bottom-full mb-2 left-0 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-48 overflow-y-auto z-30">
+                      <div className="flex justify-between items-center px-4 py-2 bg-gray-50 sticky top-0">
+                        <span className="text-xs font-medium uppercase text-gray-500">
+                          Select users
+                        </span>
+                        <i
+                          className="bx bx-x text-xl cursor-pointer"
+                          onClick={() => setTagOpen(false)}
+                        ></i>
+                      </div>
+                      {filteredUsers.map((user, i) => (
                         <div
                           key={user._id}
-                          className={`flex items-center gap-3 px-4 py-2 cursor-pointer ${canTagUser(user) ? "hover:bg-red-50" : "opacity-50"}`}
-                          onClick={() => canTagUser(user) && setTaggedUsers(prev => [...prev, user])}
+                          className={`flex items-center gap-3 px-4 py-2 cursor-pointer ${
+                            canTagUser(user) ? "hover:bg-red-50" : "opacity-50"
+                          }`}
+                          onClick={() =>
+                            canTagUser(user) &&
+                            setTaggedUsers((prev) => [...prev, user])
+                          }
                         >
-                           <img src={user.avatar?.url || user.avatar} className="w-8 h-8 rounded-full object-cover"/>
-                           <div>
-                              <p className="text-sm font-medium">@{user.username}</p>
-                           </div>
+                          <img
+                            src={user.avatar?.url || user.avatar}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          <div>
+                            <p className="text-sm font-medium">
+                              @{user.username}
+                            </p>
+                          </div>
                         </div>
-                     ))}
-                  </div>
-                   )}
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -784,47 +846,62 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                   <div className="mt-3 pt-3 border-t border-red-100 flex items-center justify-between pl-1">
                     {/* Day Selector */}
                     <div className="relative">
-                       <div 
-                         className="flex items-center gap-2 text-sm text-red-700 font-medium cursor-pointer px-2 py-1 hover:bg-red-100 rounded-lg"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           setDayDropdownOpen(!dayDropdownOpen);
-                           e.preventDefault();
-                         }}
-                       >
-                          <i className="bx bx-calendar"></i>
-                          Day {dayNumber}
-                          <i className="bx bx-chevron-down"></i>
-                       </div>
-                       {dayDropdownOpen && (
-                          <div className="absolute top-full left-0 mt-1 bg-white shadow-xl rounded-xl max-h-40 overflow-y-auto border border-red-100 z-10 min-w-[100px]">
-                             {Array.from({ length: daysInATrip }, (_, i) => i + 1).map(day => (
-                                <div 
-                                  key={day} 
-                                  className="px-4 py-2 hover:bg-red-50 text-sm cursor-pointer"
-                                  onClick={(e) => {
-                                     e.stopPropagation();
-                                     setDayNumber(day);
-                                     setDayDropdownOpen(false);
-                                 }}
-                                >Day {day}</div>
-                             ))}
-                          </div>
-                       )}
+                      <div
+                        className="flex items-center gap-2 text-sm text-red-700 font-medium cursor-pointer px-2 py-1 hover:bg-red-100 rounded-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDayDropdownOpen(!dayDropdownOpen);
+                          e.preventDefault();
+                        }}
+                      >
+                        <i className="bx bx-calendar"></i>
+                        Day {dayNumber}
+                        <i className="bx bx-chevron-down"></i>
+                      </div>
+                      {dayDropdownOpen && (
+                        <div className="absolute top-full left-0 mt-1 bg-white shadow-xl rounded-xl max-h-40 overflow-y-auto border border-red-100 z-10 min-w-[100px]">
+                          {Array.from(
+                            { length: daysInATrip },
+                            (_, i) => i + 1
+                          ).map((day) => (
+                            <div
+                              key={day}
+                              className="px-4 py-2 hover:bg-red-50 text-sm cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDayNumber(day);
+                                setDayDropdownOpen(false);
+                              }}
+                            >
+                              Day {day}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Highlight Toggle */}
-                    <div 
+                    <div
                       className="flex items-center gap-2 cursor-pointer"
                       onClick={(e) => {
-                         e.stopPropagation();
-                         setIsHighlighted(!isHighlighted);
+                        e.stopPropagation();
+                        setIsHighlighted(!isHighlighted);
                       }}
                     >
-                       <span className="text-sm text-red-700 font-medium">Highlight</span>
-                       <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isHighlighted ? 'bg-red-500' : 'bg-gray-300'}`}>
-                          <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${isHighlighted ? 'translate-x-4' : ''}`}></div>
-                       </div>
+                      <span className="text-sm text-red-700 font-medium">
+                        Highlight
+                      </span>
+                      <div
+                        className={`w-10 h-6 rounded-full p-1 transition-colors ${
+                          isHighlighted ? "bg-red-500" : "bg-gray-300"
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${
+                            isHighlighted ? "translate-x-4" : ""
+                          }`}
+                        ></div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -905,77 +982,96 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              
               {/* Tabs & Info */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {/* Custom Tab Switcher */}
                 <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 flex w-full sm:w-auto">
-                    <button
-                        className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${activatedTripPage === 'own-trip' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-                        onClick={() => setActivatedTripPage('own-trip')}
-                    >
-                        My Trips
-                    </button>
-                    <button
-                        className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${activatedTripPage === 'collaborated-trip' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
-                        onClick={() => setActivatedTripPage('collaborated-trip')}
-                    >
-                        Collabs
-                    </button>
+                  <button
+                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      activatedTripPage === "own-trip"
+                        ? "bg-red-500 text-white shadow-md"
+                        : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setActivatedTripPage("own-trip")}
+                  >
+                    My Trips
+                  </button>
+                  <button
+                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      activatedTripPage === "collaborated-trip"
+                        ? "bg-red-500 text-white shadow-md"
+                        : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                    onClick={() => setActivatedTripPage("collaborated-trip")}
+                  >
+                    Collabs
+                  </button>
                 </div>
 
                 {/* Info Note */}
-                 <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm">
-                    <i className="bx bx-info-circle text-red-400 text-lg"></i>
-                    <span>Visibility will sync with trip settings</span>
-                 </div>
+                <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm">
+                  <i className="bx bx-info-circle text-red-400 text-lg"></i>
+                  <span>Visibility will sync with trip settings</span>
+                </div>
               </div>
 
               {/* Search & Sort Bar */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i className='bx bx-search text-xl text-gray-400 group-focus-within:text-red-500 transition-colors'></i>
-                    </div>
-                    <input 
-                        type="text"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition-all bg-white"
-                        placeholder="Search trips by title, tag, or friends..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i className="bx bx-search text-xl text-gray-400 group-focus-within:text-red-500 transition-colors"></i>
+                  </div>
+                  <input
+                    type="text"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition-all bg-white"
+                    placeholder="Search trips by title, tag, or friends..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
                 </div>
-                
-                <div className="relative z-20">
-                    <button 
-                        className="w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl flex items-center justify-between sm:justify-center gap-2 text-gray-600 hover:border-red-400 hover:text-red-500 transition-all font-medium"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setDropDownOpen(!dropdownOpen);
-                        }}
-                    >
-                        <i className='bx bx-sort-alt-2'></i>
-                        <span>{sortBy}</span>
-                        <i className={`bx bx-chevron-down transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}></i>
-                    </button>
 
-                    {dropdownOpen && (
-                        <div className="absolute top-full right-0 mt-2 w-full sm:w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-2 overflow-hidden animate-fadeIn">
-                            {["Start Date", "End Date", "Destinations", "Posts"].map((sort) => (
-                                <div
-                                    key={sort}
-                                    className={`px-4 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between ${sortBy === sort ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                                    onClick={() => {
-                                        setSortBy(sort);
-                                        setDropDownOpen(false);
-                                    }}
-                                >
-                                    {sort}
-                                    {sortBy === sort && <i className='bx bx-check text-lg'></i>}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                <div className="relative z-20">
+                  <button
+                    className="w-full sm:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl flex items-center justify-between sm:justify-center gap-2 text-gray-600 hover:border-red-400 hover:text-red-500 transition-all font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDropDownOpen(!dropdownOpen);
+                    }}
+                  >
+                    <i className="bx bx-sort-alt-2"></i>
+                    <span>{sortBy}</span>
+                    <i
+                      className={`bx bx-chevron-down transition-transform ${
+                        dropdownOpen ? "rotate-180" : ""
+                      }`}
+                    ></i>
+                  </button>
+
+                  {dropdownOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-full sm:w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-2 overflow-hidden animate-fadeIn">
+                      {["Start Date", "End Date", "Destinations", "Posts"].map(
+                        (sort) => (
+                          <div
+                            key={sort}
+                            className={`px-4 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between ${
+                              sortBy === sort
+                                ? "bg-red-50 text-red-600 font-medium"
+                                : "text-gray-600 hover:bg-gray-50"
+                            }`}
+                            onClick={() => {
+                              setSortBy(sort);
+                              setDropDownOpen(false);
+                            }}
+                          >
+                            {sort}
+                            {sortBy === sort && (
+                              <i className="bx bx-check text-lg"></i>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -998,12 +1094,19 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               {/*  Error State */}
               {!tripLoading && tripError && (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                   <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                      <i className="bx bx-error-circle text-4xl text-red-500"></i>
-                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h3>
+                  <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                    <i className="bx bx-error-circle text-4xl text-red-500"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    Oops! Something went wrong
+                  </h3>
                   <p className="text-gray-500 mb-6">{tripError}</p>
-                  <button onClick={() => setActivatedTripPage(activatedTripPage)} className="px-6 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition">Try Again</button>
+                  <button
+                    onClick={() => setActivatedTripPage(activatedTripPage)}
+                    className="px-6 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition"
+                  >
+                    Try Again
+                  </button>
                 </div>
               )}
 
@@ -1011,11 +1114,17 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
               {!tripLoading && !tripError && trips.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                     <i className="bx bx-map-alt text-5xl text-gray-400"></i>
+                    <i className="bx bx-map-alt text-5xl text-gray-400"></i>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">No trips found</h3>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                    No trips found
+                  </h3>
                   <p className="text-gray-500 max-w-xs mx-auto">
-                    You don’t have any {activatedTripPage === "own-trip" ? "personal" : "collaborated"} trips matching your search yet.
+                    You don’t have any{" "}
+                    {activatedTripPage === "own-trip"
+                      ? "personal"
+                      : "collaborated"}{" "}
+                    trips matching your search yet.
                   </p>
                 </div>
               )}
@@ -1026,7 +1135,11 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                   {sortedSearchTrips.map((trip) => (
                     <div
                       key={trip._id}
-                      className={`group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border-2 ${selectedTrip?._id === trip._id ? 'border-red-500 ring-4 ring-red-500/10' : 'border-transparent hover:border-gray-200'}`}
+                      className={`group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border-2 ${
+                        selectedTrip?._id === trip._id
+                          ? "border-red-500 ring-4 ring-red-500/10"
+                          : "border-transparent hover:border-gray-200"
+                      }`}
                       onClick={() => handleTripSelect(trip)}
                     >
                       {/* Image Badge */}
@@ -1044,16 +1157,16 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                           />
                         ) : (
                           <div className="h-full w-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                             <i className='bx bx-image text-4xl text-gray-400'></i>
+                            <i className="bx bx-image text-4xl text-gray-400"></i>
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
-                        
+
                         <div className="absolute bottom-3 left-3 text-white">
-                             <p className="text-xs font-medium opacity-90 flex items-center gap-1">
-                                <i className='bx bx-calendar'></i>
-                                {formatDate(trip.startDate)}
-                             </p>
+                          <p className="text-xs font-medium opacity-90 flex items-center gap-1">
+                            <i className="bx bx-calendar"></i>
+                            {formatDate(trip.startDate)}
+                          </p>
                         </div>
                       </div>
 
@@ -1063,36 +1176,51 @@ const PostCreate = ({ setCreationTab, setCreateModal }) => {
                           {trip.title}
                         </h4>
                         <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-10">
-                          {trip.description || "No description provided for this trip."}
+                          {trip.description ||
+                            "No description provided for this trip."}
                         </p>
 
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                           {/* Collaborators Avatars */}
-                           <div className="flex items-center -space-x-2">
-                                <img src={trip.user.avatar?.url || trip.user.avatar} className="w-8 h-8 rounded-full border-2 border-white object-cover" title={`Owner: ${trip.user.name}`} />
-                                {trip.acceptedFriends?.slice(0, 3).map((friend, idx) => (
-                                    <img key={idx} src={friend.user.avatar?.url || friend.user.avatar} className="w-8 h-8 rounded-full border-2 border-white object-cover" title={friend.user.name} />
-                                ))}
-                                {trip.acceptedFriends?.length > 3 && (
-                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                                        +{trip.acceptedFriends.length - 3}
-                                    </div>
-                                )}
-                           </div>
-                           
-                           <div className="flex items-center gap-1 text-gray-400 text-xs font-medium">
-                                <i className='bx bx-photo-album'></i>
-                                {trip.posts?.length || 0}
-                           </div>
+                          {/* Collaborators Avatars */}
+                          <div className="flex items-center -space-x-2">
+                            <img
+                              src={trip.user.avatar?.url || trip.user.avatar}
+                              className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                              title={`Owner: ${trip.user.name}`}
+                            />
+                            {trip.acceptedFriends
+                              ?.slice(0, 3)
+                              .map((friend, idx) => (
+                                <img
+                                  key={idx}
+                                  src={
+                                    friend.user.avatar?.url ||
+                                    friend.user.avatar
+                                  }
+                                  className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                                  title={friend.user.name}
+                                />
+                              ))}
+                            {trip.acceptedFriends?.length > 3 && (
+                              <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                +{trip.acceptedFriends.length - 3}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1 text-gray-400 text-xs font-medium">
+                            <i className="bx bx-photo-album"></i>
+                            {trip.posts?.length || 0}
+                          </div>
                         </div>
                       </div>
-                      
+
                       {/* Selection Overlay */}
                       {selectedTrip?._id === trip._id && (
                         <div className="absolute inset-0 bg-red-500/10 z-20 flex items-center justify-center backdrop-blur-[1px]">
-                            <div className="bg-white text-red-500 rounded-full p-3 shadow-xl transform scale-100 animate-bounce">
-                                <i className='bx bx-check text-3xl'></i>
-                            </div>
+                          <div className="bg-white text-red-500 rounded-full p-3 shadow-xl transform scale-100 animate-bounce">
+                            <i className="bx bx-check text-3xl"></i>
+                          </div>
                         </div>
                       )}
                     </div>

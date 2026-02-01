@@ -1,69 +1,39 @@
-import React, { useEffect, useState } from "react";
-import mainApi from "../Apis/axios";
+import React, { useState } from "react";
+import { 
+  useGetUserInvitedTripsQuery, 
+  useGetUserAcceptedTripsQuery 
+} from "../slices/tripApiSlice";
 import PendingInvitedTrips from "./TripSection/PendingInvitedTrips";
 import AcceptedInvitedTrips from "./TripSection/AcceptedInvitedTrips";
 import AllInvitedTrips from "./TripSection/AllInvitedTrips";
 
 const InvitedTrips = () => {
-  const [invitedTrips, setInvitedTrips] = useState([]);
-  const [acceptedTrips, setAcceptedTrips] = useState([]);
-
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true); // Default to true for initial load
+  const [activePage, setActivePage] = useState("pending");
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [dropdownOpen, setDropDownOpen] = useState(false);
 
-  const [activePage, setActivePage] = useState("pending");
+  // Fetch data using RTK Query
+  // We fetch both to maintain the counts in the tabs
+  const { 
+    data: invitedData, 
+    isLoading: invitedLoading, 
+    error: invitedError 
+  } = useGetUserInvitedTripsQuery();
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const signal = controller.signal;
+  const { 
+    data: acceptedData, 
+    isLoading: acceptedLoading, 
+    error: acceptedError 
+  } = useGetUserAcceptedTripsQuery();
 
-    const fetchInvitedTrips = async () => {
-      setError("")
-      setLoading(true);
-      try {
-        if (activePage === "pending") {
-          const response = await mainApi.get("/api/user/invited-trips", {
-            signal,
-          });
+  const invitedTrips = invitedData?.trips || [];
+  const acceptedTrips = acceptedData?.trips || [];
 
-          setInvitedTrips(
-            Array.isArray(response.data?.trips) ? response.data.trips : []
-          );
-        } else if (activePage === "accepted") {
-          const response = await mainApi.get("/api/user/accepted-trips", {
-            signal,
-          });
-
-          setAcceptedTrips(
-            Array.isArray(response.data?.trips) ? response.data.trips : []
-          );
-        }
-      } catch (error) {
-        if (error.name === "CanceledError") return;
-
-        if (error?.response?.data?.message) {
-          setError(error.response.data.message);
-        } else if (error.code === "ERR_NETWORK") {
-          setError("Network connection is unstable");
-        } else {
-          setError("Something went wrong");
-        }
-      } finally {
-        if (!signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchInvitedTrips();
-
-    return () => controller.abort();
-  }, [activePage]);
+  const loading = activePage === "pending" ? invitedLoading : (activePage === "accepted" ? acceptedLoading : false);
+  const error = activePage === "pending" ? invitedError?.data?.message : (activePage === "accepted" ? acceptedError?.data?.message : "");
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -215,16 +185,14 @@ const InvitedTrips = () => {
             {activePage === "pending" ? (
             <PendingInvitedTrips
                 invitedTrips={invitedTrips}
-                setInvitedTrips={setInvitedTrips}
                 formatDate={formatDate}
-                setError={setError}
-                loading={loading}
+                loading={invitedLoading}
             />
             ) : activePage === "accepted" ? (
             <AcceptedInvitedTrips 
                 acceptedTrips={acceptedTrips}
                 formatDate={formatDate}
-                loading={loading}
+                loading={acceptedLoading}
             />
             ) : (
             <AllInvitedTrips loading={loading} />

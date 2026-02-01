@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {useDispatch} from "react-redux"
 import {setAccessToken, setUserInformation} from "../slices/userSlice"
 import { useNavigate } from "react-router-dom";
-const API_BASE = `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth`;
+import { useOtpLoginMutation, useResendOtpMutation } from "../slices/authApiSlice.js";
 
 
 const OtpVerification = ({ userId, onBack  }) => {
@@ -12,7 +11,9 @@ const OtpVerification = ({ userId, onBack  }) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0); 
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpLogin, { isLoading: isVerifying }] = useOtpLoginMutation();
+  const [resendOtp] = useResendOtpMutation();
+
   const navigate = useNavigate();
 
   // countdown timer effect
@@ -26,32 +27,29 @@ const OtpVerification = ({ userId, onBack  }) => {
 
   const handleVerify = async () => {
     if (isVerifying) return;
-    setIsVerifying(true);
     try {
-      const res = await axios.post(`${API_BASE}/otp-login`, { userId, otp }, { withCredentials: true });
+      const res = await otpLogin({ userId, otp }).unwrap();
       setMessage(" OTP verified! Login complete.");
       setError("");
-      dispatch(setAccessToken(res.data.accessToken))
-      dispatch(setUserInformation(res.data.user))
+      dispatch(setAccessToken(res.accessToken))
+      dispatch(setUserInformation(res.user))
       navigate("/home")
 
       
     } catch (err) {
-      setError(err.response?.data?.message || "OTP verification failed");
+      setError(err?.data?.message || "OTP verification failed");
       setMessage("");
-    } finally {
-      setIsVerifying(false);
     }
   };
 
   const handleResend = async () => {
     try {
-      await axios.post(`${API_BASE}/resend-otp`, { userId, type: "login" });
+      await resendOtp({ userId, type: "login" }).unwrap();
       setMessage(" A new OTP has been sent to your email.");
       setError("");
       setCooldown(600); 
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to resend OTP");
+      setError(err?.data?.message || "Failed to resend OTP");
       setMessage("");
     }
   };

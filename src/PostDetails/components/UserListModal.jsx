@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import mainApi from "../../Apis/axios";
-import { toggleFollow } from "../../redux/userSlice"; // Assuming you might want to update redux, or just local state
+import { useSelector } from "react-redux";
+import { useFollowUserMutation, useUnfollowUserMutation } from "../../slices/userApiSlice";
 
 const UserListModal = ({ title, users, onClose, onUpdateUser }) => {
   const { currentUser } = useSelector((state) => state.user);
   const [loadingId, setLoadingId] = useState(null);
+  
+  const [followUser] = useFollowUserMutation();
+  const [unfollowUser] = useUnfollowUserMutation();
 
   // We'll manage the local state of users to update follow buttons immediately
   // However, the parent might pass `users` which might be static. 
@@ -38,12 +40,13 @@ const UserListModal = ({ title, users, onClose, onUpdateUser }) => {
     setLoadingId(targetUser._id);
 
     const following = isFollowing(targetUser);
-    const url = following 
-      ? `/api/user/unfollow/${targetUser._id}`
-      : `/api/user/follow/${targetUser._id}`;
 
     try {
-      await mainApi.post(url);
+      if (following) {
+        await unfollowUser(targetUser._id).unwrap();
+      } else {
+        await followUser(targetUser._id).unwrap();
+      }
       
       // We should ideally update the Redux state or notify parent.
       // For now, let's call onUpdateUser if provided to refresh data 
