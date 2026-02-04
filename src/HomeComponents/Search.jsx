@@ -25,23 +25,23 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
   // Queries
   const skipSearch = !debouncedQuery.trim();
   
-  const { data: globalData, isFetching: globalFetching } = useGlobalSearchQuery(debouncedQuery, {
+  const { data: globalData, isFetching: globalFetching, error: globalError } = useGlobalSearchQuery(debouncedQuery, {
     skip: skipSearch || activeTab !== "All",
   });
   
-  const { data: userData, isFetching: userFetching } = useUserSearchQuery({ query: debouncedQuery }, {
+  const { data: userData, isFetching: userFetching, error: userError } = useUserSearchQuery({ query: debouncedQuery }, {
     skip: skipSearch || activeTab !== "Users",
   });
 
-  const { data: tripData, isFetching: tripFetching } = useTripSearchQuery({ query: debouncedQuery }, {
+  const { data: tripData, isFetching: tripFetching, error: tripError } = useTripSearchQuery({ query: debouncedQuery }, {
     skip: skipSearch || activeTab !== "Trips",
   });
 
-  const { data: postData, isFetching: postFetching } = usePostSearchQuery({ query: debouncedQuery }, {
+  const { data: postData, isFetching: postFetching, error: postError } = usePostSearchQuery({ query: debouncedQuery }, {
     skip: skipSearch || activeTab !== "Posts",
   });
 
-  const { data: historyData, isFetching: historyFetching } = useGetSearchHistoryQuery(undefined, {
+  const { data: historyData, isFetching: historyLoading, error: historyError } = useGetSearchHistoryQuery(undefined, {
     skip: !isSearchOpen || !!query.trim(),
   });
 
@@ -56,6 +56,13 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
   // Derived State
   const loading = globalFetching || userFetching || tripFetching || postFetching;
   const recent = historyData?.history || [];
+  
+  // Determine active error based on tab
+  let error = null;
+  if (activeTab === "All") error = globalError;
+  else if (activeTab === "Users") error = userError;
+  else if (activeTab === "Trips") error = tripError;
+  else if (activeTab === "Posts") error = postError;
   
   let results = { users: [], trips: [], posts: [] };
   if (activeTab === "All" && globalData) {
@@ -200,7 +207,7 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
             {/* Error State */}
             {!loading && error && (
               <div className="text-center py-4 text-red-400 text-sm">
-                {error}
+                {error.data?.message || "An error occurred"}
               </div>
             )}
 
@@ -266,7 +273,7 @@ const Search = ({ isSearchOpen, setIsSearchOpen }) => {
                   ))}
 
                 {/* Empty History State */}
-                {!historyFetching && recent.length === 0 && (
+                {!historyLoading && recent.length === 0 && (
                   <div className="text-center py-10 text-[#8D99AE] opacity-60">
                     <i className="bx bx-history text-4xl mb-2"></i>
                     <p className="text-sm">No recent searches</p>

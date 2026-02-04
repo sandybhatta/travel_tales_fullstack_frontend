@@ -22,6 +22,7 @@ import ViewTrip from './TripDetails/ViewTrip'
 import TaggedTripsPage from './TripDetails/TaggedTripsPage'
 import PostDetailsPage from './PostDetails/PostDetailsPage'
 import SharePostPage from './PostDetails/SharePostPage'
+import Notifications from './HomeComponents/Notifications'
 
 const App = () => {
   const [createModal, setCreateModal] = useState(false)
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="mentioned-posts" element={<MentionedPosts />} />
             <Route path="comments" element={<Comments />} />
             <Route path="search" element={<SearchResultsPage />} />
+            <Route path="notifications" element={<Notifications />} />
             
           </Route>
           <Route path='/trip/:tripId' element={<ViewTrip/>}/>

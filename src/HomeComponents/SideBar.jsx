@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useGetNotificationsQuery } from "../Apis/notificationApi";
+import { useSocketContext } from "../context/SocketContext";
 
 const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const reduxUserState = useSelector((state) => state.user);
@@ -9,8 +11,31 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const avatar = reduxUserState?.avatar || userInfo?.avatar;
   const username = reduxUserState?.username || userInfo?.username;
 
+  // Safe checks for hooks
+  const notificationQuery = useGetNotificationsQuery();
+  const { data: notifications, refetch } = notificationQuery || {};
+  
+  const socketContext = useSocketContext();
+  const socket = socketContext?.socket;
+
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (notifications) {
+      setUnreadCount(notifications.filter((n) => !n.isRead).length);
+    }
+  }, [notifications]);
+
+  useEffect(() => {
+    socket?.on("newNotification", () => {
+      refetch?.();
+    });
+    return () => socket?.off("newNotification");
+  }, [socket, refetch]);
+
   const links = [
     { name: "Home", path: "/home", icon: "bx-home-alt-2" },
+    { name: "Notifications", path: "notifications", icon: "bx-bell", hasBadge: unreadCount > 0 },
     { name: "Profile", path: `/profile/${userId}`, icon: "bx-user" },
     { name: "Invited Trips", path: "invited-trips", icon: "bx-cursor-add" },
     { name: "Friends", path: "friends", icon: "bx-group" },
@@ -62,7 +87,15 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
               `
             }
           >
-            <i className={`bx ${link.icon} text-2xl min-w-[24px]`} />
+            <div className="relative">
+              <i className={`bx ${link.icon} text-2xl min-w-[24px]`} />
+              {link.hasBadge && (
+                <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+              )}
+            </div>
 
             {/* Text (only when open and on desktop) */}
             <span
