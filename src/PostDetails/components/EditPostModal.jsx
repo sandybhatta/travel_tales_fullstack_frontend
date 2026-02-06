@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { useLazySearchMentionableUsersQuery } from "../../slices/userApiSlice";
-import { useEditPostMutation } from "../../slices/postApiSlice";
+import { searchMentionableUsers } from "../../Apis/userApi";
+import { editPost } from "../../Apis/postApi";
 import TripSelectionModal from "./TripSelectionModal";
 
 const EditPostModal = ({ post, onClose, onPostUpdate }) => {
   const { _id: currentUserId } = useSelector((state) => state.user);
   const [caption, setCaption] = useState(post.caption || "");
-
-  const [searchUsers] = useLazySearchMentionableUsersQuery();
-  const [editPost] = useEditPostMutation();
 
   // Location State
   const [locationCity, setLocationCity] = useState(post.location?.city || "");
@@ -79,8 +76,8 @@ const EditPostModal = ({ post, onClose, onPostUpdate }) => {
     const timer = setTimeout(async () => {
       setIsSearchingMentions(true);
       try {
-        const { data } = await searchUsers(mentionQuery);
-        setMentionResults(data?.users || []);
+        const data = await searchMentionableUsers(mentionQuery);
+        setMentionResults(data.users || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -154,8 +151,8 @@ const EditPostModal = ({ post, onClose, onPostUpdate }) => {
     const timer = setTimeout(async () => {
       setIsSearchingTags(true);
       try {
-        const { data } = await searchUsers(tagSearchQuery);
-        const filtered = (data?.users || []).filter(
+        const data = await searchMentionableUsers(tagSearchQuery);
+        const filtered = (data.users || []).filter(
           (u) => !taggedUsers.some((t) => t._id === u._id),
         );
         setTagSearchResults(filtered);
@@ -200,7 +197,7 @@ const EditPostModal = ({ post, onClose, onPostUpdate }) => {
     }
 
     try {
-      const response = await editPost({ postId: post._id, data: payload }).unwrap();
+      const response = await editPost(post._id, payload);
       if (onPostUpdate && response.post) {
         onPostUpdate(response.post);
       }

@@ -1,10 +1,24 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import mainApi from '../Apis/axios'
 import { Link } from 'react-router-dom'
-import { useGetMentionedPostsQuery } from '../slices/postApiSlice'
 
 const MentionedPosts = () => {
-  const { data, isLoading: loading } = useGetMentionedPostsQuery()
-  const posts = data?.post || []
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchMentionedPosts = async () => {
+      try {
+        const response = await mainApi.get('/api/posts/mentioned-posts')
+        setPosts(response.data.post || []) // API returns { post: [...] } based on mentionedPost controller
+      } catch (error) {
+        console.error("Error fetching mentioned posts:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMentionedPosts()
+  }, [])
 
   if (loading) {
     return (

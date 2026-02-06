@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   useGetTripByIdQuery,
   useToggleTripLikeMutation,
   useGetTripLikesQuery,
 } from "../slices/tripApiSlice";
+import { useFetchChatsQuery } from "../slices/chatApiSlice";
 
 import ViewNoteTrip from "./components/ViewNoteTrip";
 import ViewTodoTrip from "./components/ViewTodoTrip";
@@ -29,7 +30,13 @@ const ViewTrip = () => {
     error: tripError,
     refetch,
   } = useGetTripByIdQuery(tripId);
+
+  const navigate = useNavigate();
   
+  const { data: allChats } = useFetchChatsQuery();
+  const tripChat = allChats?.find(c => c.tripId === tripId || c.tripId?._id === tripId);
+  const hasUnreadTripMessages = tripChat?.unreadCount > 0;
+
   const trip = tripData?.trip;
 
   const [showLikedUsersModal, setShowLikedUsersModal] = useState(false);
@@ -206,7 +213,7 @@ const ViewTrip = () => {
 
               {/* Interactive Boxes (Only for Owner/Collaborators) */}
               {trip.currentUser.canAccessPrivateData && (
-                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
                     {/* Expenses Box */}
                     <div 
                         onClick={() => setActiveModal('expenses')} 
@@ -246,6 +253,25 @@ const ViewTrip = () => {
                         <div className="text-center">
                             <h3 className="text-xl font-bold text-gray-800">Todo List</h3>
                             <p className="text-gray-500 text-sm mt-1">Tasks & assignments</p>
+                        </div>
+                    </div>
+
+                    {/* Trip Chat Box */}
+                    <div 
+                        onClick={() => navigate('/chat', { state: { chatId: tripChat?._id } })} 
+                        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 cursor-pointer transition-all group flex flex-col items-center gap-4"
+                    >
+                        <div className="p-4 bg-green-50 rounded-full group-hover:bg-green-100 transition-colors flex items-center justify-center relative">
+                            <i className="bx bx-message text-4xl text-green-500"></i>
+                             {hasUnreadTripMessages && (
+                                <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-white">
+                                    {tripChat.unreadCount > 99 ? '99+' : tripChat.unreadCount}
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-gray-800">Group Chat</h3>
+                            <p className="text-gray-500 text-sm mt-1">Discuss & Plan</p>
                         </div>
                     </div>
                 </div>

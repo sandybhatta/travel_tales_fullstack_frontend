@@ -1,34 +1,44 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useGetSuggestionsQuery, useFollowUserMutation } from '../../slices/userApiSlice'
+import mainApi from '../../Apis/axios'
 
 const Suggestions = () => {
-    const { data: response, isLoading: loading } = useGetSuggestionsQuery();
-    const users = response?.users || [];
+    const [usersFromDb, setUsersFromDb] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    const [followUser] = useFollowUserMutation();
-    const [followedIds, setFollowedIds] = useState([]);
-    const [hiddenIds, setHiddenIds] = useState([]);
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                let response = await mainApi.get("/api/user/users")
+                setUsersFromDb([...response.data.users])
+            } catch (error) {
+                console.error("Error fetching suggestions:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchUsers()
+    }, [])
 
-    const handleFollow = async (id) => {
+    const handleFollow = async (id, index) => {
         try {
-            await followUser(id).unwrap();
+            let response = await mainApi.post(`/api/user/follow/${id}`);
             
-            // Mark as followed immediately
-            setFollowedIds(prev => [...prev, id]);
+            // Optimistic UI update or animation
+            const btn = document.getElementById(`follow-btn-${index}`)
+            if (btn) {
+                btn.innerText = "Followed"
+                btn.className = "w-full py-2 rounded-lg bg-green-500 text-white font-medium cursor-default"
+            }
 
-            // Hide after 1 second
             setTimeout(() => {
-                setHiddenIds(prev => [...prev, id]);
+                setUsersFromDb(prev => prev.filter(user => user._id !== id))
             }, 1000)
 
         } catch (error) {
             console.error("Error following user:", error)
-            setFollowedIds(prev => prev.filter(uid => uid !== id)); // Rollback
         }
     }
-
-    const displayUsers = users.filter(user => !hiddenIds.includes(user._id));
 
     if (loading) {
         return (
@@ -40,7 +50,7 @@ const Suggestions = () => {
         )
     }
 
-    if (displayUsers.length === 0) {
+    if (usersFromDb.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                 <p className="text-xl">No suggestions available at the moment.</p>
@@ -50,10 +60,8 @@ const Suggestions = () => {
 
     return (
         <div className='w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-5'>
-            {displayUsers.map((user, index) => {
+            {usersFromDb.map((user, index) => {
                 const logo = user.avatar?.url ? user.avatar.url : user.avatar
-                const isFollowed = followedIds.includes(user._id);
-
                 return (
                     <div
                         key={user._id}
@@ -83,15 +91,11 @@ const Suggestions = () => {
 
                         <div className="mt-4">
                             <button
-                                disabled={isFollowed}
-                                className={`w-full py-2 rounded-lg font-medium transition-colors shadow-md ${
-                                    isFollowed 
-                                    ? "bg-green-500 text-white cursor-default" 
-                                    : "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20 active:scale-95"
-                                }`}
-                                onClick={() => handleFollow(user._id)}
+                                id={`follow-btn-${index}`}
+                                className='w-full py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors shadow-md shadow-red-500/20 active:scale-95'
+                                onClick={() => handleFollow(user._id, index)}
                             >
-                                {isFollowed ? "Followed" : "Follow"}
+                                Follow
                             </button>
                         </div>
                     </div>

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
 import photo1 from "../photos/register/1.jpg";
 import photo2 from "../photos/register/2.jpg";
 import photo3 from "../photos/register/3.jpg";
 import photo4 from "../photos/register/4.jpg";
 import { Link } from "react-router-dom";
-import { useRegisterMutation, useResendVerificationEmailMutation } from "../slices/authApiSlice.js";
 
 const images = [
   { 
@@ -49,9 +49,6 @@ const RegisterUser = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30 * 60);
   const timerRef = useRef(null);
-  
-  const [register] = useRegisterMutation();
-  const [resendVerificationEmail] = useResendVerificationEmailMutation();
 
   // Smooth carousel effect
   useEffect(() => {
@@ -153,23 +150,25 @@ const RegisterUser = () => {
     }
 
     try {
-      const res = await register(form).unwrap();
-      setSuccess(res.message || "Registration successful!");
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/register`, form);
+      setSuccess(res.data.message || "Registration successful!");
       setIsSubmitted(true);
       setTimeLeft(30 * 60);
     } catch (err) {
-      setError(err?.data?.message || "Server error. Please try again.");
+      setError(err.response?.data?.message || "Server error. Please try again.");
     }
   };
 
   const handleResendEmail = async () => {
     try {
-      await resendVerificationEmail({ email: form.email }).unwrap();
+      await axios.post(`${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/resend-verification`, {
+        email: form.email,
+      });
       setSuccess("Verification email resent! Check your inbox.");
       setTimeLeft(30 * 60);
       setIsSubmitted(true);
     } catch (err) {
-      setError(err?.data?.message || "Failed to resend email.");
+      setError(err.response?.data?.message || "Failed to resend email.");
     }
   };
 

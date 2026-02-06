@@ -1,30 +1,37 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
+import mainApi from '../../Apis/axios'
 import { Link } from 'react-router-dom'
-import { useGetUserFollowingsQuery, useUnfollowUserMutation } from '../../slices/userApiSlice'
 
 const MyFollowings = () => {
+  const [followings, setFollowings] = useState([])
+  const [count, setCount] = useState(0)
   const [skip, setSkip] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [loading, setLoading] = useState(true)
   const reduxUserId = useSelector(state => state.user._id);
   const storageUser = JSON.parse(localStorage.getItem("userInfo"))
   const storageUserId = storageUser._id;
   const userId = reduxUserId || storageUserId
 
-  const { data, isLoading: loading } = useGetUserFollowingsQuery({ userId, skip, limit: 10 }, {
-    skip: !userId
-  });
-  
-  const followings = data?.followingList || [];
-  const count = data?.count || 0;
-  const hasMore = data?.hasMore;
-
-  const [unfollowUser] = useUnfollowUserMutation();
-
   const observer = useRef()
 
-  const loadMore = () => {
-    if (!loading && hasMore) {
-        setSkip(prev => prev + 10);
+  const fetchFollowings = async () => {
+    try {
+      let response = await mainApi.get(`/api/user/${userId}/following`, {
+        params: {
+          skip,
+          limit: 10
+        }
+      })
+      setFollowings(prev => [...prev, ...response.data.followingList])
+      setCount(response.data.count)
+      setHasMore(response.data.hasMore)
+      setSkip(prev => prev + 10)
+    } catch (error) {
+      console.error("Error fetching followings:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -34,7 +41,7 @@ const MyFollowings = () => {
 
     observer.current = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && hasMore) {
-        loadMore()
+        fetchFollowings()
       }
     })
 
@@ -42,13 +49,26 @@ const MyFollowings = () => {
 
   }, [loading, hasMore])
 
+
+
   const handleUnfollow = async (id) => {
     try {
-      await unfollowUser(id).unwrap();
+      await mainApi.post(`/api/user/unfollow/${id}`)
+      setFollowings(prev => prev.filter(user => user._id !== id))
+      setCount(prev => prev - 1)
     } catch (error) {
       console.error("Error unfollowing:", error)
     }
   }
+
+  useEffect(() => {
+    // Reset state on mount to avoid duplicates if re-mounting
+    setFollowings([])
+    setSkip(0)
+    setHasMore(true)
+    fetchFollowings()
+  }, [])
+
 
   return (
     <div className="w-full flex flex-col text-white">

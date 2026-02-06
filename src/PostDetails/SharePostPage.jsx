@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
-  useGetPostDetailsQuery,
-  useSharePostMutation,
-} from "../slices/postApiSlice";
-import { useSearchMentionableUsersQuery } from "../slices/userApiSlice";
+  getPostDetails,
+  sharePost,
+  searchMentions,
+} from "../Apis/postApi";
 import PostMedia from "./components/PostMedia";
 import TripInfoCard from "./components/TripInfoCard";
 
@@ -25,9 +25,9 @@ const SharePostPage = () => {
   // Using useSelector to access user data including following list directly
   const { _id: currentUserId, avatar, name, following: userFollowings } = useSelector((state) => state.user);
 
-  const { data: postData, isLoading: loading, error: postError } = useGetPostDetailsQuery(postId);
-  const [sharePost, { isLoading: sharing }] = useSharePostMutation();
-
+  const [postData, setPostData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
 
   // Share Form State
@@ -44,22 +44,16 @@ const SharePostPage = () => {
 
   // Mention Logic State
   const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionResults, setMentionResults] = useState([]);
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentions, setMentions] = useState([]); // Array of user objects
-  
-  // Use skip to prevent query when mentionQuery is empty
-  const { data: mentionData, isLoading: mentionLoading } = useSearchMentionableUsersQuery(mentionQuery, {
-    skip: !mentionQuery,
-  });
-  const mentionResults = mentionData?.users || [];
+  const [mentionLoading, setMentionLoading] = useState(false);
   
   const captionRef = useRef(null);
 
   useEffect(() => {
-    if (postError) {
-        setError("Failed to load post details");
-    }
-  }, [postError]);
+    fetchPostDetails();
+  }, [postId]);
   
   // Sync followings from Redux when it changes
   useEffect(() => {
@@ -68,7 +62,38 @@ const SharePostPage = () => {
     }
   }, [userFollowings]);
 
-  // Handle Mention Search is now handled by the hook automatically via skip
+  const fetchPostDetails = async () => {
+    try {
+      const data = await getPostDetails(postId);
+      setPostData(data);
+    } catch (err) {
+      setError("Failed to load post details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Mention Search
+  useEffect(() => {
+    if (mentionQuery) {
+      const fetchMentionUsers = async () => {
+        setMentionLoading(true);
+        try {
+          const data = await searchMentions(mentionQuery);
+          setMentionResults(data.users || []);
+        } catch (err) {
+          console.error("Search mentions failed", err);
+        } finally {
+          setMentionLoading(false);
+        }
+      };
+
+      const timer = setTimeout(fetchMentionUsers, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setMentionResults([]);
+    }
+  }, [mentionQuery]);
 
   const handleCaption = (e) => {
     const value = e.target.value;
@@ -160,6 +185,7 @@ const SharePostPage = () => {
 
   const handleShare = async () => {
     if (sharing) return;
+    setSharing(true);
     try {
       const mentionIds = mentions.map(m => m._id);
       
@@ -170,14 +196,15 @@ const SharePostPage = () => {
         location: location
       };
 
-      await sharePost({ postId, data: payload }).unwrap();
+      await sharePost(postId, payload);
       navigate("/home"); 
     } catch (err) {
       console.error(err);
       setError("Failed to share post");
+    } finally {
+      setSharing(false);
     }
   };
-
 
   const toggleTag = (user) => {
     const userId = user._id;

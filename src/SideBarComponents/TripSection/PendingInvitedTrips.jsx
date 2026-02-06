@@ -1,21 +1,16 @@
 import React, { useState } from "react";
-import { 
-  useAcceptTripInvitationMutation, 
-  useRejectTripInvitationMutation 
-} from "../../slices/tripApiSlice";
+import mainApi from "../../Apis/axios";
 
 const PendingInvitedTrips = ({
   invitedTrips,
+  setInvitedTrips,
   formatDate,
+  setError,
   loading
 }) => {
   const [acceptingTripIds, setAcceptingTripIds] = useState([]);
   const [decliningTripIds, setDecliningTripIds] = useState([]);
   const [successForTrip, setSuccessForTrip] = useState({}); 
-  const [error, setError] = useState("");
-
-  const [acceptTripInvitation] = useAcceptTripInvitationMutation();
-  const [rejectTripInvitation] = useRejectTripInvitationMutation();
 
   if (loading) {
       return (
@@ -55,25 +50,23 @@ const PendingInvitedTrips = ({
     setAcceptingTripIds((prev) => [...prev, tripId]);
 
     try {
-      const response = await acceptTripInvitation(tripId).unwrap();
+      const response = await mainApi.post(`/api/trips/${tripId}/accept`);
 
       setSuccessForTrip((prev) => ({
         ...prev,
-        [tripId]: response.message || "Trip accepted!",
+        [tripId]: response.data.message,
       }));
 
-      // No need to manually update state, RTK Query invalidates tags
+      setTimeout(() => {
+        setInvitedTrips((prev) => prev.filter((trip) => trip.id !== tripId));
+      }, 2000);
     } catch (error) {
-      if (error?.data?.message) {
-        setError(error.data.message);
-      } else {
-        setError("Something went wrong");
+      if (error?.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.code === "ERR_NETWORK") {
+        setError("Network connection is unstable");
       }
     } finally {
-      // Keep loading state for a bit to show success message before removal (via re-fetch)
-      // Actually, if we invalidate, the list updates. The item disappears.
-      // So the success message might disappear too quickly.
-      // We can rely on the fact that re-fetch takes a moment.
       setTimeout(() => {
         setAcceptingTripIds((prev) => prev.filter((id) => id !== tripId));
         setSuccessForTrip((prev) => {
@@ -92,13 +85,20 @@ const PendingInvitedTrips = ({
     setDecliningTripIds((prev) => [...prev, tripId]);
 
     try {
-      await rejectTripInvitation(tripId).unwrap();
-      // List updates automatically
+      // Corrected URL: /api/user/:tripId/reject-invitation (assuming standard route structure)
+      // Based on userRoutes.js: router.delete("/:tripId/reject-invitation", ...) mounted on /api/user probably?
+      // Wait, the user route file showed: router.delete("/:tripId/reject-invitation", protect, rejectInvitation)
+      // And InvitedTrips calls /api/user/invited-trips
+      // So the prefix is likely /api/user
+      await mainApi.delete(`/api/user/${tripId}/reject-invitation`)
+      
+      setInvitedTrips((prev) => prev.filter((trip) => trip.id !== tripId));
+
     } catch (error) {
-      if (error?.data?.message) {
-        setError(error.data.message);
-      } else {
-        setError("Something went wrong");
+      if (error?.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.code === "ERR_NETWORK") {
+        setError("Network connection is unstable");
       }
     } finally {
         setDecliningTripIds((prev) => prev.filter((id) => id !== tripId));
@@ -107,13 +107,6 @@ const PendingInvitedTrips = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {/* Error Display */}
-      {error && (
-        <div className="col-span-full bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-lg text-center mb-4">
-            {error}
-        </div>
-      )}
-      
       {invitedTrips.map((trip) => {
         const isAccepting = acceptingTripIds.includes(trip.id);
         const isDeclining = decliningTripIds.includes(trip.id);

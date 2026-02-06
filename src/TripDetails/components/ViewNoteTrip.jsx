@@ -1,14 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import mainApi from "../../Apis/axios";
 import { useDispatch, useSelector } from "react-redux";
 import { loadUserFromStorage } from "../../slices/userSlice";
 import { Link } from "react-router-dom";
-import {
-  useAddTripNoteMutation,
-  usePinTripNoteMutation,
-  useDeleteTripNoteMutation,
-} from "../../slices/tripApiSlice";
 
-const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
+const ViewNoteTrip = ({ trip, setTrip, isModal = false }) => {
   const { _id, username, name, avatar } = useSelector((state) => state.user);
   const dispatch = useDispatch();
 
@@ -20,22 +16,20 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
   const [showMore, setShowMore] = useState(false);
   const [addNoteModal, setAddNoteModal] = useState(false);
   
-  // RTK Query Mutations
-  const [addTripNote, { isLoading: isAddingNote }] = useAddTripNoteMutation();
-  const [pinTripNote] = usePinTripNoteMutation();
-  const [deleteTripNote] = useDeleteTripNoteMutation();
+  // Loading states
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [isFetchingNotes, setIsFetchingNotes] = useState(false);
   
   // Throttling state for pin/unpin
   const [processingNotes, setProcessingNotes] = useState(new Set());
 
   let notes = useMemo(() => {
-    if (!trip?.notes) return [];
     if (showMore || isModal) {
       return trip.notes;
     } else {
       return trip.notes.slice(0, 3);
     }
-  }, [showMore, trip?.notes, isModal]);
+  }, [showMore, trip.notes, isModal]);
 
   useEffect(() => {
     dispatch(loadUserFromStorage());
@@ -51,6 +45,21 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
     });
   };
 
+  const fetchNotes = async () => {
+    setIsFetchingNotes(true);
+    try {
+      const response = await mainApi.get(`/api/trips/${trip._id}/notes`);
+      setTrip((prev) => ({
+        ...prev,
+        notes: response.data.notes,
+      }));
+    } catch (err) {
+      console.error("Failed to fetch notes", err);
+    } finally {
+      setIsFetchingNotes(false);
+    }
+  };
+
   const handlePinUnpinNote = async (noteId) => {
     // Throttling check
     if (processingNotes.has(noteId)) return;
@@ -58,10 +67,43 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
     // Add to processing set
     setProcessingNotes((prev) => new Set(prev).add(noteId));
 
+    const previousNotes = [...trip.notes];
+
+    // Optimistic Update
+    const updatedNotes = trip.notes.map((note) => {
+      if (note._id === noteId) {
+        return { ...note, isPinned: !note.isPinned };
+      }
+      return note;
+    });
+
+    // Sort optimistically: Pinned first, then by Date
+    updatedNotes.sort((a, b) => {
+      if (a.isPinned !== b.isPinned) {
+        return b.isPinned - a.isPinned;
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    setTrip({
+      ...trip,
+      notes: updatedNotes,
+    });
+
     try {
-      await pinTripNote({ tripId: trip._id, noteId }).unwrap();
+      const result = await mainApi.patch(
+        `/api/trips/${trip._id}/notes/${noteId}/pin`
+      );
+
+      // Update with server response
+      setTrip((prev) => ({
+        ...prev,
+        notes: result.data.notes,
+      }));
     } catch (error) {
+      // Rollback on error
       console.error("Failed to pin/unpin note", error);
+      setTrip({ ...trip, notes: previousNotes });
     } finally {
       // Remove from processing set
       setProcessingNotes((prev) => {
@@ -73,10 +115,26 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
   };
 
   const handleDeleteNote = async (noteId) => {
+    // 1. Optimistic Update: Store previous state for rollback
+    const previousNotes = [...trip.notes];
+
+    // 2. Immediately remove the note from UI
+    setTrip((prev) => ({
+      ...prev,
+      notes: prev.notes.filter((note) => note._id !== noteId),
+    }));
+
     try {
-      await deleteTripNote({ tripId: trip._id, noteId }).unwrap();
+      // 3. Call API
+      await mainApi.delete(`/api/trips/${trip._id}/notes/${noteId}`);
+      // Success: Do nothing, UI is already updated
     } catch (error) {
       console.error("Failed to delete note", error);
+      // 4. Rollback on failure: Restore previous notes
+      setTrip((prev) => ({
+        ...prev,
+        notes: previousNotes,
+      }));
     }
   };
 
@@ -88,12 +146,15 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
       return;
     }
 
+    if (isAddingNote) return; // Throttling
+
+    setIsAddingNote(true);
+
     try {
-      await addTripNote({
-        tripId: trip._id,
-        body: noteBody.body,
-        isPinned: noteBody.isPinned
-      }).unwrap();
+      await mainApi.post(
+        `/api/trips/${trip._id}/notes`,
+        noteBody
+      );
       
       // Close modal immediately after success
       setAddNoteModal(false);
@@ -102,9 +163,14 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
         isPinned: false,
       });
 
+      // Then fetch updated notes
+      await fetchNotes();
+
     } catch (error) {
       console.error("Failed to add note", error);
-      setError(error?.data?.message || "Failed to add note");
+      setError(error.response?.data?.message || "Failed to add note");
+    } finally {
+      setIsAddingNote(false);
     }
   };
 
@@ -293,7 +359,15 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
             </div>
           </div>
 
-            {/* Actual Notes List */}
+          {isFetchingNotes ? (
+            // Shimmer Loading State
+            <div className="flex flex-col gap-4 w-full">
+               <NoteShimmer />
+               <NoteShimmer />
+               <NoteShimmer />
+            </div>
+          ) : (
+            // Actual Notes List
             <>
               {trip?.notes &&
                 trip?.notes.length > 0 &&
@@ -396,6 +470,7 @@ const ViewNoteTrip = ({ trip, setTrip, isModal = false, onTripUpdate }) => {
                 </div>
               )}
             </>
+          )}
         </div>
       </div>
     </div>

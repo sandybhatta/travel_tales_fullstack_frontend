@@ -78,19 +78,6 @@ export const commentApiSlice = apiSlice.injectEndpoints({
         { type: "CommentLikes", id: commentId },
       ],
     }),
-    getMentionedComments: builder.query({
-      query: () => '/api/comment/mentioned-comments',
-    }),
-    toggleCommentLike: builder.mutation({
-      query: (commentId) => ({
-        url: `/api/comment/${commentId}/like`,
-        method: "POST",
-      }),
-      invalidatesTags: (result, error, commentId) => [
-        { type: "Comment", id: commentId },
-        { type: "CommentLikes", id: commentId },
-      ],
-    }),
   }),
 });
 
@@ -102,7 +89,4 @@ export const {
   useEditCommentMutation,
   useDeleteCommentMutation,
   useGetCommentLikesQuery,
-  useLazyGetCommentLikesQuery,
-  useGetMentionedCommentsQuery,
-  useToggleCommentLikeMutation,
 } = commentApiSlice;

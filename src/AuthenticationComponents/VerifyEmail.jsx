@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useVerifyEmailMutation } from "../slices/authApiSlice.js";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
@@ -8,7 +8,6 @@ const VerifyEmail = () => {
   const [status, setStatus] = useState("loading"); 
   const [message, setMessage] = useState("");
   const navigate = useNavigate()
-  const [verifyEmail] = useVerifyEmailMutation();
 
   useEffect(() => {
     const verify = async () => {
@@ -19,16 +18,18 @@ const VerifyEmail = () => {
       }
 
       try {
-        const res = await verifyEmail(token).unwrap();
+        const res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_LIVE_URL}/api/auth/verify-email?token=${token}`
+        );
         setStatus("success");
-        setMessage(res.message || "Your email has been successfully verified!");
+        setMessage(res.data.message || "Your email has been successfully verified!");
         setTimeout(()=>{
           navigate("/login")
         },2500)
       } catch (err) {
         setStatus("error");
         setMessage(
-          err?.data?.message || "Verification failed. Please try again."
+          err.response?.data?.message || "Verification failed. Please try again."
         );
       }
     };

@@ -1,10 +1,24 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import mainApi from '../Apis/axios'
 import { Link } from 'react-router-dom'
-import { useGetTaggedPostsQuery } from '../slices/postApiSlice'
 
 const TaggedPosts = () => {
-  const { data, isLoading: loading } = useGetTaggedPostsQuery()
-  const posts = data?.posts || []
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchTaggedPosts = async () => {
+      try {
+        const response = await mainApi.get('/api/posts/tagged-posts')
+        setPosts(response.data.posts || [])
+      } catch (error) {
+        console.error("Error fetching tagged posts:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTaggedPosts()
+  }, [])
 
   if (loading) {
     return (

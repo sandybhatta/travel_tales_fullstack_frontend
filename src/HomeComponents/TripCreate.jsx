@@ -4,15 +4,14 @@ import Details from "./Details";
 import Planning from "./Planning";
 import Settings from "./Settings";
 import { useSelector } from "react-redux";
-import { useCreateTripMutation } from "../slices/tripApiSlice";
+import mainApi from "../Apis/axios";
 
 const TripCreate = ({ setCreationTab, setCreateModal }) => {
   const { _id } = useSelector((state) => state.user);
 
   const [activeTab, setActiveTab] = useState("basic_info");
+  const [createLoading, setCreateLoading] = useState(false);
   const [globalError, setGlobalError] = useState("");
-
-  const [createTrip, { isLoading: createLoading }] = useCreateTripMutation();
 
   const [title, setTitle] = useState("");
 
@@ -87,6 +86,7 @@ const TripCreate = ({ setCreationTab, setCreateModal }) => {
       return;
     }
 
+    setCreateLoading(true);
     setGlobalError("");
 
     const formData = new FormData();
@@ -131,11 +131,15 @@ const TripCreate = ({ setCreationTab, setCreateModal }) => {
       formData.append("invitedFriends", JSON.stringify(inviteFriends));
 
     try {
-      await createTrip(formData).unwrap();
+      await mainApi.post("/api/trips", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setCreateModal(false);
       setCreationTab("");
     } catch (err) {
-      setGlobalError(err?.data?.message || "Failed to create trip");
+      setGlobalError(err.response?.data?.message || "Failed to create trip");
+    } finally {
+      setCreateLoading(false);
     }
   };
 

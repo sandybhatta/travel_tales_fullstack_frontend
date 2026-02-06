@@ -15,8 +15,10 @@ export const SocketContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (user && user._id) {
-      const socketUrl = import.meta.env.VITE_BACKEND_LIVE_URL;
-      console.log("Connecting Socket to:", socketUrl); 
+      // Prioritize the LIVE URL env var, but ensure it's trimmed.
+      // If it's missing, fallback to the hardcoded live URL to ensure connectivity.
+      const envUrl = import.meta.env.VITE_BACKEND_LIVE_URL;
+      const socketUrl = envUrl ? envUrl.trim() : "https://api.traveltalesapp.in";
       
       const socket = io(socketUrl, {
         query: {

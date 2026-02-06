@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import EditTripModal from './EditTripModal';
 import InviteTripModal from './InviteTripModal';
-import { useArchiveTripMutation, useToggleTripLikeMutation } from '../../slices/tripApiSlice';
+import mainApi from '../../Apis/axios';
 
 const TripCover = ({
   trip,
@@ -20,10 +20,6 @@ const TripCover = ({
 
   // Redux state for current user
   const { user: currentUser } = useSelector((state) => state.user);
-
-  // Mutations
-  const [archiveTrip] = useArchiveTripMutation();
-  const [toggleTripLike] = useToggleTripLikeMutation();
 
   // Local state for like
   const [isLiked, setIsLiked] = useState(trip?.currentUser?.isLiked);
@@ -51,7 +47,7 @@ const TripCover = ({
     navigate(-1);
     
     try {
-      await archiveTrip(trip._id).unwrap();
+      await mainApi.delete(`/api/trips/${trip._id}/archive`);
     } catch (error) {
       console.error("Failed to archive trip", error);
     }
@@ -69,9 +65,7 @@ const TripCover = ({
     setLikeCount(prev => previousLiked ? prev - 1 : prev + 1);
 
     try {
-       await toggleTripLike(trip._id).unwrap();
-       // onTripUpdate is likely not needed if using RTK Query tags, 
-       // but keeping it for safety if parent relies on it for other things
+       await mainApi.post(`/api/trips/${trip._id}/like`);
        if(onTripUpdate) onTripUpdate(); 
     } catch (error) {
        console.error("Like failed", error);

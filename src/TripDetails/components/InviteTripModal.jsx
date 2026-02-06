@@ -1,40 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import {
-    useGetTripInvitedQuery,
-    useGetTripCollaboratorsQuery,
-    useInviteUserToTripMutation,
-    useRemoveTripInviteMutation,
-    useRemoveTripCollaboratorMutation
-} from '../../slices/tripApiSlice';
+import mainApi from '../../Apis/axios';
 
 const InviteTripModal = ({ trip, onClose, onUpdate }) => {
     const { following } = useSelector((state) => state.user);
     
-    // RTK Query Hooks
-    const { data: invitedData, isLoading: invitedLoading } = useGetTripInvitedQuery(trip._id);
-    const { data: collaboratorsData, isLoading: collaboratorsLoading } = useGetTripCollaboratorsQuery(trip._id);
+    // Local state for lists
+    const [invitedUsers, setInvitedUsers] = useState([]);
+    const [collaborators, setCollaborators] = useState([]);
+    const [isOwner, setIsOwner] = useState(false);
     
-    const [inviteUserToTrip] = useInviteUserToTripMutation();
-    const [removeTripInvite] = useRemoveTripInviteMutation();
-    const [removeTripCollaborator] = useRemoveTripCollaboratorMutation();
-
-    // Derived State from RTK Query
-    const invitedUsers = invitedData?.invitedFriends || [];
-    const collaborators = collaboratorsData?.collaborators || [];
-    const isOwner = invitedData?.isOwner || false; // Backend returns isOwner in invited response
-
     // UI state
     const [activeTab, setActiveTab] = useState('invited'); // 'invited' | 'collaborators' | 'invite'
     const [searchTerm, setSearchTerm] = useState('');
-    
-    // Optimistic tracking for instant feedback (since RTK Query invalidation might take a moment)
-    const [justInvitedIds, setJustInvitedIds] = useState(new Set()); 
-
-    const loading = invitedLoading || collaboratorsLoading;
+    const [loading, setLoading] = useState(true);
+    const [justInvitedIds, setJustInvitedIds] = useState(new Set()); // Track newly invited users to hide them
 
     // Check if trip is past (end date is before today)
     const isPastTrip = trip?.endDate && new Date(trip.endDate) < new Date(new Date().setHours(0, 0, 0, 0));
+
+    // Fetch initial data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [invitedRes, collaboratorsRes] = await Promise.all([
+                    mainApi.get(`/api/trips/${trip._id}/invited`),
+                    mainApi.get(`/api/trips/${trip._id}/collaborators`)
+                ]);
+
+                if (invitedRes.data.success) {
+                    setInvitedUsers(invitedRes.data.invitedFriends || []);
+                    if (invitedRes.data.isOwner !== undefined) setIsOwner(invitedRes.data.isOwner);
+                }
+
+                if (collaboratorsRes.data.success) {
+                    setCollaborators(collaboratorsRes.data.collaborators || []);
+                }
+            } catch (error) {
+                console.error("Failed to fetch trip details", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (trip?._id) {
+            fetchData();
+        }
+    }, [trip]);
 
     // Filtering Logic for "Invite Friends" tab
     const getFilteredFollowing = () => {
@@ -67,8 +79,11 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
             return next;
         });
 
+        // Add to invited list (optional, but good for consistency if they switch tabs)
+        setInvitedUsers(prev => [...prev, userToInvite]);
+
         try {
-            await inviteUserToTrip({ tripId: trip._id, invitee: userToInvite._id }).unwrap();
+            await mainApi.post(`/api/trips/${trip._id}/invite`, { invitee: userToInvite._id });
         } catch (error) {
             console.error("Invite failed", error);
             // Rollback: Show user again
@@ -77,14 +92,21 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
                 next.delete(userToInvite._id);
                 return next;
             });
+            setInvitedUsers(prev => prev.filter(u => u._id !== userToInvite._id));
         }
     };
 
     const handleRemoveInvite = async (userId) => {
+        // Optimistic Update
+        const originalInvited = [...invitedUsers];
+        setInvitedUsers(prev => prev.filter(u => u._id !== userId));
+
         try {
-            await removeTripInvite({ tripId: trip._id, userId }).unwrap();
+            await mainApi.delete(`/api/trips/${trip._id}/invited/${userId}`);
         } catch (error) {
             console.error("Remove invite failed", error);
+            // Rollback
+            setInvitedUsers(originalInvited);
         }
     };
 
@@ -92,11 +114,17 @@ const InviteTripModal = ({ trip, onClose, onUpdate }) => {
         const userId = collaboratorEntry.user?._id;
         if (!userId) return;
 
+        // Optimistic Update
+        const originalCollaborators = [...collaborators];
+        setCollaborators(prev => prev.filter(c => c.user?._id !== userId));
+
         try {
-            await removeTripCollaborator({ tripId: trip._id, userId }).unwrap();
-            if(onUpdate) onUpdate(); // Optional: if parent needs to refresh something beyond cache
+            await mainApi.delete(`/api/trips/${trip._id}/collaborators/${userId}`);
+            if(onUpdate) onUpdate();
         } catch (error) {
             console.error("Remove collaborator failed", error);
+            // Rollback
+            setCollaborators(originalCollaborators);
         }
     };
 

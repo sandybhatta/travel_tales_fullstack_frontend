@@ -1,115 +1,22 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import {
-  useGetUserFollowersQuery,
-  useGetUserFollowingsQuery,
-  useGetMutualFollowersQuery,
-  useGetCloseFriendsQuery,
-  useFollowUserMutation,
-  useUnfollowUserMutation,
-  useAddCloseFriendMutation,
-  useRemoveCloseFriendMutation,
-} from "../../slices/userApiSlice";
 
 /**
  * Modal to display lists of users (followers, following, etc.).
- * Fetches its own data based on `type` and `userId`.
  */
 const UserListModal = ({
   type,
-  userId,
+  loading,
+  error,
+  users,
   onClose,
   ownProfile,
+  actionLoadingId,
+  onRemoveCloseFriend,
+  onUnfollow,
+  onAddCloseFriend,
+  onFollow,
 }) => {
-  const [actionLoadingId, setActionLoadingId] = useState(null);
-
-  // --- Data Fetching ---
-  // We use `skip` to conditionally run only the relevant query.
-  
-  const { 
-    data: followersData, 
-    isLoading: followersLoading, 
-    error: followersError 
-  } = useGetUserFollowersQuery(userId, { 
-    skip: type !== "followers" 
-  });
-
-  const { 
-    data: followingData, 
-    isLoading: followingLoading, 
-    error: followingError 
-  } = useGetUserFollowingsQuery({ userId, limit: 100 }, { 
-    skip: type !== "following" 
-  });
-
-  const { 
-    data: mutualData, 
-    isLoading: mutualLoading, 
-    error: mutualError 
-  } = useGetMutualFollowersQuery({ userId, limit: 100 }, { 
-    skip: type !== "mutual" 
-  });
-
-  const { 
-    data: closeFriendsData, 
-    isLoading: closeFriendsLoading, 
-    error: closeFriendsError 
-  } = useGetCloseFriendsQuery(undefined, { 
-    skip: type !== "closeFriends" 
-  });
-
-  // --- Mutations ---
-  const [followUser] = useFollowUserMutation();
-  const [unfollowUser] = useUnfollowUserMutation();
-  const [addCloseFriend] = useAddCloseFriendMutation();
-  const [removeCloseFriend] = useRemoveCloseFriendMutation();
-
-  // --- Normalize Data ---
-  let users = [];
-  let loading = false;
-  let error = null;
-
-  switch (type) {
-    case "followers":
-      users = followersData?.followers || [];
-      loading = followersLoading;
-      error = followersError;
-      break;
-    case "following":
-      users = followingData?.followingList || [];
-      loading = followingLoading;
-      error = followingError;
-      break;
-    case "mutual":
-      users = mutualData?.mutualFollowers || [];
-      loading = mutualLoading;
-      error = mutualError;
-      break;
-    case "closeFriends":
-      users = closeFriendsData?.closeFriends || [];
-      loading = closeFriendsLoading;
-      error = closeFriendsError;
-      break;
-    default:
-      break;
-  }
-
-  // Handle error messages
-  const errorMessage = error?.data?.message || error?.error || null;
-
-  // --- Actions ---
-  const handleAction = async (actionFn, id) => {
-    if (actionLoadingId) return;
-    setActionLoadingId(id);
-    try {
-      await actionFn(id).unwrap();
-    } catch (err) {
-      console.error("Action failed", err);
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
   const getTitle = () => {
     switch (type) {
       case "mutual": return "Mutual followers";
@@ -137,17 +44,17 @@ const UserListModal = ({
               <p className="text-gray-500 text-sm">Loading users...</p>
             </div>
           )}
-          {!loading && errorMessage && (
+          {!loading && error && (
             <div className="flex items-center justify-center py-6 px-4">
-              <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+              <p className="text-sm text-red-500 text-center">{error}</p>
             </div>
           )}
-          {!loading && !errorMessage && users.length === 0 && (
+          {!loading && !error && users.length === 0 && (
             <div className="flex items-center justify-center py-6">
               <p className="text-sm text-gray-500">No users found.</p>
             </div>
           )}
-          {!loading && !errorMessage && users.length > 0 && (
+          {!loading && !error && users.length > 0 && (
             <div className="p-2">
               {users.map((u) => {
                 const avatar = u.avatar?.url || u.avatar;
@@ -182,7 +89,7 @@ const UserListModal = ({
                     {isCloseFriendsList && (
                       <button
                         type="button"
-                        onClick={() => handleAction(removeCloseFriend, u._id)}
+                        onClick={() => onRemoveCloseFriend(u._id)}
                         disabled={isBusy}
                         className="ml-2 inline-flex items-center justify-center rounded-full bg-red-50 text-red-600 px-3 py-1 text-xs font-semibold hover:bg-red-100 disabled:opacity-50"
                       >
@@ -201,7 +108,7 @@ const UserListModal = ({
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleAction(addCloseFriend, u._id)}
+                            onClick={() => onAddCloseFriend(u._id)}
                             disabled={isBusy}
                             className="inline-flex items-center justify-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold hover:bg-emerald-100 disabled:opacity-50"
                           >
@@ -211,7 +118,7 @@ const UserListModal = ({
                         )}
                         <button
                           type="button"
-                          onClick={() => handleAction(unfollowUser, u._id)}
+                          onClick={() => onUnfollow(u._id)}
                           disabled={isBusy}
                           className="inline-flex items-center justify-center rounded-full bg-gray-100 text-gray-700 px-3 py-1 text-xs font-semibold hover:bg-gray-200 disabled:opacity-50"
                         >
@@ -225,7 +132,7 @@ const UserListModal = ({
                         {u.followBack ? (
                           <button
                             type="button"
-                            onClick={() => handleAction(unfollowUser, u._id)}
+                            onClick={() => onUnfollow(u._id)}
                             disabled={isBusy}
                             className="inline-flex items-center justify-center rounded-full bg-gray-100 text-gray-700 px-3 py-1 text-xs font-semibold hover:bg-gray-200 disabled:opacity-50"
                           >
@@ -234,7 +141,7 @@ const UserListModal = ({
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleAction(followUser, u._id)}
+                            onClick={() => onFollow(u._id)}
                             disabled={isBusy}
                             className="inline-flex items-center justify-center rounded-full bg-red-500 text-white px-3 py-1 text-xs font-semibold hover:bg-red-600 disabled:opacity-50"
                           >

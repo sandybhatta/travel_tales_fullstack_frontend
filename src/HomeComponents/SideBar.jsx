@@ -11,13 +11,8 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const avatar = reduxUserState?.avatar || userInfo?.avatar;
   const username = reduxUserState?.username || userInfo?.username;
 
-  // Safe checks for hooks
-  const notificationQuery = useGetNotificationsQuery();
-  const { data: notifications, refetch } = notificationQuery || {};
-  
-  const socketContext = useSocketContext();
-  const socket = socketContext?.socket;
-
+  const { data: notifications, refetch } = useGetNotificationsQuery();
+  const { socket } = useSocketContext();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -28,7 +23,7 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
   useEffect(() => {
     socket?.on("newNotification", () => {
-      refetch?.();
+      refetch();
     });
     return () => socket?.off("newNotification");
   }, [socket, refetch]);

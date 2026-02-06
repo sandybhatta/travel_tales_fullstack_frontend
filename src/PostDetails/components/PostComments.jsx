@@ -1,25 +1,30 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { useCreateRootCommentMutation } from "../../slices/commentApiSlice";
+import mainApi from "../../Apis/axios";
 
 const PostComments = ({ postId, rootComments, commentsCount, onCommentAdded }) => {
   const { currentUser } = useSelector((state) => state.user);
   const [newComment, setNewComment] = useState("");
-  const [createRootComment, { isLoading: submitting }] = useCreateRootCommentMutation();
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
+    setSubmitting(true);
     try {
-        const { comment } = await createRootComment({ postId, content: newComment }).unwrap();
+        const { data } = await mainApi.post(`/api/comments/${postId}`, {
+            content: newComment
+        });
         setNewComment("");
         if (onCommentAdded) {
-            onCommentAdded(comment);
+            onCommentAdded(data.comment);
         }
     } catch (err) {
         console.error("Failed to post comment", err);
+    } finally {
+        setSubmitting(false);
     }
   };
 

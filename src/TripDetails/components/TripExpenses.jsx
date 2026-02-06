@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import {
-  useAddTripExpenseMutation,
-  useDeleteTripExpenseMutation,
-} from "../../slices/tripApiSlice";
+import mainApi from '../../Apis/axios';
 
-const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false, organizedExpenses: propOrganizedExpenses }) => {
+const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false }) => {
   const { _id: currentUserId } = useSelector((state) => state.user);
-  
-  // RTK Query
-  const [addTripExpense, { isLoading: isSubmitting }] = useAddTripExpenseMutation();
-  const [deleteTripExpense] = useDeleteTripExpenseMutation();
-  
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   
   // Form State
@@ -22,9 +16,17 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false,
     spentBy: ""
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dropdownRef = useRef(null);
 
-  const expenses = trip?.expenses || [];
+  // Initial Fetch & Sync
+  useEffect(() => {
+    if (trip?.expenses) {
+      setExpenses(trip.expenses);
+      // Don't force loading false here, let fetch handle it if needed
+      if(expenses.length === 0 && trip.expenses.length > 0) setLoading(false);
+    }
+  }, [trip]);
 
   // Click outside listener for dropdown
   useEffect(() => {
@@ -37,6 +39,19 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false,
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const fetchExpenses = async () => {
+    setLoading(true);
+    try {
+      const response = await mainApi.get(`/api/trips/${trip._id}/expenses`);
+      setExpenses(response.data.expenses || []);
+    } catch (err) {
+      console.error("Failed to fetch expenses", err);
+      setError("Failed to load expenses");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddExpense = async () => {
     // Only allow submission if all fields are filled
     if (!formData.title || !formData.amount || !formData.spentBy) {
@@ -44,29 +59,33 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false,
       return;
     }
 
+    setIsSubmitting(true);
     setError("");
     
     try {
-      await addTripExpense({
-        tripId: trip._id,
+      await mainApi.post(`/api/trips/${trip._id}/expenses`, {
         title: formData.title,
         amount: Number(formData.amount),
         spentBy: formData.spentBy
-      }).unwrap();
+      });
       
       // Success: Refresh and reset
       setShowAddForm(false);
       setFormData({ title: "", amount: "", spentBy: "" });
       
+      // User requirement: hit getExpensesTrip api and use shimmer
+      await fetchExpenses();
+
+      if (onTripUpdate) onTripUpdate();
     } catch (err) {
-      setError(err?.data?.message || "Failed to add expense");
+      setError(err?.response?.data?.message || "Failed to add expense");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Group expenses by user (Client-side grouping)
   const organizedExpenses = useMemo(() => {
-    if (propOrganizedExpenses) return propOrganizedExpenses;
-    
     if (!expenses.length) return {};
     
     const grouped = {};
@@ -85,7 +104,7 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false,
       grouped[userId].expenses.push(expense);
     });
     return grouped;
-  }, [expenses, propOrganizedExpenses]);
+  }, [expenses]);
 
   // List of potential spenders (Owner + Collaborators)
   const potentialSpenders = useMemo(() => {
@@ -104,10 +123,17 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false,
                       (currentUserId && String(trip.user?._id || trip.user) === String(currentUserId));
 
   const handleDeleteExpense = async (expenseId) => {
+    // Optimistic update: remove immediately
+    const previousExpenses = [...expenses];
+    setExpenses(prev => prev.filter(e => e._id !== expenseId));
+
     try {
-      await deleteTripExpense({ tripId: trip._id, expenseId }).unwrap();
+      await mainApi.delete(`/api/trips/${trip._id}/expenses/${expenseId}`);
+      if (onTripUpdate) onTripUpdate();
     } catch (err) {
-      setError(err?.data?.message || "Failed to delete expense");
+      setError(err?.response?.data?.message || "Failed to delete expense");
+      // Rollback/Refetch on failure
+      fetchExpenses();
     }
   };
 
@@ -226,8 +252,8 @@ const TripExpenses = ({ trip, formatAcceptedDate, onTripUpdate, isModal = false,
         </div>
       )}
 
-      {/* Loading Shimmer (Only if expenses is null/undefined) */}
-      {!trip.expenses ? (
+      {/* Loading Shimmer */}
+      {loading ? (
         <div className="w-full flex flex-col gap-4 animate-pulse">
           {[1, 2].map(i => (
             <div key={i} className="w-full bg-gray-100 h-32 rounded-lg"></div>

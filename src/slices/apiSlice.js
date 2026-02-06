@@ -3,7 +3,6 @@ import { setAccessToken, logout } from './userSlice';
 
 const baseQuery = fetchBaseQuery({
     baseUrl: import.meta.env.VITE_BACKEND_LIVE_URL,
-    credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
         const token = getState().user?.accessToken || localStorage.getItem("accessToken");
         if (token) {
@@ -13,17 +12,12 @@ const baseQuery = fetchBaseQuery({
     },
 });
 
-const refreshBaseQuery = fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_BACKEND_LIVE_URL,
-    credentials: 'include',
-});
-
 const baseQueryWithReauth = async (args, api, extraOptions) => {
     let result = await baseQuery(args, api, extraOptions);
 
-    if (result.error && result.error.status === 401) {
+    if (result.error && result.error.status === 401 && result.error.data?.message === "Token expired") {
         // try to get a new token
-        const refreshResult = await refreshBaseQuery('/api/auth/refresh', api, extraOptions);
+        const refreshResult = await baseQuery('/api/auth/refresh', api, extraOptions);
 
         if (refreshResult.data) {
             // store the new token
@@ -44,6 +38,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery: baseQueryWithReauth,
-    tagTypes: ['User', 'Trip', 'Post', 'Comment', 'Feed', 'History', 'PostLikes', 'TripLikes', 'CommentLikes', 'Notification'], // Add relevant tags here
+    tagTypes: ['User', 'Trip', 'Post', 'Comment', 'Feed', 'History', 'PostLikes', 'TripLikes', 'CommentLikes'], // Add relevant tags here
     endpoints: (builder) => ({}),
 });

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { useDeletePostMutation } from "../../slices/postApiSlice";
+import { deletePost } from "../../Apis/postApi";
 import EditPostModal from "./EditPostModal";
 
 const PostHeader = ({ post, onOpenTaggedUsers, onPostUpdate }) => {
@@ -10,7 +10,6 @@ const PostHeader = ({ post, onOpenTaggedUsers, onPostUpdate }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showTagsModal, setShowTagsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [deletePost] = useDeletePostMutation();
 
   const author = post.author || post.sharedFrom?.author;
   const taggedUsers = post.taggedUsers || [];
@@ -35,7 +34,7 @@ const PostHeader = ({ post, onOpenTaggedUsers, onPostUpdate }) => {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
-        await deletePost(post._id).unwrap();
+        await deletePost(post._id);
         navigate("/"); // Redirect to home
       } catch (error) {
         console.error("Failed to delete post", error);
