@@ -23,6 +23,7 @@ import TaggedTripsPage from './TripDetails/TaggedTripsPage'
 import PostDetailsPage from './PostDetails/PostDetailsPage'
 import SharePostPage from './PostDetails/SharePostPage'
 import Notifications from './HomeComponents/Notifications'
+import ChatPage from './ChatComponents/ChatPage'
 
 const App = () => {
   const [createModal, setCreateModal] = useState(false)
@@ -64,6 +65,7 @@ const App = () => {
           <Route path='/post/:postId' element={<PostDetailsPage/>}/>
           <Route path='/post/share/:postId' element={<SharePostPage/>}/>
           <Route path='profile/:userId' element={<ProfilePage/>} />
+          <Route path='/chat' element={<ChatPage />} />
 
 
         </Routes>

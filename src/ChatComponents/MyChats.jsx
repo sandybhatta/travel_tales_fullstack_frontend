@@ -105,7 +105,7 @@ const MyChats = ({ selectedChat, setSelectedChat, chatIdToSelect }) => {
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin scrollbar-thumb-gray-200">
-        {chats?.map((chat) => {
+        {chats && [...chats].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).map((chat) => {
            const isGroup = chat.isGroupChat;
            const chatName = !isGroup 
                 ? getSender(loggedUser, chat.users) 

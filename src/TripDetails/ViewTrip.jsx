@@ -262,7 +262,7 @@ const ViewTrip = () => {
                         className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-red-200 cursor-pointer transition-all group flex flex-col items-center gap-4"
                     >
                         <div className="p-4 bg-green-50 rounded-full group-hover:bg-green-100 transition-colors flex items-center justify-center relative">
-                            <i className="bx bx-message text-4xl text-green-500"></i>
+                            <i className="bx bx-message-circle-dots-2 text-4xl text-green-500"></i>
                              {hasUnreadTripMessages && (
                                 <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white border-2 border-white">
                                     {tripChat.unreadCount > 99 ? '99+' : tripChat.unreadCount}

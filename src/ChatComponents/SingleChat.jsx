@@ -26,7 +26,7 @@ const SingleChat = ({ selectedChat, setSelectedChat }) => {
 
   // Handle Fetching Messages
   useEffect(() => {
-    if (fetchedMessages) {
+    if (fetchedMessages && selectedChat) {
       setMessages(fetchedMessages);
       if(socket) socket.emit("join chat", selectedChat._id);
     }
@@ -34,7 +34,7 @@ const SingleChat = ({ selectedChat, setSelectedChat }) => {
 
   // Socket Listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !selectedChat) return;
     
     const messageHandler = (newMessageReceived) => {
         if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
@@ -116,10 +116,11 @@ const SingleChat = ({ selectedChat, setSelectedChat }) => {
       <div className="p-3 bg-white border-b flex justify-between items-center z-10">
          <div className="flex items-center gap-3">
              <button 
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-full"
+                className="p-2 mr-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
                 onClick={() => setSelectedChat(null)}
+                title="Back to chat list"
              >
-                <i className="bx bx-arrow-back text-2xl"></i>
+                <i className="bx bx-arrow-left-stroke text-2xl"></i>
              </button>
 
              {!selectedChat.isGroupChat ? (

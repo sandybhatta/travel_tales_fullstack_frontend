@@ -25,8 +25,11 @@ const NavComponent = ({isSearchOpen , setIsSearchOpen}) => {
         <Search isSearchOpen={isSearchOpen} setIsSearchOpen={setIsSearchOpen} />
       </div>
 
-      {/* Placeholder for balance (optional) */}
-      <div className="w-[200px] hidden lg:flex justify-end">
+      {/* Chat Icon */}
+      <div className="w-[200px] hidden lg:flex justify-end items-center gap-4">
+        <Link to="/chat" className="text-white hover:text-gray-300 transition-colors" title="Chats">
+          <i className="bx bx-message-circle-detail text-3xl"></i>
+        </Link>
       </div>
 
     </nav>

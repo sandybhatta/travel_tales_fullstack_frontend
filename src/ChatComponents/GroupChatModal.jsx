@@ -10,16 +10,23 @@ const GroupChatModal = ({ onClose }) => {
   const [searchResult, setSearchResult] = useState([]);
   
   const [createGroupChat] = useCreateGroupChatMutation();
-  const [searchUsers, { isLoading: loading }] = useLazySearchMentionableUsersQuery();
+  // Removed API search
   const user = useSelector((state) => state.user);
 
-  const handleSearch = async (query) => {
+  const handleSearch = (query) => {
     setSearch(query);
-    if (!query) return;
+    if (!query) {
+        setSearchResult([]);
+        return;
+    }
 
     try {
-      const { data } = await searchUsers(query);
-      setSearchResult(data);
+      const filteredUsers = user.following.filter((u) => 
+        u.name.toLowerCase().includes(query.toLowerCase()) || 
+        u.username.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 5);
+      
+      setSearchResult(filteredUsers);
     } catch (error) {
       console.error("Failed to search users", error);
     }
@@ -90,24 +97,25 @@ const GroupChatModal = ({ onClose }) => {
             ))}
         </div>
 
-        {/* Search Results */}
-        <div className="max-h-40 overflow-y-auto flex flex-col gap-1">
-            {loading ? <div>Loading...</div> : (
-                searchResult?.slice(0, 4).map((user) => (
-                    <div 
-                        key={user._id} 
-                        className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-2"
-                        onClick={() => handleGroup(user)}
-                    >
-                        <img src={user.avatar?.url || user.pic} alt={user.name} className="w-8 h-8 rounded-full object-cover"/>
-                        <div>
-                            <p className="text-sm font-semibold text-[#2B2D42]">{user.name}</p>
-                            <p className="text-xs text-gray-500">@{user.username}</p>
-                        </div>
-                    </div>
-                ))
-            )}
-        </div>
+      {/* Search Results */}
+      <div className="max-h-40 overflow-y-auto flex flex-col gap-1">
+          {searchResult?.slice(0, 5).map((u) => (
+              <div 
+                  key={u._id} 
+                  className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-2"
+                  onClick={() => handleGroup(u)}
+              >
+                  <img src={u.avatar?.url || u.pic || "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg"} alt={u.name} className="w-8 h-8 rounded-full object-cover"/>
+                  <div>
+                      <p className="text-sm font-semibold text-[#2B2D42]">{u.name}</p>
+                      <p className="text-xs text-gray-500">@{u.username}</p>
+                  </div>
+              </div>
+          ))}
+          {search && searchResult.length === 0 && (
+              <div className="p-2 text-sm text-gray-500 text-center">No following users found</div>
+          )}
+      </div>
 
         <button 
             onClick={handleSubmit}
