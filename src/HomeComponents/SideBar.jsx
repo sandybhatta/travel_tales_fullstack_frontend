@@ -31,7 +31,8 @@ const SideBar = ({ isSidebarOpen, setIsSidebarOpen }) => {
   const links = [
     { name: "Home", path: "/home", icon: "bx-home-alt-2" },
     { name: "Notifications", path: "notifications", icon: "bx-bell", hasBadge: unreadCount > 0 },
-    { name: "Chats", path: "/chat", icon: "bx-message-circle-detail" },
+    // Chats removed from mobile sidebar, only visible on desktop via NavComponent
+    // { name: "Chats", path: "/chat", icon: "bx-message-circle-detail" },
     { name: "Profile", path: `/profile/${userId}`, icon: "bx-user" },
     { name: "Invited Trips", path: "invited-trips", icon: "bx-cursor-add" },
     { name: "Friends", path: "friends", icon: "bx-group" },
